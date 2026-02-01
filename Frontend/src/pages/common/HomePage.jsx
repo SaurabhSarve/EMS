@@ -33,12 +33,12 @@ export default function HomePage() {
 
               <div className="hero-buttons">
                 <div className="hero-btn">
-                  <a href="#" className="btn-secondary get-started-btn">
+                  <a href="/register" className="btn-secondary get-started-btn">
                     Get Started
                   </a>
-                  <a href="#features" className="btn-secondary book-demo-btn">
+                  {/* <a href="#features" className="btn-secondary book-demo-btn">
                     <i class="fa-solid fa-arrow-trend-up"></i> Book Demo
-                  </a>
+                  </a> */}
                 </div>
               </div>
 
@@ -129,7 +129,7 @@ export default function HomePage() {
           </div>
         </section>
         {/* CTA Section */}
-        <section className="cta-section">
+        {/* <section className="cta-section">
           <div className="cta-container">
             <h2>Ready to optimize your workforce?</h2>
             <p>
@@ -144,7 +144,7 @@ export default function HomePage() {
 
             <p className="cta-note">No credit card required for trial.</p>
           </div>
-        </section>
+        </section> */}
         <Footer />
       </div>
     </>

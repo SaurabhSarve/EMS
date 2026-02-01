@@ -2,7 +2,7 @@ import { useState } from "react";
 import { emailService } from "../../services/emailServices";
 
 /* 🔹 IMAGE */
-import sideImage from "../../assets/images/pass.png";
+import sideImage from "../../assets/images/createPassImg.png";
 import {useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
 
@@ -201,7 +201,7 @@ try {
           <img
             src={sideImage}
             alt="Password Security"
-            className="w-full h-full object-contain rounded-xl shadow-lg"
+            className="w-full h-full object-cover rounded-xl shadow-lg"
           />
         </div>
       </div>

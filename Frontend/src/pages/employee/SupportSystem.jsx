@@ -141,7 +141,7 @@ const Support = () => {
         setCategory("");
         setPriority("Medium");
         setDescription("");
-      
+
         fetchMytickets();
       }
     } catch (err) {
@@ -150,7 +150,7 @@ const Support = () => {
         err.response?.data?.message ||
           err.message ||
           "Failed to submit ticket. Please try again.",
-        "error"
+        "error",
       );
     } finally {
       setLoading(false);
@@ -384,7 +384,8 @@ const Support = () => {
                         <tr
                           key={ticket._id}
                           style={{
-                            backgroundColor: index % 2 === 0 ? "#fff" : "#f9fafb",
+                            backgroundColor:
+                              index % 2 === 0 ? "#fff" : "#f9fafb",
                             transition: "background-color 0.2s",
                           }}
                           onMouseEnter={(e) =>
@@ -588,27 +589,13 @@ const Support = () => {
 
       <EmployeesSidebar />
       <div className="support-center">
-        <div className="support-header">
+        <div className="support-header bg-white rounded-2xl shadow-lg p-6">
           <div className="support-header-child1">
             <h1>Support Center</h1>
             <p className="support-subtitle">How can we help you today?</p>
           </div>
           <div className="support-header-child2">
             <div className="support-header-buttons">
-              <button className="support-btn-secondary">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                </svg>
-                Knowledge Base
-              </button>
               <button
                 className="support-btn-secondary"
                 onClick={() => setShowTicketsModal(true)}
@@ -631,7 +618,7 @@ const Support = () => {
 
         <div className="support-content-grid">
           <div className="support-main-content">
-            <div className="support-ticket-form">
+            <div className="support-ticket-form bg-white rounded-2xl shadow-lg">
               <h2>New Support Ticket</h2>
               <p className="support-form-subtitle">
                 Please provide detailed information to help us resolve your
@@ -730,7 +717,7 @@ const Support = () => {
             </div>
           </div>
 
-          <div className="support-sidebar">
+          {/* <div className="support-sidebar">
             <div className="support-sidebar-section">
               <h3>
                 <svg
@@ -809,8 +796,8 @@ const Support = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </div> 
+            </div> */}
         </div>
       </div>
     </>

@@ -71,7 +71,7 @@ body {
 
 .support-content-grid {
   display: grid;
-  grid-template-columns: 1fr 450px;
+  grid-template-columns: 1fr;
   gap: 24px;
   margin-bottom: 40px;
 }
@@ -85,7 +85,7 @@ body {
   border-radius: 12px;
   padding: 32px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  max-width: 700px;
+  max-width: 1200px;
 }
 
 .support-ticket-form h2 {

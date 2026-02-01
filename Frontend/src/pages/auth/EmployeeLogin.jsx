@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { User, ArrowRight, Lock, Mail, KeyRound } from "lucide-react";
 import authService from "../../services/auth";
 import { useAuth } from "../../context/AuthContext";
-import EMPloginPic from "../../assets/images/emp.jpg";
+import EMPloginPic from "../../assets/images/Employee.jpeg";
 
 export default function EmployeeLogin() {
   const [view, setView] = useState("login");
