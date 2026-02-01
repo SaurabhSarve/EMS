@@ -13,8 +13,8 @@ console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? '***loaded***' : 'NOT LOADED
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, 
-    pass: process.env.EMAIL_PASSWORD 
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
   }
 });
 
@@ -25,15 +25,15 @@ const generateTransactionId = () => {
 
 
 
-const sendOtp = async(userDetails) => {
-const {user , otp} = userDetails; 
-console.log(user);
+const sendOtp = async (userDetails) => {
+  const { user, otp } = userDetails;
+  console.log(user);
 
   const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: user.personalEmail || user.email,
-          subject: 'Password Reset OTP - Graphura HR',
-          html: `
+    from: process.env.EMAIL_USER,
+    to: user.personalEmail || user.email,
+    subject: 'Password Reset OTP - Graphura HR',
+    html: `
             <!DOCTYPE html>
             <html>
             <head>
@@ -126,8 +126,8 @@ console.log(user);
             </body>
             </html>
           `
-        };
-         try {
+  };
+  try {
     const info = await transporter.sendMail(mailOptions);
     console.log('otp  sent:', info.messageId);
     return { success: true, messageId: info.messageId };
@@ -135,224 +135,188 @@ console.log(user);
     console.error('Error sending Otp', error);
     throw error;
   }
-  }
+}
 
 
 
 const sendEmployeeRegistrationEmail = async (employeeData) => {
   const { email, employeeId, name } = employeeData;
-  
+
 
   const passwordCreationLink = `${process.env.FRONTEND_URL}create-password?employeeId=${encodeURIComponent(employeeId)}`;
-  
+
   const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: email.trim(), 
+    to: email.trim(),
     subject: 'Welcome to Graphura HR - Create Your Password',
     html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            line-height: 1.6; 
-            color: #333; 
-            background-color: #f0f4f8;
-            margin: 0;
-            padding: 0;
-          }
-          .email-wrapper {
-            background-color: #f0f4f8;
-            padding: 40px 20px;
-          }
-          .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            background-color: white;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.1);
-          }
-          .header { 
-            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-            color: white; 
-            padding: 40px 30px;
-            text-align: center;
-          }
-          .logo {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            letter-spacing: 1px;
-          }
-          .logo-subtitle {
-            font-size: 14px;
-            opacity: 0.9;
-            font-weight: normal;
-          }
-          .content { 
-            background-color: white;
-            padding: 40px 30px;
-          }
-          .greeting {
-            font-size: 24px;
-            color: #1e293b;
-            margin-bottom: 20px;
-            font-weight: 600;
-          }
-          .message {
-            color: #475569;
-            font-size: 16px;
-            margin-bottom: 30px;
-            line-height: 1.8;
-          }
-          .id-card {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            border: 2px solid #2563eb;
-            border-radius: 12px;
-            padding: 25px;
-            margin: 30px 0;
-            text-align: center;
-          }
-          .id-label {
-            font-size: 14px;
-            color: #1e40af;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-          }
-          .employee-id { 
-            font-size: 32px; 
-            font-weight: bold; 
-            color: #2563eb;
-            letter-spacing: 2px;
-          }
-          .button-container {
-            text-align: center;
-            margin: 35px 0;
-          }
-          .button { 
-            display: inline-block; 
-            padding: 16px 40px; 
-            background: linear-gradient(135deg, #1b1c1f 0%, #4d556f 100%);
-            color: white; 
-            text-decoration: none; 
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 16px;
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
-            transition: all 0.3s ease;
-          }
-          .button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
-          }
-          .link-section {
-            background-color: #f8fafc;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 25px 0;
-          }
-          .link-label {
-            font-size: 14px;
-            color: #64748b;
-            margin-bottom: 10px;
-          }
-          .link-text {
-            word-break: break-all; 
-            color: #2563eb;
-            font-size: 14px;
-            font-family: 'Courier New', monospace;
-          }
-          .warning-box {
-            background-color: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 15px 20px;
-            border-radius: 6px;
-            margin: 25px 0;
-          }
-          .warning-box p {
-            margin: 0;
-            color: #92400e;
-            font-size: 14px;
-          }
-          .footer { 
-            background-color: #f8fafc;
-            text-align: center; 
-            padding: 30px;
-            border-top: 1px solid #e2e8f0;
-          }
-          .footer p {
-            margin: 5px 0;
-            font-size: 13px;
-            color: #64748b;
-          }
-          .footer-company {
-            font-weight: 600;
-            color: #2563eb;
-            margin-top: 15px;
-          }
-          .divider {
-            height: 1px;
-            background: linear-gradient(to right, transparent, #e2e8f0, transparent);
-            margin: 30px 0;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="email-wrapper">
-          <div class="container">
-            <div class="header">
-              <div class="logo">GRAPHURA HR</div>
-              <div class="logo-subtitle">Human Resource Management System</div>
-            </div>
-            
-            <div class="content">
-              <div class="greeting">Hello ${name}! 👋</div>
-              
-              <p class="message">
-                Congratulations and welcome to the team! We're excited to have you join us. 
-                You have been successfully registered in our HR management system.
-              </p>
-              
-              <div class="id-card">
-                <div class="id-label">Your Employee ID</div>
-                <div class="employee-id">${employeeId}</div>
-              </div>
-              
-              <div class="divider"></div>
-              
-              <p class="message">
-                To complete your registration and access your account, please create your password 
-                by clicking the button below:
-              </p>
-              
-              <div class="button-container">
-                <a href="${passwordCreationLink}" class="button">Create Your Password</a>
-              </div>
-              
-              <div class="link-section">
-                <div class="link-label">Or copy and paste this link in your browser:</div>
-                <div class="link-text">${passwordCreationLink}</div>
-              </div>
-              
-              <div class="warning-box">
-                <p>⚠️ <strong>Important:</strong> This activation link will expire in 24 hours for security reasons. 
-                Please complete your registration as soon as possible.</p>
-              </div>
-            </div>
-            
-            <div class="footer">
-              <p>If you did not expect this email or have any questions, please contact our HR department immediately.</p>
-              <p class="footer-company">© 2025 Graphura HR. All rights reserved.</p>
-            </div>
-          </div>
-        </div>
-      </body>
-      </html>
-    `
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body{
+  margin:0;
+  padding:0;
+  background:#eef2f7;
+  font-family:Segoe UI, Arial, sans-serif;
+}
+.wrapper{
+  width:100%;
+  padding:40px 15px;
+}
+.container{
+  max-width:600px;
+  margin:auto;
+  background:#ffffff;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 6px 18px rgba(0,0,0,0.12);
+}
+.header{
+  background:#2563eb;
+  color:#ffffff;
+  padding:40px 20px;
+  text-align:center;
+}
+.logo{
+  font-size:30px;
+  font-weight:700;
+}
+.subtitle{
+  font-size:13px;
+  opacity:0.9;
+}
+.content{
+  padding:40px 30px;
+}
+h2{
+  margin-top:0;
+  color:#1e293b;
+}
+p{
+  color:#475569;
+  font-size:15px;
+  line-height:1.8;
+}
+.card{
+  background:#f8fafc;
+  border-radius:14px;
+  padding:22px;
+  text-align:center;
+  margin:25px 0;
+  border:1px solid #e5e7eb;
+}
+.card-label{
+  font-size:12px;
+  letter-spacing:1px;
+  color:#64748b;
+}
+.card-value{
+  font-size:30px;
+  font-weight:700;
+  color:#2563eb;
+  margin-top:8px;
+}
+.button-wrap{
+  text-align:center;
+  margin:35px 0;
+}
+.footer{
+  background:#f8fafc;
+  padding:25px;
+  text-align:center;
+  font-size:12px;
+  color:#64748b;
+}
+.link-box{
+  background:#f1f5f9;
+  padding:14px;
+  border-radius:10px;
+  word-break:break-all;
+  color:#2563eb;
+  font-size:13px;
+}
+.warn{
+  background:#fff7ed;
+  border-left:4px solid #fb923c;
+  padding:14px;
+  border-radius:8px;
+  font-size:13px;
+  color:#9a3412;
+  margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+<div class="wrapper">
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">GRAPHURA HR</div>
+      <div class="subtitle">Human Resource Management System</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <h2>Hello ${name} 👋</h2>
+
+      <p>
+        Welcome to Graphura HR! Your employee account has been created successfully.
+      </p>
+
+      <!-- Employee Card -->
+      <div class="card">
+        <div class="card-label">EMPLOYEE ID</div>
+        <div class="card-value">${employeeId}</div>
+      </div>
+
+      <p style="text-align:center;">
+        Click the button below to create your password:
+      </p>
+
+      <!-- Button -->
+      <div class="button-wrap">
+        <table align="center" cellpadding="0" cellspacing="0">
+          <tr>
+            <td bgcolor="#2563eb" style="border-radius:10px;">
+              <a href="${passwordCreationLink}"
+                 style="
+                   display:inline-block;
+                   padding:16px 42px;
+                   font-size:16px;
+                   font-weight:600;
+                   color:#ffffff;
+                   text-decoration:none;
+                   background:#2563eb;
+                   border-radius:10px;
+                   font-family:Segoe UI, Arial, sans-serif;">
+                Create Your Password
+              </a>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="font-size:13px;">Or copy and paste link:</p>
+      <div class="link-box">${passwordCreationLink}</div>
+
+      <div class="warn">
+        This link will expire in 24 hours. If you did not request this email, please ignore it.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      © 2025 Graphura HR. All rights reserved.
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
+`
   };
 
   try {
@@ -371,7 +335,7 @@ const sendEmployeeRegistrationEmail = async (employeeData) => {
 const sendSalaryReceiptEmail = async (salaryData, pdfBuffer) => {
   const { email, employeeName, employeeId, amount, month, year } = salaryData;
   const transactionId = generateTransactionId();
-  
+
   const mailOptions = {
     from: {
       name: 'Company Payroll',
@@ -447,10 +411,10 @@ const sendSalaryReceiptEmail = async (salaryData, pdfBuffer) => {
   try {
     const info = await transporter.sendMail(mailOptions);
     console.log('Salary receipt email sent:', info.messageId);
-    return { 
-      success: true, 
+    return {
+      success: true,
       messageId: info.messageId,
-      transactionId: transactionId 
+      transactionId: transactionId
     };
   } catch (error) {
     console.error('Error sending salary receipt email:', error);
