@@ -1,0 +1,127 @@
+/* Page */
+.register-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f4f8ff, #eef3ff);
+  font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+/* Outer container (NO border) */
+.register-joined-card {
+  width: 950px;
+  display: flex;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 25px 60px rgba(37, 99, 235, 0.18);
+}
+
+/* FORM SECTION (BORDER ONLY FOR FORM) */
+.register-form-section {
+  flex: 1;
+  padding: 36px 40px;
+  margin: 20px;
+  border: 2px solid #2563eb;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+/* Heading */
+.register-form-section h2 {
+  text-align: center;
+  margin-bottom: 22px;
+  color: #1e3a8a;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+/* Labels */
+.register-form-section label {
+  display: block;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Inputs */
+.register-form-section input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 8px;
+  border: 1px solid #dbeafe;
+  outline: none;
+}
+
+.register-form-section input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.register-form-section input:disabled {
+  background: #f1f5ff;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+/* Button */
+.register-btn {
+  width: 100%;
+  margin-top: 22px;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.register-btn:hover {
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
+}
+
+/* Login link */
+.login-link {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.login-link span {
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* IMAGE SECTION (WIDER IMAGE) */
+.register-image-section {
+  flex: 1;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  border-radius: 0 16px 16px 0;
+}
+
+.register-image-section img {
+  width: 200%;          /* 🔹 INCREASED WIDTH */
+  max-width: 460px;   /* 🔹 WIDER IMAGE */
+  object-fit: contain;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .register-joined-card {
+    flex-direction: column;
+    width: 92%;
+  }
+
+  .register-image-section {
+    display: none;
+  }
+}
