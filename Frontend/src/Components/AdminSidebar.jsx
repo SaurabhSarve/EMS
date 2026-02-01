@@ -126,7 +126,7 @@ const AdminSidebar = () => {
                         </div>
                         <div className="overflow-hidden">
                             <p className="text-base font-semibold text-gray-900 truncate">{user?.firstName}</p>
-                            <p className="text-sm text-gray-500 font-medium">Super Admin</p>
+                            <p className="text-sm text-gray-500 font-medium">{user?.role === "Department Head" ? "Head" : "Admin"}</p>
                         </div>
                     </div>
 
