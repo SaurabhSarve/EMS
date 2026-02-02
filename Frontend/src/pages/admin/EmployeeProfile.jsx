@@ -30,6 +30,7 @@ import {
   Copy,
   Key,
   ShieldCheck,
+  IndianRupee
 } from "lucide-react";
 import "../../assets/styles/EmployeeProfileCSS/EmployeeProfile.css";
 import AdminSidebar from "../../Components/AdminSidebar";
@@ -57,7 +58,7 @@ export default function EmployeeProfile() {
   const [owner, setOwner] = useState();
   const [tasksData, setTasksData] = useState([]);
   const [leavesData, setLeavesData] = useState();
-  
+
   // Password and Secret Key States
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -69,7 +70,7 @@ export default function EmployeeProfile() {
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   const [showSecretKeyModal, setShowSecretKeyModal] = useState(false);
   const [secretKeyForm, setSecretKeyForm] = useState({
     currentKey: "",
@@ -318,7 +319,7 @@ export default function EmployeeProfile() {
       const result = await authService.changePassword(
         passwordForm.oldPassword,
         passwordForm.newPassword,
-        passwordForm.confirmPassword
+        passwordForm.confirmPassword,
       );
 
       if (result.success) {
@@ -334,7 +335,10 @@ export default function EmployeeProfile() {
       }
     } catch (err) {
       console.error("Password change error:", err);
-      const errorMessage = err.response?.data?.message || err.message || "Failed to change password";
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to change password";
       showToast(errorMessage, "error");
     } finally {
       setIsUpdatingPassword(false);
@@ -358,7 +362,7 @@ export default function EmployeeProfile() {
       const result = await authService.updateSecretKey(
         secretKeyForm.currentKey,
         secretKeyForm.newKey,
-        secretKeyForm.confirmKey
+        secretKeyForm.confirmKey,
       );
 
       if (result.success) {
@@ -378,7 +382,10 @@ export default function EmployeeProfile() {
       }
     } catch (err) {
       console.error("Secret key update error:", err);
-      const errorMessage = err.response?.data?.message || err.message || "Failed to update secret key";
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to update secret key";
       showToast(errorMessage, "error");
     } finally {
       setIsUpdatingKey(false);
@@ -441,7 +448,7 @@ export default function EmployeeProfile() {
         <main className="main-content">
           {/* TOP HEADER */}
           <header className="top-header flex justify-between items-center bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 border-b-4 border-blue-700 shadow-lg">
-            <h1 className="text-3xl font-bold text-white border-l-4 border-white pl-6 drop-shadow-lg flex items-center">
+            <h1 className="text-3xl font-bold text-black border-l-4 border-white pl-6 drop-shadow-lg flex items-center">
               <User size={22} className="mr-2" />
               Employee Profile
             </h1>
@@ -452,8 +459,8 @@ export default function EmployeeProfile() {
             {/* PROFILE CARD */}
             <div
               className="profile-card bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400 
-    text-white hover:from-blue-700 hover:via-blue-600 hover:to-cyan-500 shadow-2xl rounded-2xl transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.25)]"
-            >
+               text-white hover:from-blue-700 hover:via-blue-600 hover:to-cyan-500 shadow-2xl rounded-2xl transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.25)]"
+             >
               <div className="profile-avatar-section">
                 <div className="relative">
                   <img
@@ -467,8 +474,8 @@ export default function EmployeeProfile() {
                 </div>
               </div>
 
-              <div className="profile-info flex items-center justify-start w-full">
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 md:p-6 border border-white/20 shadow-lg max-w-2xl text-left w-full">
+              <div className="profile-info flex gap-4 items-center justify-center w-full">
+                <div className="bg-white/10 !p-4 backdrop-blur-sm rounded-2xl p-5 md:p-6 border border-white/20 shadow-lg max-w-2xl text-left w-full">
                   <div className="flex flex-col gap-2 items-start">
                     <h1 className="profile-name text-3xl md:text-4xl font-bold leading-tight tracking-tight">
                       {capitalize(profile?.name)}
@@ -477,7 +484,9 @@ export default function EmployeeProfile() {
                       <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20">
                         Employee ID: {profile?.employeeId}
                       </span>
-                      <span className="hidden sm:inline-block text-white/60">•</span>
+                      <span className="hidden sm:inline-block text-white/60">
+                        •
+                      </span>
                       <span className="job-title font-semibold flex items-center">
                         <Briefcase size={16} className="mr-2" />
                         {capitalize(profile?.position)}
@@ -486,24 +495,33 @@ export default function EmployeeProfile() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 mt-4">
-                    <span className={`status-badge px-4 py-2 rounded-full text-sm font-bold shadow-lg ${
-                      profile?.status === 'active' ? 'bg-green-400/95 text-white' : 'bg-red-400/95 text-white'
-                    }`}>
+                    <span
+                      className={`status-badge px-4 py-2 rounded-full text-sm font-bold shadow-lg ${
+                        profile?.status === "active"
+                          ? "bg-green-400/95 text-white"
+                          : "bg-red-400/95 text-white"
+                      }`}
+                    >
                       {capitalize(profile?.status)}
                     </span>
-                    <span className="text-white/70 text-xs md:text-sm">Last updated just now</span>
+                    <span className="text-white/70 text-xs md:text-sm">
+                      Last updated just now
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div className="profile-actions gap-4 flex flex-wrap items-center justify-end">
-                <Link to={`/admin/employees/${id}/edit`} className="edit-btn bg-white/25 hover:bg-white/40 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all font-semibold">
+                <Link
+                  to={`/admin/employees/${id}/edit`}
+                  className="edit-btn bg-white/25 hover:bg-white/40 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all font-semibold"
+                >
                   <Edit3 size={18} />
                   Edit Profile
                 </Link>
-                <button className="menu-btn hover:bg-white/30 transition-all transform hover:scale-105">
+                {/* <button className="menu-btn hover:bg-white/30 transition-all transform hover:scale-105">
                   <MoreVertical size={20} />
-                </button>
+                </button> */}
               </div>
             </div>
 
@@ -521,7 +539,7 @@ export default function EmployeeProfile() {
                   },
                   {
                     name: "Salary & Payroll",
-                    icon: DollarSign,
+                    icon: IndianRupee,
                   },
                   {
                     name: "Leaves",
@@ -566,7 +584,9 @@ export default function EmployeeProfile() {
 
                     <div className="contact-info-grid p-6 space-y-4">
                       <div className="info-field bg-blue-50 rounded-xl p-4 transform hover:scale-105 transition-all">
-                        <label className="info-label text-blue-600 font-bold text-sm">Phone Number</label>
+                        <label className="info-label text-blue-600 font-bold text-sm">
+                          Phone Number
+                        </label>
                         <div className="info-value text-gray-800 font-semibold text-lg mt-2">
                           <Phone size={16} className="text-blue-600 mr-2" />
                           <span>{profile?.contactNumber}</span>
@@ -574,7 +594,9 @@ export default function EmployeeProfile() {
                       </div>
 
                       <div className="info-field bg-cyan-50 rounded-xl p-4 transform hover:scale-105 transition-all">
-                        <label className="info-label text-cyan-600 font-bold text-sm">Personal Email</label>
+                        <label className="info-label text-cyan-600 font-bold text-sm">
+                          Personal Email
+                        </label>
                         <div className="info-value text-gray-800 font-semibold text-lg mt-2">
                           <Mail size={16} className="text-cyan-600 mr-2" />
                           <span>{profile?.personalEmail}</span>
@@ -582,7 +604,9 @@ export default function EmployeeProfile() {
                       </div>
 
                       <div className="info-field bg-indigo-50 rounded-xl p-4 transform hover:scale-105 transition-all">
-                        <label className="info-label text-indigo-600 font-bold text-sm">Work Location</label>
+                        <label className="info-label text-indigo-600 font-bold text-sm">
+                          Work Location
+                        </label>
                         <div className="info-value text-gray-800 font-semibold text-lg mt-2">
                           <MapPin size={16} className="text-indigo-600 mr-2" />
                           <span>Bangalore</span>
@@ -602,19 +626,29 @@ export default function EmployeeProfile() {
                       <div className="stat-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-l-4 border-blue-600 hover:shadow-lg transition-all transform hover:scale-105">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="stat-label text-gray-600 font-semibold text-sm">Attendance</p>
-                            <p className="stat-value text-2xl font-bold text-blue-600 mt-1">98.5%</p>
+                            <p className="stat-label text-gray-600 font-semibold text-sm">
+                              Attendance
+                            </p>
+                            <p className="stat-value text-2xl font-bold text-blue-600 mt-1">
+                              98.5%
+                            </p>
                           </div>
                           <Calendar size={26} className="text-blue-600" />
                         </div>
-                        <span className="stat-change text-green-600 font-bold text-sm mt-2 block">↑ +2%</span>
+                        <span className="stat-change text-green-600 font-bold text-sm mt-2 block">
+                          ↑ +2%
+                        </span>
                       </div>
 
                       <div className="stat-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border-l-4 border-purple-600 hover:shadow-lg transition-all transform hover:scale-105">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="stat-label text-gray-600 font-semibold text-sm">Leave Balance</p>
-                            <p className="stat-value text-2xl font-bold text-purple-600 mt-1">12 Days</p>
+                            <p className="stat-label text-gray-600 font-semibold text-sm">
+                              Leave Balance
+                            </p>
+                            <p className="stat-value text-2xl font-bold text-purple-600 mt-1">
+                              12 Days
+                            </p>
                           </div>
                           <FileText size={26} className="text-purple-600" />
                         </div>
@@ -623,8 +657,12 @@ export default function EmployeeProfile() {
                       <div className="stat-card bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border-l-4 border-orange-600 hover:shadow-lg transition-all transform hover:scale-105">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="stat-label text-gray-600 font-semibold text-sm">Performance</p>
-                            <p className="stat-value text-2xl font-bold text-orange-600 mt-1">4.8/5.0</p>
+                            <p className="stat-label text-gray-600 font-semibold text-sm">
+                              Performance
+                            </p>
+                            <p className="stat-value text-2xl font-bold text-orange-600 mt-1">
+                              4.8/5.0
+                            </p>
                           </div>
                           <Star size={26} className="text-orange-600" />
                         </div>
@@ -644,24 +682,34 @@ export default function EmployeeProfile() {
 
                   <div className="details-grid p-6 gap-6">
                     <div className="detail-item bg-indigo-50 rounded-xl p-5 border-l-4 border-indigo-600 transform hover:scale-105 transition-all">
-                      <label className="detail-label text-indigo-600 font-bold text-sm">Department</label>
-                      <p className="detail-value text-gray-900 font-semibold text-lg mt-2">{profile?.department}</p>
+                      <label className="detail-label text-indigo-600 font-bold text-sm">
+                        Department
+                      </label>
+                      <p className="detail-value text-gray-900 font-semibold text-lg mt-2">
+                        {profile?.department}
+                      </p>
                     </div>
 
                     <div className="detail-item bg-blue-50 rounded-xl p-5 border-l-4 border-blue-600 transform hover:scale-105 transition-all">
-                      <label className="detail-label text-blue-600 font-bold text-sm">Reporting Manager</label>
+                      <label className="detail-label text-blue-600 font-bold text-sm">
+                        Reporting Manager
+                      </label>
                       <div className="manager-card flex items-center gap-3 mt-2">
                         <div className="manager-avatar bg-gradient-to-br from-blue-600 to-blue-400 text-white font-bold text-lg">
                           {profile.reportingManager
                             ? profile?.reportingManager.charAt(0).toUpperCase()
                             : "NA"}
                         </div>
-                        <span className="detail-value text-gray-900 font-semibold">{profile?.reportingManager}</span>
+                        <span className="detail-value text-gray-900 font-semibold">
+                          {profile?.reportingManager}
+                        </span>
                       </div>
                     </div>
 
                     <div className="detail-item bg-cyan-50 rounded-xl p-5 border-l-4 border-cyan-600 transform hover:scale-105 transition-all">
-                      <label className="detail-label text-cyan-600 font-bold text-sm">Date of Joining</label>
+                      <label className="detail-label text-cyan-600 font-bold text-sm">
+                        Date of Joining
+                      </label>
                       <p className="detail-value text-gray-900 font-semibold text-lg mt-2">
                         {new Date(profile.joiningDate).toLocaleDateString(
                           "en-GB",
@@ -675,7 +723,9 @@ export default function EmployeeProfile() {
                     </div>
 
                     <div className="detail-item bg-purple-50 rounded-xl p-5 border-l-4 border-purple-600 transform hover:scale-105 transition-all">
-                      <label className="detail-label text-purple-600 font-bold text-sm">Contract Type</label>
+                      <label className="detail-label text-purple-600 font-bold text-sm">
+                        Contract Type
+                      </label>
                       <p className="detail-value text-gray-900 font-semibold text-lg mt-2">
                         {capitalize(profile?.jobType)}
                       </p>
@@ -696,7 +746,9 @@ export default function EmployeeProfile() {
 
                     <div className="details-grid p-6 space-y-4">
                       <div className="detail-item bg-blue-50 rounded-xl p-4 border-l-4 border-blue-600 transform hover:scale-105 transition-all">
-                        <label className="detail-label text-blue-600 font-bold text-sm">Date of Birth</label>
+                        <label className="detail-label text-blue-600 font-bold text-sm">
+                          Date of Birth
+                        </label>
                         <p className="detail-value text-gray-900 font-semibold text-lg mt-2">
                           <Calendar size={16} className="text-blue-600 mr-2" />
                           {profile?.dob || "no record"}
@@ -704,7 +756,9 @@ export default function EmployeeProfile() {
                       </div>
 
                       <div className="detail-item bg-blue-50 rounded-xl p-4 border-l-4 border-blue-600 transform hover:scale-105 transition-all">
-                        <label className="detail-label text-blue-600 font-bold text-sm">Gender</label>
+                        <label className="detail-label text-blue-600 font-bold text-sm">
+                          Gender
+                        </label>
                         <p className="detail-value text-gray-900 font-semibold text-lg mt-2">
                           <User size={16} className="text-blue-600 mr-2" />
                           {profile?.gender || "no record"}
@@ -715,7 +769,9 @@ export default function EmployeeProfile() {
                         className="detail-item bg-blue-50 rounded-xl p-4 border-l-4 border-blue-600 transform hover:scale-105 transition-all"
                         style={{ gridColumn: "1 / -1" }}
                       >
-                        <label className="detail-label text-blue-600 font-bold text-sm">Current Address</label>
+                        <label className="detail-label text-blue-600 font-bold text-sm">
+                          Current Address
+                        </label>
                         <p className="detail-value text-gray-900 font-semibold text-lg mt-2">
                           <MapPin size={16} className="text-blue-600 mr-2" />
                           {profile?.address || "India"}
@@ -738,7 +794,9 @@ export default function EmployeeProfile() {
                       >
                         <div className="flex items-center gap-3">
                           <Trash2 size={20} className="text-orange-700" />
-                          <div className="font-bold text-orange-700">Delete Employee</div>
+                          <div className="font-bold text-orange-700">
+                            Delete Employee
+                          </div>
                         </div>
                       </div>
                       {profile?.status === "active" ? (
@@ -748,7 +806,9 @@ export default function EmployeeProfile() {
                         >
                           <div className="flex items-center gap-3">
                             <Ban size={20} className="text-red-700" />
-                            <div className="font-bold text-red-700">Deactivate Employee</div>
+                            <div className="font-bold text-red-700">
+                              Deactivate Employee
+                            </div>
                           </div>
                         </div>
                       ) : (
@@ -758,33 +818,39 @@ export default function EmployeeProfile() {
                         >
                           <div className="flex items-center gap-3">
                             <CheckCircle size={20} className="text-green-700" />
-                            <div className="font-bold text-green-700">Activate Employee</div>
+                            <div className="font-bold text-green-700">
+                              Activate Employee
+                            </div>
                           </div>
                         </div>
                       )}
 
                       {/* CHANGE PASSWORD & SECRET KEY BUTTONS */}
-                      <div
+                      {/* <div
                         className="action-item bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 border-l-4 border-purple-600 cursor-pointer hover:shadow-lg transform hover:scale-105 transition-all"
                         onClick={() => setShowChangePasswordModal(true)}
                       >
                         <div className="flex items-center gap-3">
                           <Key size={20} className="text-purple-700" />
-                          <div className="font-bold text-purple-700">Change Password</div>
+                          <div className="font-bold text-purple-700">
+                            Change Password
+                          </div>
                         </div>
-                      </div>
+                      </div> */}
 
-                      {user?.role === "Admin" && (
+                      {/* {user?.role === "Admin" && (
                         <div
                           className="action-item bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 border-l-4 border-blue-600 cursor-pointer hover:shadow-lg transform hover:scale-105 transition-all"
                           onClick={() => setShowSecretKeyModal(true)}
                         >
                           <div className="flex items-center gap-3">
                             <MdSecurity size={20} className="text-blue-700" />
-                            <div className="font-bold text-blue-700">Update Secret Key</div>
+                            <div className="font-bold text-blue-700">
+                              Update Secret Key
+                            </div>
                           </div>
                         </div>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 </div>
@@ -803,7 +869,9 @@ export default function EmployeeProfile() {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold">Change Password</h3>
-                        <p className="text-purple-100 text-sm">Update your account password</p>
+                        <p className="text-purple-100 text-sm">
+                          Update your account password
+                        </p>
                       </div>
                     </div>
                     <button
@@ -822,7 +890,10 @@ export default function EmployeeProfile() {
                   </div>
 
                   {/* Modal Content */}
-                  <form onSubmit={handleChangePassword} className="p-6 space-y-5">
+                  <form
+                    onSubmit={handleChangePassword}
+                    className="p-6 space-y-5"
+                  >
                     {/* Info Box */}
                     <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
                       <p className="text-sm text-purple-900 font-semibold flex items-center">
@@ -830,7 +901,8 @@ export default function EmployeeProfile() {
                         Update your account password
                       </p>
                       <p className="text-xs text-purple-700 mt-1">
-                        Enter your current password and then set a new secure password. Minimum 8 characters required.
+                        Enter your current password and then set a new secure
+                        password. Minimum 8 characters required.
                       </p>
                     </div>
 
@@ -858,7 +930,11 @@ export default function EmployeeProfile() {
                           onClick={() => setShowOldPassword(!showOldPassword)}
                           className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                         >
-                          {showOldPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showOldPassword ? (
+                            <EyeOff size={18} />
+                          ) : (
+                            <Eye size={18} />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -887,16 +963,23 @@ export default function EmployeeProfile() {
                           onClick={() => setShowNewPassword(!showNewPassword)}
                           className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                         >
-                          {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showNewPassword ? (
+                            <EyeOff size={18} />
+                          ) : (
+                            <Eye size={18} />
+                          )}
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Minimum 8 characters
+                      </p>
                     </div>
 
                     {/* Confirm Password */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Confirm New Password <span className="text-red-500">*</span>
+                        Confirm New Password{" "}
+                        <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <input
@@ -914,10 +997,16 @@ export default function EmployeeProfile() {
                         />
                         <button
                           type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
                           className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                         >
-                          {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showConfirmPassword ? (
+                            <EyeOff size={18} />
+                          ) : (
+                            <Eye size={18} />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -962,8 +1051,12 @@ export default function EmployeeProfile() {
                         <MdSecurity size={24} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold">Update Admin Secret Key</h3>
-                        <p className="text-blue-100 text-sm">Secure authentication update</p>
+                        <h3 className="text-xl font-bold">
+                          Update Admin Secret Key
+                        </h3>
+                        <p className="text-blue-100 text-sm">
+                          Secure authentication update
+                        </p>
                       </div>
                     </div>
                     <button
@@ -978,7 +1071,10 @@ export default function EmployeeProfile() {
                   </div>
 
                   {/* Modal Content */}
-                  <form onSubmit={handleUpdateSecretKey} className="p-6 space-y-5">
+                  <form
+                    onSubmit={handleUpdateSecretKey}
+                    className="p-6 space-y-5"
+                  >
                     {/* Info Box */}
                     <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
                       <p className="text-sm text-blue-900 font-semibold flex items-center">
@@ -986,14 +1082,16 @@ export default function EmployeeProfile() {
                         Update your admin authentication key
                       </p>
                       <p className="text-xs text-blue-700 mt-1">
-                        Enter your current key and set a new secure key. Keep it confidential and change regularly.
+                        Enter your current key and set a new secure key. Keep it
+                        confidential and change regularly.
                       </p>
                     </div>
 
                     {/* Current Secret Key */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Current Secret Key <span className="text-red-500">*</span>
+                        Current Secret Key{" "}
+                        <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <input
@@ -1014,7 +1112,11 @@ export default function EmployeeProfile() {
                           onClick={() => setShowCurrentKey(!showCurrentKey)}
                           className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                         >
-                          {showCurrentKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showCurrentKey ? (
+                            <EyeOff size={18} />
+                          ) : (
+                            <Eye size={18} />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -1043,7 +1145,11 @@ export default function EmployeeProfile() {
                           onClick={() => setShowNewKey(!showNewKey)}
                           className="absolute right-14 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                         >
-                          {showNewKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showNewKey ? (
+                            <EyeOff size={18} />
+                          ) : (
+                            <Eye size={18} />
+                          )}
                         </button>
                         <button
                           type="button"
@@ -1054,13 +1160,16 @@ export default function EmployeeProfile() {
                           <Key size={18} />
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">Minimum 16 characters</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Minimum 16 characters
+                      </p>
                     </div>
 
                     {/* Confirm Secret Key */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Confirm Secret Key <span className="text-red-500">*</span>
+                        Confirm Secret Key{" "}
+                        <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <input
@@ -1081,7 +1190,11 @@ export default function EmployeeProfile() {
                           onClick={() => setShowConfirmKey(!showConfirmKey)}
                           className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                         >
-                          {showConfirmKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showConfirmKey ? (
+                            <EyeOff size={18} />
+                          ) : (
+                            <Eye size={18} />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -1089,13 +1202,19 @@ export default function EmployeeProfile() {
                     {/* Latest Key Display */}
                     {secretKey && (
                       <div className="bg-gray-900 text-white font-mono text-xs p-3 rounded-lg break-all">
-                        {showSecretKey ? secretKey : secretKey.replace(/./g, "•")}
+                        {showSecretKey
+                          ? secretKey
+                          : secretKey.replace(/./g, "•")}
                         <button
                           type="button"
                           onClick={() => setShowSecretKey(!showSecretKey)}
                           className="ml-3 text-gray-300 hover:text-white"
                         >
-                          {showSecretKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                          {showSecretKey ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
                         </button>
                         <button
                           type="button"
@@ -1137,8 +1256,8 @@ export default function EmployeeProfile() {
               </div>
             )}
 
-      {/* DELETE USER MODAL */}
-      {showDeleteModal && (
+            {/* DELETE USER MODAL */}
+            {showDeleteModal && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
                   <div className="flex justify-between items-center p-6 border-b border-gray-200">
@@ -1208,12 +1327,24 @@ export default function EmployeeProfile() {
                   <table className="w-full">
                     <thead className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
                       <tr>
-                        <th className="px-4 py-4 text-left text-sm font-bold uppercase tracking-wider">Month</th>
-                        <th className="px-4 py-4 text-left text-sm font-bold uppercase tracking-wider">Total Working Days</th>
-                        <th className="px-4 py-4 text-left text-sm font-bold uppercase tracking-wider">Total Present</th>
-                        <th className="px-4 py-4 text-left text-sm font-bold uppercase tracking-wider">Total Absent</th>
-                        <th className="px-4 py-4 text-left text-sm font-bold uppercase tracking-wider">On Leave</th>
-                        <th className="px-4 py-4 text-left text-sm font-bold uppercase tracking-wider">Attendance %</th>
+                        <th className="px-4 py-4 text-left text-sm font-bold uppercase tracking-wider">
+                          Month
+                        </th>
+                        <th className="px-4 py-4 text-left text-sm font-bold uppercase tracking-wider">
+                          Total Working Days
+                        </th>
+                        <th className="px-4 py-4 text-left text-sm font-bold uppercase tracking-wider">
+                          Total Present
+                        </th>
+                        <th className="px-4 py-4 text-left text-sm font-bold uppercase tracking-wider">
+                          Total Absent
+                        </th>
+                        <th className="px-4 py-4 text-left text-sm font-bold uppercase tracking-wider">
+                          On Leave
+                        </th>
+                        <th className="px-4 py-4 text-left text-sm font-bold uppercase tracking-wider">
+                          Attendance %
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -1223,11 +1354,18 @@ export default function EmployeeProfile() {
                           100
                         ).toFixed(1);
                         return (
-                          <tr key={idx} className="hover:bg-blue-50 transition-all">
+                          <tr
+                            key={idx}
+                            className="hover:bg-blue-50 transition-all"
+                          >
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <span className="font-bold text-gray-900">{record.month}</span>
+                              <span className="font-bold text-gray-900">
+                                {record.month}
+                              </span>
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-gray-700 font-semibold">{record.workingDays}</td>
+                            <td className="px-4 py-4 whitespace-nowrap text-gray-700 font-semibold">
+                              {record.workingDays}
+                            </td>
                             <td className="px-4 py-4 whitespace-nowrap">
                               <span className="px-4 py-2 text-sm font-bold rounded-full bg-green-100 text-green-800 shadow-sm">
                                 {record.present}
@@ -1270,7 +1408,7 @@ export default function EmployeeProfile() {
                 <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl shadow-lg border-l-4 border-green-700 p-6">
                   <div className="flex justify-between items-center">
                     <h3 className="text-2xl font-bold flex items-center">
-                      <DollarSign size={20} className="mr-2" />
+                      <IndianRupee size={20} className="mr-2" />
                       Salary & Payroll
                     </h3>
                     <span className="bg-white/20 px-4 py-2 rounded-full font-bold text-sm">
@@ -1281,7 +1419,7 @@ export default function EmployeeProfile() {
 
                 {salaryData.length === 0 ? (
                   <div className="bg-white rounded-2xl shadow-lg border-l-4 border-gray-300 p-12 text-center">
-                    <DollarSign
+                    <IndianRupee
                       size={48}
                       className="text-gray-400 mx-auto mb-4"
                     />
@@ -1296,29 +1434,59 @@ export default function EmployeeProfile() {
                       <table className="w-full text-sm">
                         <thead className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
                           <tr>
-                            <th className="px-4 py-4 text-left text-sm font-bold uppercase">Month</th>
-                            <th className="px-4 py-4 text-right text-sm font-bold uppercase">Basic</th>
-                            <th className="px-4 py-4 text-right text-sm font-bold uppercase">Allow.</th>
-                            <th className="px-4 py-4 text-right text-sm font-bold uppercase">Deduct.</th>
-                            <th className="px-4 py-4 text-right text-sm font-bold uppercase">Tax %</th>
-                            <th className="px-4 py-4 text-right text-sm font-bold uppercase">Net</th>
-                            <th className="px-4 py-4 text-center text-sm font-bold uppercase">Status</th>
+                            <th className="px-4 py-4 text-left text-sm font-bold uppercase">
+                              Month
+                            </th>
+                            <th className="px-4 py-4 text-right text-sm font-bold uppercase">
+                              Basic
+                            </th>
+                            <th className="px-4 py-4 text-right text-sm font-bold uppercase">
+                              Allow.
+                            </th>
+                            <th className="px-4 py-4 text-right text-sm font-bold uppercase">
+                              Deduct.
+                            </th>
+                            <th className="px-4 py-4 text-right text-sm font-bold uppercase">
+                              Tax %
+                            </th>
+                            <th className="px-4 py-4 text-right text-sm font-bold uppercase">
+                              Net
+                            </th>
+                            <th className="px-4 py-4 text-center text-sm font-bold uppercase">
+                              Status
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                           {salaryData.map((record) => (
-                            <tr key={record._id} className="hover:bg-green-50 transition-all">
-                              <td className="px-4 py-4 font-bold text-gray-900">{record?.month || "N/A"} '26</td>
-                              <td className="px-4 py-4 text-right text-gray-700 font-semibold">₹{(record.baseSalary || 0).toLocaleString()}</td>
-                              <td className="px-4 py-4 text-right text-green-600 font-bold">+₹{(record.allowances || 0).toLocaleString()}</td>
-                              <td className="px-4 py-4 text-right text-red-600 font-bold">−₹{(record.deductions || 0).toLocaleString()}</td>
-                              <td className="px-4 py-4 text-right text-amber-600 font-bold">{record.taxApply || 0}%</td>
-                              <td className="px-4 py-4 text-right font-bold text-green-600 text-lg">₹{(record.netSalary || 0).toLocaleString()}</td>
+                            <tr
+                              key={record._id}
+                              className="hover:bg-green-50 transition-all"
+                            >
+                              <td className="px-4 py-4 font-bold text-gray-900">
+                                {record?.month || "N/A"} '26
+                              </td>
+                              <td className="px-4 py-4 text-right text-gray-700 font-semibold">
+                                ₹{(record.baseSalary || 0).toLocaleString()}
+                              </td>
+                              <td className="px-4 py-4 text-right text-green-600 font-bold">
+                                +₹{(record.allowances || 0).toLocaleString()}
+                              </td>
+                              <td className="px-4 py-4 text-right text-red-600 font-bold">
+                                −₹{(record.deductions || 0).toLocaleString()}
+                              </td>
+                              <td className="px-4 py-4 text-right text-amber-600 font-bold">
+                                {record.taxApply || 0}%
+                              </td>
+                              <td className="px-4 py-4 text-right font-bold text-green-600 text-lg">
+                                ₹{(record.netSalary || 0).toLocaleString()}
+                              </td>
                               <td className="px-4 py-4 text-center">
                                 <span
                                   className="px-3 py-2 text-xs font-bold rounded-full inline-block shadow-sm"
                                   style={{
-                                    backgroundColor: getStatusColor(record.Status) + "20",
+                                    backgroundColor:
+                                      getStatusColor(record.Status) + "20",
                                     color: getStatusColor(record.Status),
                                   }}
                                 >
@@ -1340,13 +1508,18 @@ export default function EmployeeProfile() {
                         >
                           <div className="flex justify-between items-start mb-4">
                             <div>
-                              <p className="font-bold text-gray-900 text-lg">{record.month || "N/A"} 2026</p>
-                              <p className="text-2xl font-bold text-green-600 mt-2">₹{(record.netSalary || 0).toLocaleString()}</p>
+                              <p className="font-bold text-gray-900 text-lg">
+                                {record.month || "N/A"} 2026
+                              </p>
+                              <p className="text-2xl font-bold text-green-600 mt-2">
+                                ₹{(record.netSalary || 0).toLocaleString()}
+                              </p>
                             </div>
                             <span
                               className="px-3 py-2 text-xs font-bold rounded-full shadow-sm"
                               style={{
-                                backgroundColor: getStatusColor(record.Status) + "20",
+                                backgroundColor:
+                                  getStatusColor(record.Status) + "20",
                                 color: getStatusColor(record.Status),
                               }}
                             >
@@ -1355,20 +1528,36 @@ export default function EmployeeProfile() {
                           </div>
                           <div className="grid grid-cols-2 gap-3 text-sm">
                             <div className="bg-gray-50 rounded-lg p-3">
-                              <span className="text-gray-600 font-semibold">Basic:</span>
-                              <p className="font-bold text-gray-900">₹{(record.baseSalary || 0).toLocaleString()}</p>
+                              <span className="text-gray-600 font-semibold">
+                                Basic:
+                              </span>
+                              <p className="font-bold text-gray-900">
+                                ₹{(record.baseSalary || 0).toLocaleString()}
+                              </p>
                             </div>
                             <div className="bg-green-50 rounded-lg p-3">
-                              <span className="text-green-600 font-semibold">Allow:</span>
-                              <p className="font-bold text-green-700">+₹{(record.allowances || 0).toLocaleString()}</p>
+                              <span className="text-green-600 font-semibold">
+                                Allow:
+                              </span>
+                              <p className="font-bold text-green-700">
+                                +₹{(record.allowances || 0).toLocaleString()}
+                              </p>
                             </div>
                             <div className="bg-red-50 rounded-lg p-3">
-                              <span className="text-red-600 font-semibold">Deduct:</span>
-                              <p className="font-bold text-red-700">−₹{(record.deductions || 0).toLocaleString()}</p>
+                              <span className="text-red-600 font-semibold">
+                                Deduct:
+                              </span>
+                              <p className="font-bold text-red-700">
+                                −₹{(record.deductions || 0).toLocaleString()}
+                              </p>
                             </div>
                             <div className="bg-amber-50 rounded-lg p-3">
-                              <span className="text-amber-600 font-semibold">Tax:</span>
-                              <p className="font-bold text-amber-700">{record.taxApply || 0}%</p>
+                              <span className="text-amber-600 font-semibold">
+                                Tax:
+                              </span>
+                              <p className="font-bold text-amber-700">
+                                {record.taxApply || 0}%
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -1400,7 +1589,9 @@ export default function EmployeeProfile() {
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex items-center gap-3">
                             <Calendar size={20} className="text-purple-600" />
-                            <span className="font-bold text-gray-900 text-lg">{leave?.leaveType}</span>
+                            <span className="font-bold text-gray-900 text-lg">
+                              {leave?.leaveType}
+                            </span>
                           </div>
                           <span
                             className="px-4 py-2 text-sm font-bold rounded-full inline-flex items-center gap-2 shadow-md"
@@ -1453,8 +1644,12 @@ export default function EmployeeProfile() {
                     <div className="w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center mb-4">
                       <FileText size={40} className="text-purple-400" />
                     </div>
-                    <h4 className="text-xl font-bold text-gray-900 mb-2">No Leave Records</h4>
-                    <p className="text-sm text-gray-500 text-center">This employee hasn't taken any leaves yet.</p>
+                    <h4 className="text-xl font-bold text-gray-900 mb-2">
+                      No Leave Records
+                    </h4>
+                    <p className="text-sm text-gray-500 text-center">
+                      This employee hasn't taken any leaves yet.
+                    </p>
                   </div>
                 )}
               </div>
@@ -1468,7 +1663,11 @@ export default function EmployeeProfile() {
                     <ClipboardList size={20} className="mr-2" />
                     Assigned Tasks
                   </h3>
-                  <Plus size={24} className="text-orange-600 cursor-pointer hover:scale-110 transition-transform" onClick={() => setShowTaskModal(true)} />
+                  <Plus
+                    size={24}
+                    className="text-orange-600 cursor-pointer hover:scale-110 transition-transform"
+                    onClick={() => setShowTaskModal(true)}
+                  />
                 </div>
 
                 {tasksData && tasksData.length > 0 ? (
@@ -1487,7 +1686,8 @@ export default function EmployeeProfile() {
                             <span
                               className="px-3 py-1 text-xs font-bold rounded-full uppercase shadow-sm"
                               style={{
-                                backgroundColor: getStatusColor(task?.status) + "20",
+                                backgroundColor:
+                                  getStatusColor(task?.status) + "20",
                                 color: taskStatusColor(task?.status),
                               }}
                             >
@@ -1497,7 +1697,8 @@ export default function EmployeeProfile() {
                             <span
                               className="px-3 py-1 text-xs font-bold rounded-full uppercase shadow-sm"
                               style={{
-                                backgroundColor: getPriorityColor(task?.priority) + "20",
+                                backgroundColor:
+                                  getPriorityColor(task?.priority) + "20",
                                 color: getPriorityColor(task?.priority),
                               }}
                             >
@@ -1530,8 +1731,12 @@ export default function EmployeeProfile() {
                     <div className="w-24 h-24 rounded-full bg-orange-100 flex items-center justify-center mb-4">
                       <FileText size={40} className="text-orange-400" />
                     </div>
-                    <h4 className="text-xl font-bold text-gray-900 mb-2">No Tasks Assigned</h4>
-                    <p className="text-sm text-gray-500 text-center max-w-sm mb-6">This employee doesn't have any assigned tasks yet.</p>
+                    <h4 className="text-xl font-bold text-gray-900 mb-2">
+                      No Tasks Assigned
+                    </h4>
+                    <p className="text-sm text-gray-500 text-center max-w-sm mb-6">
+                      This employee doesn't have any assigned tasks yet.
+                    </p>
                     <button
                       onClick={() => setShowTaskModal(true)}
                       className="px-6 py-3 bg-gradient-to-br from-orange-600 to-amber-600 text-white rounded-xl hover:from-orange-700 hover:to-amber-700 font-bold transition-all transform hover:scale-105 shadow-lg"

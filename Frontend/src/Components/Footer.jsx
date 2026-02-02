@@ -24,9 +24,9 @@ export default function Footer() {
               <i class="fa-brands fa-linkedin"></i>
             </a>
 
-            <a href="#" title="Twitter">
+            {/* <a href="#" title="Twitter">
               <i className="fa-brands fa-twitter"></i>
-            </a>
+            </a> */}
 
             <a
               href="https://www.facebook.com/share/19nKAMTopZ/"

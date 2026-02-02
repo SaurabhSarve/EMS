@@ -270,7 +270,7 @@ body {
   padding: 24px;
   display: flex;
   gap: 24px;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 0;
   position: relative;
   overflow: hidden;
