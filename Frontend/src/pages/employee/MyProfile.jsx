@@ -146,11 +146,10 @@ export default function MyProfile() {
                                             <div className="relative p-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/30 hover:bg-white/20 hover:scale-105 transition-all duration-300 shadow-xl h-full flex flex-col">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <p className="text-4xl font-extrabold text-white drop-shadow-lg">{profileData.leaveBalance?.annual || 0}</p>
-                                                    <span className="text-white/60 text-sm font-semibold">/ 24</span>
                                                 </div>
-                                                <div className="w-full bg-white/20 rounded-full h-2 mb-3 overflow-hidden">
+                                                {/* <div className="w-full bg-white/20 rounded-full h-2 mb-3 overflow-hidden">
                                                     <div className="bg-white h-full rounded-full shadow-lg transition-all duration-500" style={{width: `${((profileData.leaveBalance?.annual || 0) / 24) * 100}%`}}></div>
-                                                </div>
+                                                </div> */}
                                                 <p className="text-white font-semibold text-sm mt-auto">Annual Leave</p>
                                             </div>
                                         </div>
@@ -159,11 +158,11 @@ export default function MyProfile() {
                                             <div className="relative p-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/30 hover:bg-white/20 hover:scale-105 transition-all duration-300 shadow-xl h-full flex flex-col">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <p className="text-4xl font-extrabold text-white drop-shadow-lg">{profileData.leaveBalance?.sick || 0}</p>
-                                                    <span className="text-white/60 text-sm font-semibold">/ 15</span>
+                                                    {/* <span className="text-white/60 text-sm font-semibold">/ 15</span> */}
                                                 </div>
-                                                <div className="w-full bg-white/20 rounded-full h-2 mb-3 overflow-hidden">
+                                                {/* <div className="w-full bg-white/20 rounded-full h-2 mb-3 overflow-hidden">
                                                     <div className="bg-white h-full rounded-full shadow-lg transition-all duration-500" style={{width: `${((profileData.leaveBalance?.sick || 0) / 15) * 100}%`}}></div>
-                                                </div>
+                                                </div> */}
                                                 <p className="text-white font-semibold text-sm mt-auto">Sick Leave</p>
                                             </div>
                                         </div>
@@ -172,11 +171,11 @@ export default function MyProfile() {
                                             <div className="relative p-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/30 hover:bg-white/20 hover:scale-105 transition-all duration-300 shadow-xl h-full flex flex-col">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <p className="text-4xl font-extrabold text-white drop-shadow-lg">{profileData.leaveBalance?.personal || 0}</p>
-                                                    <span className="text-white/60 text-sm font-semibold">/ 16</span>
+                                                    {/* <span className="text-white/60 text-sm font-semibold">/ 16</span> */}
                                                 </div>
-                                                <div className="w-full bg-white/20 rounded-full h-2 mb-3 overflow-hidden">
+                                                {/* <div className="w-full bg-white/20 rounded-full h-2 mb-3 overflow-hidden">
                                                     <div className="bg-white h-full rounded-full shadow-lg transition-all duration-500" style={{width: `${((profileData.leaveBalance?.personal || 0) / 16) * 100}%`}}></div>
-                                                </div>
+                                                </div> */}
                                                 <p className="text-white font-semibold text-sm mt-auto">Personal Leave</p>
                                             </div>
                                         </div>
@@ -189,7 +188,7 @@ export default function MyProfile() {
                                                      (profileData.leaveBalance?.personal || 0)}
                                                 </p>
                                                 <p className="text-white font-bold text-sm uppercase tracking-wider">Days</p>
-                                                <p className="text-white/90 text-xs font-medium mt-1">Total Leave</p>
+                                                <p className="text-white/90 text-xs font-medium mt-1">Total Available Leave</p>
                                             </div>
                                         </div>
                                     </div>

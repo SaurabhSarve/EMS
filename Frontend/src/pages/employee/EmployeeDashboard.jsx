@@ -523,12 +523,12 @@ const SalaryHistory = ({ salarydetails }) => {
         )}
       </div>
 
-      {/* FOOTER */}
+      {/* FOOTER
       <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-xl sticky bottom-0">
         <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-semibold hover:bg-blue-50 py-2 rounded-lg transition-all">
           View All Payslips ({salarydetails?.length || 0})
         </button>
-      </div>
+      </div> */}
     </div>
   );
 };

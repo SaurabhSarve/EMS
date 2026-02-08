@@ -984,20 +984,67 @@ const getAllEmployees = async(req,res) => {
 };
 
 
-const getleavesDetail = async (req,res) => {
-  try{
-      const employeeLeaves = await Leave.find({}).populate("employee" , "firstName employeeId");
-      // console.log(employeeLeaves);
-
-      return res.status(200).json({
-        message : "working",
-        success : true,
-        data : employeeLeaves
-            })
+const getleavesDetail = async (req, res) => {
+  try {
+    const { role, _id } = req.user;
     
+    let employeeLeaves;
+    
+    // If Department Head, show only their department's employees' leaves
+    if (role === 'Department Head') {
+      
+      // Find the department where this user is the manager
+      const managedDepartment = await Department.findOne({ 
+        manager: _id,
+        isActive: true 
+      });
+      
+      // If no department found
+      if (!managedDepartment) {
+        return res.status(200).json({
+          success: true,
+          message: 'No department assigned to this Department Head',
+          data: []
+        });
+      }
+      
+      console.log(`Department Head managing: ${managedDepartment.name}`);
+      
+      // Find all employees in this department
+      const departmentEmployees = await User.find({ 
+        department: managedDepartment._id, // Assuming User has department field as ObjectId
+        isActive: true
+      }).select('_id firstName lastName');
+      
+      // Also include the department head themselves
+      const employeeIds = [_id, ...departmentEmployees.map(emp => emp._id)];
+      
+      console.log(`Found ${employeeIds.length} employees in department (including head)`);
+      
+      // Get leaves for these employees only
+      employeeLeaves = await Leave.find({ 
+        employee: { $in: employeeIds } 
+      })
+      .populate("employee", "firstName lastName employeeId")
+      .sort({ createdAt: -1 });
+      
+    } else {
+      // For Admin or other roles, show all leaves
+      employeeLeaves = await Leave.find({})
+        .populate("employee", "firstName lastName employeeId")
+        .sort({ createdAt: -1 });
+    }
+    
+    console.log(`Total leaves returned: ${employeeLeaves.length}`);
+    
+    return res.status(200).json({
+      message: "success",
+      success: true,
+      data: employeeLeaves
+    });
 
-  }catch(error){
- console.error('Error fetching employees leave detail:', error);
+  } catch(error) {
+    console.error('Error fetching employees leave detail:', error);
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -1006,45 +1053,49 @@ const getleavesDetail = async (req,res) => {
   }
 }
 
-const updateLeavebalance = async(req,res) => {
+// const updateLeavebalance = async(req,res) => {
 
-}
+// }
 
 const leaveAction = async (req, res) => {
   try {
     const { Leaveid, action } = req.body;
     console.log(Leaveid);
-    
-    const updatedLeave = await Leave.findByIdAndUpdate(
-      Leaveid, 
-      { status: action },
-      { new: true }
-    ).populate('employee', 'leaveBalance firstName lastName');
+    console.log(req.body);
+
+    const updatedLeave = await Leave.findById(Leaveid).populate('employee', 'leaveBalance firstName lastName');
+    console.log(updatedLeave);
 
     if (!updatedLeave) {
-      return res.status(404).json({
-        success: false,
-        message: 'Leave request not found'
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Leave request not found' 
       });
     }
 
     if (action === 'Approved' || action === 'approved') {
-      
       const employee = await User.findById(updatedLeave.employee._id).select('leaveBalance firstName lastName');
       
       if (employee) {
         const leaveType = updatedLeave.leaveType; // 'personal', 'annual', or 'sick'
         const daysToDeduct = updatedLeave.duration || updatedLeave.totalDays;
-      
+
         if (employee.leaveBalance[leaveType] >= daysToDeduct) {
           employee.leaveBalance[leaveType] -= daysToDeduct;
           await employee.save();
-          
           console.log(`Deducted ${daysToDeduct} days from ${leaveType} leave`);
         } else {
-          throw new Error(`Insufficient ${leaveType} leave balance`);
+          // ADD RETURN HERE to stop execution
+          return res.status(401).json({ 
+            success: false, 
+            message: `Insufficient ${leaveType} leave balance` 
+          });
         }
       }
+
+      // UPDATE LEAVE STATUS TO APPROVED
+      updatedLeave.status = 'approved';
+      await updatedLeave.save();
 
       // LOG ACTIVITY - Leave Approved
       await logActivity('leave_approved', employee._id, {
@@ -1060,6 +1111,10 @@ const leaveAction = async (req, res) => {
       });
 
     } else if (action === 'Rejected' || action === 'rejected') {
+      // UPDATE LEAVE STATUS TO REJECTED
+      updatedLeave.status = 'rejected';
+      await updatedLeave.save();
+
       // LOG ACTIVITY - Leave Rejected
       await logActivity('leave_rejected', updatedLeave.employee._id, {
         targetUserId: updatedLeave.employee._id,
@@ -1077,20 +1132,22 @@ const leaveAction = async (req, res) => {
 
     console.log(updatedLeave);
     
-    return res.status(200).json({
-      message: `Successfully ${action} leave`,
+    // SINGLE RESPONSE at the end
+    return res.status(200).json({ 
+      message: `Successfully ${action} leave`, 
       success: true,
     });
 
   } catch(error) {
     console.error('Error action on leave', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error',
-      error: error.message
+    // ADD RETURN here too
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server Error', 
+      error: error.message 
     });
   }
-}
+};
 
 
 const getEmployeesSalary = async (req,res) => {

@@ -23,9 +23,9 @@ const LeaveCard = ({
                             <h2 className="text-3xl font-bold text-slate-900">
                                 {used}
                             </h2>
-                            <span className="text-sm text-slate-400 mb-1">
+                            {/* <span className="text-sm text-slate-400 mb-1">
                                 / {total} Days
-                            </span>
+                            </span> */}
                         </div>
                     </div>
 
@@ -36,12 +36,12 @@ const LeaveCard = ({
                 </div>
 
                 {/* PROGRESS BAR */}
-                <div className="mt-6 w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                {/* <div className="mt-6 w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                     <div
                         className={`h-full rounded-full ${progressColor}`}
                         style={{ width: `${percentage}%` }}
                     />
-                </div>
+                </div> */}
             </div>
         </div>
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Calendar, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { MdClose } from 'react-icons/md';
 import AdminSidebar from '../../Components/AdminSidebar';
 import { employeeService } from '../../services/employeeServices';
 import { capitalize } from '../../utils/helper';
@@ -7,56 +8,95 @@ import { leaveService } from '../../services/leaveServive';
 
 const LeaveRecord = () => {
   const [leaves, setLeaves] = useState([]);
+  const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
- useEffect(() => {
- 
-  fetchData();
- },[]);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
- const fetchData = async () => {
-try{
- const result = await employeeService.getLeavesdetails();
- console.log(result.data);
- setLeaves(result.data);
+  // Auto-hide toast after 3 seconds
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast({ show: false, message: "", type: "" });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
 
-}catch(err){
-console.log("leave err " , err);
-}
+  const fetchData = async () => {
+    try {
+      const result = await employeeService.getLeavesdetails();
+      console.log(result.data);
+      setLeaves(result.data);
+    } catch (err) {
+      console.log("leave err ", err);
+      setToast({ 
+        show: true, 
+        message: "Failed to fetch leave data", 
+        type: "error" 
+      });
+    }
   }
 
-  const handleApprove = async(id , Lid) => {
-    try{
-      console.log(id);
-    const response = await leaveService.leaveAction(Lid , "approved");
-    console.log(response);
-   setLeaves(leaves.map(leave => 
-      leave?._id === Lid ? { ...leave, status: 'approved' } : leave
-    ));
-fetchData();
-
-    
-
-    }catch(err){
-console.log("leave approving err" , err);
+  const handleApprove = async (id, Lid) => {
+    try {
+      console.log(Lid);
+      // Backend expects capitalized "Approved"
+      const response = await leaveService.leaveAction(Lid, "Approved");
+      console.log(response);
+      
+      // Check if response is successful
+      if (response.success || response.data?.success) {
+        // Update state optimistically
+        setLeaves(leaves.map(leave => 
+          leave?._id === Lid ? { ...leave, status: 'approved' } : leave
+        ));
+        
+        setToast({ 
+          show: true, 
+          message: "Leave approved successfully!", 
+          type: "success" 
+        });
+      }
+    } catch (err) {
+      console.log("leave approving err", err);
+      setToast({ 
+        show: true, 
+        message: err.response?.data?.message || "Failed to approve leave", 
+        type: "error" 
+      });
     }
- 
   };
 
- const handleReject = async(id , Lid) => {
-    try{
+  const handleReject = async (id, Lid) => {
+    try {
       console.log(id);
-    const response = await leaveService.leaveAction(Lid , "rejected");
-    console.log(response);
-   setLeaves(leaves.map(leave => 
-      leave?._id === Lid ? { ...leave, status: 'rejected' } : leave
-    ));
-fetchData();
-    
-
-    }catch(err){
-console.log("leave rejecting err" , err);
+      // Backend expects capitalized "Rejected"
+      const response = await leaveService.leaveAction(Lid, "Rejected");
+      console.log(response);
+      
+      // Check if response is successful
+      if (response.success || response.data?.success) {
+        // Update state optimistically
+        setLeaves(leaves.map(leave => 
+          leave?._id === Lid ? { ...leave, status: 'rejected' } : leave
+        ));
+        
+        setToast({ 
+          show: true, 
+          message: "Leave rejected successfully!", 
+          type: "success" 
+        });
+      }
+    } catch (err) {
+      console.log("leave rejecting err", err);
+      setToast({ 
+        show: true, 
+        message: err.response?.data?.message || "Failed to reject leave", 
+        type: "error" 
+      });
     }
- 
   };
 
   const formatDate = (dateString) => {
@@ -94,9 +134,28 @@ console.log("leave rejecting err" , err);
 
   return (
     <div className="flex min-h-screen bg-white">
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-lg animate-slideLeft ${
+          toast.type === "error" 
+            ? "bg-red-500 text-white" 
+            : "bg-green-500 text-white"
+        } max-w-xs sm:max-w-md w-full sm:w-auto`}>
+          <div className="flex-1 text-sm sm:text-base font-medium">
+            {toast.message}
+          </div>
+          <button 
+            onClick={() => setToast({ show: false, message: "", type: "" })}
+            className="text-white hover:bg-white/20 rounded-full p-1 transition-colors"
+          >
+            <MdClose size={20} />
+          </button>
+        </div>
+      )}
+
       <AdminSidebar />
     
-      <div className="flex-1 mt-3   w-full min-w-0 lg:ml-64">
+      <div className="flex-1 mt-3 w-full min-w-0 lg:ml-64">
         <div className="p-4 pt-16 md:p-6 md:pt-6 lg:p-8 lg:pt-8 bg-gradient-to-br from-gray-50 to-gray-100">
           <div className="max-w-full">
             {/* Header Section */}
@@ -132,58 +191,58 @@ console.log("leave rejecting err" , err);
             <div className="mb-10">
               <h2 className="text-lg font-bold text-gray-900 mb-5">Overview</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-200 shadow-lg hover:shadow-xl hover:border-blue-300 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 group">
-                    <div className="absolute inset-0 bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="relative flex items-start justify-between mb-5">
-                      <div>
-                        <p className="text-xs uppercase tracking-widest text-blue-700 font-black mb-3">Total</p>
-                        <p className="text-3xl font-black text-blue-900">{totalLeaves}</p>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-lg group-hover:shadow-blue-300/50 transition-all duration-300 transform group-hover:rotate-12">
-                        <Calendar className="w-6 h-6 text-white font-black" />
-                      </div>
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-200 shadow-lg hover:shadow-xl hover:border-blue-300 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 group">
+                  <div className="absolute inset-0 bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative flex items-start justify-between mb-5">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-blue-700 font-black mb-3">Total</p>
+                      <p className="text-3xl font-black text-blue-900">{totalLeaves}</p>
                     </div>
-                    <p className="text-xs text-blue-600 font-semibold">All leave requests</p>
-                  </div>
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200 shadow-lg hover:shadow-xl hover:border-amber-300 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 group">
-                    <div className="absolute inset-0 bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="relative flex items-start justify-between mb-5">
-                      <div>
-                        <p className="text-xs uppercase tracking-widest text-amber-700 font-black mb-3">Pending</p>
-                        <p className="text-3xl font-black text-amber-900">{pendingLeaves}</p>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg group-hover:shadow-amber-300/50 transition-all duration-300 transform group-hover:rotate-12">
-                        <Clock className="w-6 h-6 text-white font-black" />
-                      </div>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-lg group-hover:shadow-blue-300/50 transition-all duration-300 transform group-hover:rotate-12">
+                      <Calendar className="w-6 h-6 text-white font-black" />
                     </div>
-                    <p className="text-xs text-amber-600 font-semibold">Awaiting approval</p>
                   </div>
-                  <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-200 shadow-lg hover:shadow-xl hover:border-emerald-300 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 group">
-                    <div className="absolute inset-0 bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="relative flex items-start justify-between mb-5">
-                      <div>
-                        <p className="text-xs uppercase tracking-widest text-emerald-700 font-black mb-3">Approved</p>
-                        <p className="text-3xl font-black text-emerald-900">{approvedLeaves}</p>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg group-hover:shadow-emerald-300/50 transition-all duration-300 transform group-hover:rotate-12">
-                        <CheckCircle className="w-6 h-6 text-white font-black" />
-                      </div>
+                  <p className="text-xs text-blue-600 font-semibold">All leave requests</p>
+                </div>
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200 shadow-lg hover:shadow-xl hover:border-amber-300 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 group">
+                  <div className="absolute inset-0 bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative flex items-start justify-between mb-5">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-amber-700 font-black mb-3">Pending</p>
+                      <p className="text-3xl font-black text-amber-900">{pendingLeaves}</p>
                     </div>
-                    <p className="text-xs text-emerald-600 font-semibold">Confirmed leaves</p>
-                  </div>
-                  <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl p-6 border border-rose-200 shadow-lg hover:shadow-xl hover:border-rose-300 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 group">
-                    <div className="absolute inset-0 bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="relative flex items-start justify-between mb-5">
-                      <div>
-                        <p className="text-xs uppercase tracking-widest text-rose-700 font-black mb-3">Rejected</p>
-                        <p className="text-3xl font-black text-rose-900">{rejectedLeaves}</p>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center shadow-lg group-hover:shadow-rose-300/50 transition-all duration-300 transform group-hover:rotate-12">
-                        <XCircle className="w-6 h-6 text-white font-black" />
-                      </div>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg group-hover:shadow-amber-300/50 transition-all duration-300 transform group-hover:rotate-12">
+                      <Clock className="w-6 h-6 text-white font-black" />
                     </div>
-                    <p className="text-xs text-rose-600 font-semibold">Declined requests</p>
                   </div>
+                  <p className="text-xs text-amber-600 font-semibold">Awaiting approval</p>
+                </div>
+                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-200 shadow-lg hover:shadow-xl hover:border-emerald-300 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 group">
+                  <div className="absolute inset-0 bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative flex items-start justify-between mb-5">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-emerald-700 font-black mb-3">Approved</p>
+                      <p className="text-3xl font-black text-emerald-900">{approvedLeaves}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg group-hover:shadow-emerald-300/50 transition-all duration-300 transform group-hover:rotate-12">
+                      <CheckCircle className="w-6 h-6 text-white font-black" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-emerald-600 font-semibold">Confirmed leaves</p>
+                </div>
+                <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl p-6 border border-rose-200 shadow-lg hover:shadow-xl hover:border-rose-300 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 group">
+                  <div className="absolute inset-0 bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative flex items-start justify-between mb-5">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-rose-700 font-black mb-3">Rejected</p>
+                      <p className="text-3xl font-black text-rose-900">{rejectedLeaves}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center shadow-lg group-hover:shadow-rose-300/50 transition-all duration-300 transform group-hover:rotate-12">
+                      <XCircle className="w-6 h-6 text-white font-black" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-rose-600 font-semibold">Declined requests</p>
+                </div>
               </div>
             </div>
 
@@ -258,14 +317,14 @@ console.log("leave rejecting err" , err);
                               {leave.status === 'pending' ? (
                                 <div className="flex gap-2.5 min-w-max">
                                   <button
-                                    onClick={() => handleApprove(leave?.employee?._id , leave?._id )}
+                                    onClick={() => handleApprove(leave?.employee?._id, leave?._id)}
                                     className="flex items-center justify-center gap-1 px-4 py-2.5 bg-gradient-to-br from-green-500 to-emerald-600 text-white text-xs font-bold rounded-lg hover:from-green-600 hover:to-emerald-700 active:scale-95 transition-all shadow-lg hover:shadow-xl whitespace-nowrap uppercase tracking-wide"
                                   >
                                     <CheckCircle className="w-4 h-4 flex-shrink-0" />
                                     Approve
                                   </button>
                                   <button
-                                    onClick={() => handleReject(leave?.employee?._id , leave?._id)}
+                                    onClick={() => handleReject(leave?.employee?._id, leave?._id)}
                                     className="flex items-center justify-center gap-1 px-4 py-2.5 bg-gradient-to-br from-red-500 to-rose-600 text-white text-xs font-bold rounded-lg hover:from-red-600 hover:to-rose-700 active:scale-95 transition-all shadow-lg hover:shadow-xl whitespace-nowrap uppercase tracking-wide"
                                   >
                                     <XCircle className="w-4 h-4 flex-shrink-0" />
@@ -287,86 +346,86 @@ console.log("leave rejecting err" , err);
                 <div className="md:hidden mt-8 pt-6 border-t-2 border-gray-200">
                   <h2 className="text-lg font-bold text-gray-900 mb-4">Leave Requests</h2>
                   <div className="space-y-4">
-                  {leaves.map((leave) => (
-                    <div key={leave?._id} className="bg-white/95 backdrop-blur rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
-                      {/* Card Header */}
-                      <div className="bg-gradient-to-r from-blue-500 to-blue-400 px-4 py-4 border-b border-blue-200">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <h3 className="font-bold text-white text-sm">{capitalize(leave?.employee?.firstName)}</h3>
-                            <p className="text-xs text-blue-100 mt-0.5">{leave?.employee?.employeeId}</p>
-                          </div>
-                          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold capitalize whitespace-nowrap ${getStatusColor(leave.status)}`}>
-                            {leave.status === 'pending' && <Clock className="w-4 h-4 mr-1" />}
-                            {leave.status === 'approved' && <CheckCircle className="w-4 h-4 mr-1" />}
-                            {leave.status === 'rejected' && <XCircle className="w-4 h-4 mr-1" />}
-                            {leave.status}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Card Body */}
-                      <div className="px-4 py-4 space-y-3">
-                        <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-3">
-                          <Calendar className="w-5 h-5 text-blue-500 flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-xs text-gray-500 font-semibold">Date Range</p>
-                            <p className="text-sm font-bold text-gray-900 mt-0.5">
-                              {formatDate(leave?.startDate)} - {formatDate(leave?.endDate)}
-                            </p>
-                            <p className="text-xs text-gray-600 mt-0.5">{leave?.totalDays} {leave?.totalDays === 1 ? 'day' : 'days'}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
-                          <div className="w-5 h-5 flex-shrink-0 mt-0.5">
-                            <div className="w-3 h-3 rounded-full bg-blue-500 mt-1"></div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-gray-500 font-semibold mb-1">Leave Type</p>
-                            <span className={`inline-flex px-3 py-1.5 rounded-lg text-xs font-semibold capitalize ${getLeaveTypeColor(leave.leaveType)}`}>
-                              {leave?.leaveType}
+                    {leaves.map((leave) => (
+                      <div key={leave?._id} className="bg-white/95 backdrop-blur rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
+                        {/* Card Header */}
+                        <div className="bg-gradient-to-r from-blue-500 to-blue-400 px-4 py-4 border-b border-blue-200">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <h3 className="font-bold text-white text-sm">{capitalize(leave?.employee?.firstName)}</h3>
+                              <p className="text-xs text-blue-100 mt-0.5">{leave?.employee?.employeeId}</p>
+                            </div>
+                            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold capitalize whitespace-nowrap ${getStatusColor(leave.status)}`}>
+                              {leave.status === 'pending' && <Clock className="w-4 h-4 mr-1" />}
+                              {leave.status === 'approved' && <CheckCircle className="w-4 h-4 mr-1" />}
+                              {leave.status === 'rejected' && <XCircle className="w-4 h-4 mr-1" />}
+                              {leave.status}
                             </span>
                           </div>
                         </div>
 
-                        <div className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
-                          <div className="w-5 h-5 flex-shrink-0 mt-0.5">
-                            <div className="w-3 h-3 rounded-full bg-gray-400 mt-1"></div>
+                        {/* Card Body */}
+                        <div className="px-4 py-4 space-y-3">
+                          <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-3">
+                            <Calendar className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-xs text-gray-500 font-semibold">Date Range</p>
+                              <p className="text-sm font-bold text-gray-900 mt-0.5">
+                                {formatDate(leave?.startDate)} - {formatDate(leave?.endDate)}
+                              </p>
+                              <p className="text-xs text-gray-600 mt-0.5">{leave?.totalDays} {leave?.totalDays === 1 ? 'day' : 'days'}</p>
+                            </div>
                           </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-gray-500 font-semibold mb-1">Reason</p>
-                            <p className="text-sm text-gray-700 font-medium">{leave?.reason}</p>
-                          </div>
-                        </div>
-                      </div>
 
-                      {/* Card Footer - Actions */}
-                      {leave.status === 'pending' && (
-                        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex gap-2">
-                          <button
-                            onClick={() => handleApprove(leave?.employee._id)}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-br from-green-500 to-green-600 text-white text-sm font-bold rounded-lg hover:from-green-600 hover:to-green-700 active:scale-95 transition-all shadow-md hover:shadow-lg"
-                          >
-                            <CheckCircle className="w-5 h-5" />
-                            <span>Approve</span>
-                          </button>
-                          <button
-                            onClick={() => handleReject(leave?.employee?._id)}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-br from-red-500 to-red-600 text-white text-sm font-bold rounded-lg hover:from-red-600 hover:to-red-700 active:scale-95 transition-all shadow-md hover:shadow-lg"
-                          >
-                            <XCircle className="w-5 h-5" />
-                            <span>Reject</span>
-                          </button>
+                          <div className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                            <div className="w-5 h-5 flex-shrink-0 mt-0.5">
+                              <div className="w-3 h-3 rounded-full bg-blue-500 mt-1"></div>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs text-gray-500 font-semibold mb-1">Leave Type</p>
+                              <span className={`inline-flex px-3 py-1.5 rounded-lg text-xs font-semibold capitalize ${getLeaveTypeColor(leave.leaveType)}`}>
+                                {leave?.leaveType}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                            <div className="w-5 h-5 flex-shrink-0 mt-0.5">
+                              <div className="w-3 h-3 rounded-full bg-gray-400 mt-1"></div>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs text-gray-500 font-semibold mb-1">Reason</p>
+                              <p className="text-sm text-gray-700 font-medium">{leave?.reason}</p>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                      {leave.status !== 'pending' && (
-                        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-                          <p className="text-center text-xs text-gray-500 font-semibold">Status: {capitalize(leave.status)}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+
+                        {/* Card Footer - Actions */}
+                        {leave.status === 'pending' && (
+                          <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex gap-2">
+                            <button
+                              onClick={() => handleApprove(leave?.employee?._id, leave?._id)}
+                              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-br from-green-500 to-green-600 text-white text-sm font-bold rounded-lg hover:from-green-600 hover:to-green-700 active:scale-95 transition-all shadow-md hover:shadow-lg"
+                            >
+                              <CheckCircle className="w-5 h-5" />
+                              <span>Approve</span>
+                            </button>
+                            <button
+                              onClick={() => handleReject(leave?.employee?._id, leave?._id)}
+                              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-br from-red-500 to-red-600 text-white text-sm font-bold rounded-lg hover:from-red-600 hover:to-red-700 active:scale-95 transition-all shadow-md hover:shadow-lg"
+                            >
+                              <XCircle className="w-5 h-5" />
+                              <span>Reject</span>
+                            </button>
+                          </div>
+                        )}
+                        {leave.status !== 'pending' && (
+                          <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                            <p className="text-center text-xs text-gray-500 font-semibold">Status: {capitalize(leave.status)}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </>
@@ -374,13 +433,36 @@ console.log("leave rejecting err" , err);
           </div>
         </div>
       </div>
-
-      <style>{`
-        /* Ensure main content adjusts for sidebar on desktop (1120px+) */
+<style>{`
         @media (min-width: 1120px) {
-          .lg\:ml-64 {
-            margin-left: 0;
+          .main-content {
+            margin-left: 256px;
+            width: calc(100% - 256px);
           }
+        }
+        @media (max-width: 1119px) {
+          .main-content {
+            margin-left: 0;
+            width: 100%;
+          }
+        }
+      `}</style>
+      <style>{`
+        
+        
+        /* Toast animation */
+        @keyframes slideLeft {
+          from {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        .animate-slideLeft {
+          animation: slideLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
       `}</style>
     </div>

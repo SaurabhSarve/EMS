@@ -257,14 +257,14 @@ const EmployeeLeave = () => {
                                         onChange={(e) => setReason(e.target.value)}
                                         disabled={loading}
                                     />
-                                    <div className="text-xs text-slate-400 mt-1">
+                                    {/* <div className="text-xs text-slate-400 mt-1">
                                         {leaveType === 'sick' && duration > 2 && (
                                             <span className="text-orange-500 font-medium">⚠ Medical certificate required for sick leave &gt; 2 days</span>
                                         )}
                                         {(!leaveType || leaveType !== 'sick' || duration <= 2) && (
                                             <span>Attach document if sick leave &gt; 2 days</span>
                                         )}
-                                    </div>
+                                    </div> */}
                                 </div>
 
                                 {/* BUTTONS */}

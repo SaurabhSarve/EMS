@@ -231,12 +231,12 @@ const AdminDashboard = () => {
             Recent Activity
           </h3>
         </div>
-        <button
+        {/* <button
           onClick={() => navigate("/admin/employees")}
           className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition"
         >
           View All →
-        </button>
+        </button> */}
       </div>
 
       <div className="space-y-4 flex-1 overflow-y-auto pr-2">
