@@ -8,7 +8,6 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import "./App.css";
 import "./index.css";
 
-
 // pages
 
 import EmployeeLogin from "./pages/auth/EmployeeLogin";
@@ -30,8 +29,9 @@ import Register from "./pages/auth/Register";
 import Tasks from "./pages/admin/Tasks/Tasks";
 import CreatePasswordForm from "./pages/auth/CreatePasswordForm";
 import NotFound from "./pages/common/NotFoundPage";
-import AdminProfile from './pages/admin/profile';
+import AdminProfile from "./pages/admin/profile";
 import Tickets from "./pages/admin/Ticekts";
+import AdminPaymentHistory from "./pages/admin/AdminPaymentHistory";
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
 
@@ -66,8 +66,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
-
-
 function App() {
   return (
     <AuthProvider>
@@ -82,146 +80,148 @@ function App() {
           <Route path="/login" element={<Navigate to="/" replace />} />
 
           {/* Protected Admin Routes */}
-          <Route 
-            path="/admin/dashboard" 
+          <Route
+            path="/admin/dashboard"
             element={
-              <ProtectedRoute allowedRoles={['Admin', 'Department Head']}>
+              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
                 <AdminDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/admin/employees" 
+          <Route
+            path="/admin/employees"
             element={
-              <ProtectedRoute allowedRoles={['Admin', 'Department Head']}>
+              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
                 <EmployeesList />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/admin/employees/:id" 
+          <Route path="/payment" element={<AdminPaymentHistory />} />
+
+          <Route
+            path="/admin/employees/:id"
             element={
-              <ProtectedRoute allowedRoles={['Admin', 'Department Head']}>
+              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
                 <EmployeeProfile />
               </ProtectedRoute>
-            } 
-          /> 
+            }
+          />
 
-          <Route 
-            path="/admin/employees/add" 
+          <Route
+            path="/admin/employees/add"
             element={
-              <ProtectedRoute allowedRoles={['Admin', 'Department Head']}>
+              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
                 <AddEmployee />
               </ProtectedRoute>
-            } 
-          /> 
+            }
+          />
 
-          <Route 
-            path="/admin/employees/:id/edit" 
+          <Route
+            path="/admin/employees/:id/edit"
             element={
-              <ProtectedRoute allowedRoles={['Admin', 'Department Head']}>
-                <EmployeeEdit/>
+              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
+                <EmployeeEdit />
               </ProtectedRoute>
-            } 
-          /> 
+            }
+          />
 
-          <Route 
-            path="/admin/employees/leaves" 
+          <Route
+            path="/admin/employees/leaves"
             element={
-              <ProtectedRoute allowedRoles={['Admin', 'Department Head']}>
+              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
                 <LeaveRecord />
               </ProtectedRoute>
-            } 
-          /> 
+            }
+          />
 
-          <Route 
-            path="/admin/employees/tasks" 
+          <Route
+            path="/admin/employees/tasks"
             element={
-              <ProtectedRoute allowedRoles={['Admin', 'Department Head']}>
+              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
                 <Tasks />
               </ProtectedRoute>
-            } 
-          /> 
+            }
+          />
 
-          <Route 
-            path="/admin/employees/salary" 
+          <Route
+            path="/admin/employees/salary"
             element={
-              <ProtectedRoute allowedRoles={['Admin', 'Department Head']}>
+              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
                 <SalaryManagement />
               </ProtectedRoute>
-            } 
-          /> 
+            }
+          />
 
-           <Route 
-            path="/admin/me" 
+          <Route
+            path="/admin/me"
             element={
-              <ProtectedRoute allowedRoles={['Admin', 'Department Head']}>
+              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
                 <AdminProfile />
               </ProtectedRoute>
-            } 
-          /> 
+            }
+          />
 
-          <Route 
-            path="/admin/tickets" 
+          <Route
+            path="/admin/tickets"
             element={
-              <ProtectedRoute allowedRoles={['Admin', 'Department Head']}>
+              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
                 <Tickets />
               </ProtectedRoute>
-            } 
-          /> 
+            }
+          />
 
           {/* Default Admin Route - redirect /admin to /admin/dashboard */}
-          <Route 
-            path="/admin" 
-            element={<Navigate to="/admin/dashboard" replace />} 
+          <Route
+            path="/admin"
+            element={<Navigate to="/admin/dashboard" replace />}
           />
 
           {/* Employee Protected Routes */}
-          <Route 
-            path="/employee/dashboard" 
+          <Route
+            path="/employee/dashboard"
             element={
-              <ProtectedRoute allowedRoles={['employee']}>
+              <ProtectedRoute allowedRoles={["employee"]}>
                 <EmployeeDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/employee/mytasks" 
+          <Route
+            path="/employee/mytasks"
             element={
-              <ProtectedRoute allowedRoles={['employee']}>
+              <ProtectedRoute allowedRoles={["employee"]}>
                 <MyTasks />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/employee/support-system" 
+          <Route
+            path="/employee/support-system"
             element={
-              <ProtectedRoute allowedRoles={['employee']}>
-                <Support/>
+              <ProtectedRoute allowedRoles={["employee"]}>
+                <Support />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/employee/apply-leave" 
+          <Route
+            path="/employee/apply-leave"
             element={
-              <ProtectedRoute allowedRoles={['employee']}>
-                <EmployeeLeave/>
+              <ProtectedRoute allowedRoles={["employee"]}>
+                <EmployeeLeave />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/employee/profile" 
+          <Route
+            path="/employee/profile"
             element={
-              <ProtectedRoute allowedRoles={['employee']}>
-                <MyProfile/>
+              <ProtectedRoute allowedRoles={["employee"]}>
+                <MyProfile />
               </ProtectedRoute>
-            } 
+            }
           />
 
           {/* Default Employee Route - redirect /employee to /employee/dashboard */}
