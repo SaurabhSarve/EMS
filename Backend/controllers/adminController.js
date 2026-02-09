@@ -118,12 +118,12 @@ const createEmployee = async (req, res, next) => {
 
       let nextNum = 2025;
       if (lastEmployee && lastEmployee.employeeId) {
-        const match = lastEmployee.employeeId.match(/#EMP-(\d+)/);
+        const match = lastEmployee.employeeId.match(/EMP-(\d+)/);
         if (match && match[1]) {
           nextNum = parseInt(match[1]) + 1;
         }
       }
-      return `#EMP-${nextNum}`;
+      return `EMP-${nextNum}`;
     };
 
     const employeeId = await generateEmployeeId();
