@@ -280,9 +280,7 @@ const login = async (req, res, next) => {
       if (currUser.AccessKey !== accessKey) {
         return res.status(403).json({ message: "Invalid Admin access key" });
       }
-      if (currUser.employeeId !== employeeId) {
-        return res.status(403).json({ message: "Invalid Admin employee ID" });
-      }
+
       const isPasswordValid = await currUser.comparePassword(password);
       if (!isPasswordValid) {
         return res.status(400).json({ message: "Wrong password" });
@@ -318,9 +316,7 @@ const login = async (req, res, next) => {
       if (currUser.AccessKey !== accessKey) {
         return res.status(403).json({ message: "Invalid Department Head access key" });
       }
-      if (currUser.employeeId !== employeeId) {
-        return res.status(403).json({ message: "Invalid Department Head employee ID" });
-      }
+
       const isPasswordValid = await currUser.comparePassword(password);
       if (!isPasswordValid) {
         return res.status(400).json({ message: "Wrong password" });

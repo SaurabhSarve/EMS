@@ -1467,18 +1467,74 @@ const payIndividual = async (req, res) => {
 };
 
 
+const getEmployeesForDepartmentHead = async (req, res) => {
+  try {
+    const { search, status, page = 1, limit = 50 } = req.query;
 
+    // Check if user is a Department Head and has a department assigned
+    if (req.user.role !== 'Department Head' || !req.user.department) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Only Department Heads with an assigned department can access this.'
+      });
+    }
 
+    const departmentId = req.user.department;
 
+    const filter = { department: departmentId, role: 'employee' };
 
+    // Search filter
+    if (search) {
+      filter.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { personalEmail: { $regex: search, $options: 'i' } },
+        { employeeId: { $regex: search, $options: 'i' } },
+        { position: { $regex: search, $options: 'i' } }
+      ];
+    }
 
+    // Status filter
+    if (status && status !== 'all') {
+      let statusValue = status.toLowerCase();
+      if (statusValue === 'on leave') statusValue = 'on_leave';
+      filter.status = statusValue;
+    }
 
+    // Pagination
+    const skip = (page - 1) * limit;
 
+    // Execute query
+    const employees = await User.find(filter)
+      .select('-password -__v')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await User.countDocuments(filter);
+
+    res.status(200).json({
+      success: true,
+      count: employees.length,
+      total,
+      data: employees
+    });
+
+  } catch (error) {
+    console.error('Error fetching employees for department head:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
 
 
 module.exports = {
   getDashboardstats,
   getAllEmployees,
+  getEmployeesForDepartmentHead,
   getEmployeebyId,
   createEmployee,
   updateEmployee,

@@ -24,7 +24,8 @@ const {
     payIndividual,
     deleteDepartment,
     updateDepartment,
-    updateProfile
+    updateProfile,
+    getEmployeesForDepartmentHead
 } = require("../controllers/adminController.js");
 
 const { protect } = require('../middleware/auth');
@@ -49,7 +50,7 @@ router.route("/employees")
     .get(getAllEmployees)
     .post(upload.single('profilePhoto'), createEmployee);
 
-
+router.get("/department-head/employees", getEmployeesForDepartmentHead);
 
 // after registraion (after adding employee)
 router.post("/employees/sent-email", sentEmail);
