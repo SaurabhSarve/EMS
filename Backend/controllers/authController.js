@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const Department = require("../models/Department");
 const OTP = require("../models/Otp");
 const generateEmployeeId = require("../utils/generateEmployeeId");
+const Counter = require("../models/counter");
 
 const { sendOtp } = require("../services/emailService");
 dotenv.config();
@@ -34,6 +35,7 @@ const requestPasswordReset = async (req, res) => {
       });
       identifier = employeeId;
     }
+
 
 
 
@@ -533,36 +535,49 @@ const register = async (req, res) => {
     const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY;
     const DEPARTMENT_HEAD_SECRET_KEY = process.env.DEPARTMENT_HEAD_SECRET_KEY;
 
+    const generateEmployeeId = async () => {
+      const counter = await Counter.findOneAndUpdate(
+        { name: "employeeId" },     // one counter for employees
+        { $inc: { seq: 1 } },       // atomic increment
+        {
+          new: true,
+          upsert: true              // create if not exists
+        }
+      );
+
+      return `EMP-${counter.seq}`;
+    };
+
+
+
+    const employeeId = await generateEmployeeId();
+
     if (registerAs === 'Admin' && secretKey === ADMIN_SECRET_KEY) {
-      const employeeId = await generateEmployeeId();
       const user = await User.create({
         firstName,
         lastName,
         email,
         contactNumber: mobileNumber || null,
         password, // Will be hashed by pre-save middleware
+        employeeId,
         role: registerAs,
         isActive: true,
         status: 'active',
-        AccessKey: ADMIN_SECRET_KEY,
-        employeeId
+        AccessKey: ADMIN_SECRET_KEY
       });
 
     } else if (registerAs === 'Department Head' && secretKey === DEPARTMENT_HEAD_SECRET_KEY) {
-      //to add employee id to the department head
-      const employeeId = await generateEmployeeId();
-
       const user = await User.create({
         firstName,
         lastName,
         email,
         contactNumber: mobileNumber || null,
         password, // Will be hashed by pre-save middleware
+        employeeId,
         role: registerAs,
         isActive: true,
         status: 'active',
-        AccessKey: DEPARTMENT_HEAD_SECRET_KEY,
-        employeeId
+        AccessKey: DEPARTMENT_HEAD_SECRET_KEY
       });
       // const departmentInfo = await Department.findOneAndUpdate(
       //     { name : department }, 

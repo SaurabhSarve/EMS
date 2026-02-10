@@ -27,9 +27,24 @@ export const employeeService = {
             throw error;
         }
     },
+<<<<<<< HEAD
     getAllEmployees: async () => {
         try {
             const response = await api.get('/admin/employees');
+=======
+    getAllEmployees : async() => {
+       try {
+            const response = await api.get('/admin/employees',);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    getAllEmployeesByDeparment : async(department) => {
+       try {
+            const response = await api.get(`/admin/employees/bydepartment?department=${department}`,);
+>>>>>>> a785dcc8d4c4756c718d58e369ccb8f8498f2eb3
             return response.data;
         } catch (error) {
             throw error;

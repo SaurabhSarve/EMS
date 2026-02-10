@@ -62,6 +62,8 @@ router.route("/employee/:id")
     .put(upload.single('profilePhoto'), updateEmployee)
     .delete(deleteEmployee);
 
+router.route("/employees/bydepartment").get(getAllEmployeesByDepartement)
+
 
 // tasks , based on Head and Admin
 router.get("/employees/tasks", getDepartmentTasks);

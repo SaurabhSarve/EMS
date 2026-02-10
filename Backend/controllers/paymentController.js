@@ -31,7 +31,7 @@ const {secretKey} = req.body;
             success: false,
             message: 'error activating payment mode'
         });
-}
+    }
 }
 
 const UpdateBankDetails = async(req,res) => {
@@ -59,7 +59,7 @@ return res.status(400).json({
   return res.status(400).json({
     success: false,
     message: err.message
-});
+  });
 }
 }
 

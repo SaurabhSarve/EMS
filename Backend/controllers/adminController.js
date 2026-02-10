@@ -9,7 +9,10 @@ const { sendEmployeeRegistrationEmail, sendSalaryReceiptEmail } = require("../se
 const mongoose = require("mongoose");
 // const logActivity = require("../models/Activity.js");
 const logActivity = require("../utils/activityLogger.js");
+
 const generateEmployeeId = require("../utils/generateEmployeeId");
+const Counter = require("../models/counter");
+
 
 const getDashboardstats = async (req, res, next) => {
   try {
@@ -111,6 +114,38 @@ const createEmployee = async (req, res, next) => {
       });
     }
 
+
+
+    // Generate employee ID
+    // const generateEmployeeId = async () => {
+    //   const lastEmployee = await User.findOne(
+    //     { employeeId: true }
+    //   ).sort({ createdAt: -1 });
+
+    //   let nextNum = 2025;
+    //   if (lastEmployee && lastEmployee.employeeId) {
+    //     const match = lastEmployee.employeeId.match(/EMP-(\d+)/);
+    //     if (match && match[1]) {
+    //       nextNum = parseInt(match[1]) + 1;
+    //     }
+    //   }
+    //   return `EMP-${nextNum}`;
+    // };
+
+    const generateEmployeeId = async () => {
+      const counter = await Counter.findOneAndUpdate(
+        { name: "employeeId" },    
+        { $inc: { seq: 1 } },      
+        {
+          new: true,
+          upsert: true              
+        }
+      );
+
+      return `EMP-${counter.seq}`;
+    };
+
+ a785dcc8d4c4756c718d58e369ccb8f8498f2eb3
     const employeeId = await generateEmployeeId();
 
 
@@ -969,6 +1004,128 @@ const getAllEmployees = async (req, res) => {
   }
 };
 
+const getAllEmployeesByDepartement = async (req, res) => {
+  try {
+    const { search, department, status, page = 1, limit = 50 } = req.query;
+
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    const employeeMatch = { role: "employee" };
+
+    if (search) {
+      employeeMatch.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { employeeId: { $regex: search, $options: "i" } },
+        { position: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (status && status !== "all") {
+      let statusValue = status.toLowerCase();
+      if (statusValue === "on leave") statusValue = "on_leave";
+      employeeMatch.status = statusValue;
+    }
+
+    const employeePipeline = [
+      { $match: employeeMatch },
+      {
+        $lookup: {
+          from: "departments",
+          localField: "department",
+          foreignField: "_id",
+          as: "department",
+        },
+      },
+      { $unwind: "$department" },
+      ...(department && department !== "all"
+        ? [
+            {
+              $match: {
+                "department.name": { $regex: department, $options: "i" },
+              },
+            },
+          ]
+        : []),
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limitNum },
+      { $project: { __v: 0 } },
+    ];
+
+    const employees = await User.aggregate(employeePipeline);
+
+    let departmentHead = null;
+
+    if (department && department !== "all") {
+      const managerPipeline = [
+        { $match: { name: { $regex: department, $options: "i" } } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "manager",
+            foreignField: "_id",
+            as: "manager",
+          },
+        },
+        {
+          $unwind: {
+            path: "$manager",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            manager: {
+              _id: "$manager._id",
+              firstName: "$manager.firstName",
+              lastName: "$manager.lastName",
+              email: "$manager.email",
+              position: "$manager.position",
+              employeeId: "$manager.employeeId",
+              status: "$manager.status",
+              joiningDate: "$manager.joiningDate"
+            },
+          },
+        },
+      ];
+
+      const managerResult = await Department.aggregate(managerPipeline);
+      departmentHead = managerResult[0]?.manager || null;
+    }
+
+    const countPipeline = employeePipeline.filter(
+      stage => !stage.$skip && !stage.$limit && !stage.$sort
+    );
+
+    const totalResult = await User.aggregate([
+      ...countPipeline,
+      { $count: "total" },
+    ]);
+
+    const total = totalResult[0]?.total || 0;
+
+    res.status(200).json({
+      success: true,
+      departmentHead,
+      count: employees.length,
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum),
+      data: employees,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
 
 const getleavesDetail = async (req, res) => {
   try {
@@ -1553,5 +1710,7 @@ module.exports = {
   leaveAction,
   sentEmail,
   getDepartmentTasks,
-  payIndividual
+  payIndividual,
+  payIndividual,
+  getAllEmployeesByDepartement
 }

@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema({
     }
     ,
 
+<<<<<<< HEAD
     employeeId: {
         type: String,
         required: function () {
@@ -41,6 +42,14 @@ const userSchema = new mongoose.Schema({
         unique: true,
         trim: true
     },
+=======
+    employeeId : {
+        type : String,
+        sparse : true,
+        unique : true,
+        trim :  true
+    } ,
+>>>>>>> a785dcc8d4c4756c718d58e369ccb8f8498f2eb3
 
     // info of admin and employees depend on the user role
     firstName: {
