@@ -4,9 +4,12 @@ import { useNavigate } from "react-router-dom";
 import AdminSidebar from "../../Components/AdminSidebar.jsx";
 import { employeeService } from "../../services/employeeServices.js";
 import { capitalize } from "../../utils/helper.js";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 export default function EmployeesList() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isDepartmentHead = user?.role === "Department Head";
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -15,14 +18,18 @@ export default function EmployeesList() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
-    fetchDepartments();
+    if (!isDepartmentHead) {
+      fetchDepartments();
+    }
     fetchEmployees();
-  }, []);
+  }, [isDepartmentHead]);
 
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const result = await employeeService.getAllEmployees();
+      const result = isDepartmentHead
+        ? await employeeService.getDepartmentHeadEmployees()
+        : await employeeService.getAllEmployees();
       if (result && result.data) {
         setEmployees(result.data);
       }
@@ -63,12 +70,12 @@ export default function EmployeesList() {
     const matchesDept =
       departmentFilter === "all" ||
       (employee.department?.name?.toLowerCase() || "") ===
-        departmentFilter.toLowerCase();
+      departmentFilter.toLowerCase();
 
     const matchesStatus =
       statusFilter === "all" ||
       (employee.status?.toLowerCase() || "") ===
-        statusFilter.toLowerCase().replace(" ", "_");
+      statusFilter.toLowerCase().replace(" ", "_");
 
     return matchesSearch && matchesDept && matchesStatus;
   });
@@ -109,7 +116,7 @@ export default function EmployeesList() {
                   </div>
                   <div>
                     <h1 className="text-2xl sm:text-3xl font-bold">
-                      Employee Directory
+                      {isDepartmentHead ? "My Department Employees" : "Employee Directory"}
                     </h1>
                     <p className="text-blue-100 mt-1 text-sm sm:text-base">
                       {loading
@@ -145,18 +152,20 @@ export default function EmployeesList() {
 
               {/* Filters */}
               <div className="flex flex-col sm:flex-row gap-3">
-                <select
-                  value={departmentFilter}
-                  onChange={(e) => setDepartmentFilter(e.target.value)}
-                  className="px-4 py-3 border border-gray-200 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-1 bg-white shadow-sm"
-                >
-                  <option value="all">All Departments</option>
-                  {departments.map((dept) => (
-                    <option key={dept._id} value={dept.name}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
+                {!isDepartmentHead && (
+                  <select
+                    value={departmentFilter}
+                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                    className="px-4 py-3 border border-gray-200 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-1 bg-white shadow-sm"
+                  >
+                    <option value="all">All Departments</option>
+                    {departments.map((dept) => (
+                      <option key={dept._id} value={dept.name}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
 
                 <select
                   value={statusFilter}
@@ -236,7 +245,7 @@ export default function EmployeesList() {
                           <td className="p-4 pl-6">
                             <div className="flex items-center gap-3">
                               {employee?.profilePhoto?.url &&
-                              employee.profilePhoto?.url !== "" ? (
+                                employee.profilePhoto?.url !== "" ? (
                                 <div className="w-10 h-10 rounded-full overflow-hidden">
                                   <img
                                     src={employee?.profilePhoto?.url}
@@ -277,13 +286,12 @@ export default function EmployeesList() {
                           </td>
                           <td className="p-4">
                             <span
-                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
-                                employee.status === "active"
-                                  ? "bg-green-100 text-green-800"
-                                  : employee.status === "inactive"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-yellow-100 text-yellow-800"
-                              }`}
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${employee.status === "active"
+                                ? "bg-green-100 text-green-800"
+                                : employee.status === "inactive"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                                }`}
                             >
                               {employee.status.charAt(0).toUpperCase() +
                                 employee.status.slice(1)}
@@ -293,12 +301,12 @@ export default function EmployeesList() {
                             <span className="text-gray-700">
                               {employee.joiningDate
                                 ? new Date(
-                                    employee.joiningDate,
-                                  ).toLocaleDateString("en-US", {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  })
+                                  employee.joiningDate,
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })
                                 : "N/A"}
                             </span>
                           </td>
@@ -325,7 +333,7 @@ export default function EmployeesList() {
                       {/* Employee Info */}
                       <div className="flex items-center gap-3 mb-4">
                         {employee?.profilePhoto?.url &&
-                        employee.profilePhoto?.url !== "" ? (
+                          employee.profilePhoto?.url !== "" ? (
                           <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 shadow-md">
                             <img
                               src={employee?.profilePhoto?.url}
@@ -379,12 +387,12 @@ export default function EmployeesList() {
                             <p className="text-gray-700 text-sm">
                               {employee.joiningDate
                                 ? new Date(
-                                    employee.joiningDate,
-                                  ).toLocaleDateString("en-US", {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  })
+                                  employee.joiningDate,
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })
                                 : "N/A"}
                             </p>
                           </div>
@@ -393,13 +401,12 @@ export default function EmployeesList() {
 
                       {/* Status Badge */}
                       <span
-                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold shadow-sm w-full justify-center ${
-                          employee.status === "active"
-                            ? "bg-green-100 text-green-800"
-                            : employee.status === "inactive"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
-                        }`}
+                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold shadow-sm w-full justify-center ${employee.status === "active"
+                          ? "bg-green-100 text-green-800"
+                          : employee.status === "inactive"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                          }`}
                       >
                         ● {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
                       </span>
