@@ -34,9 +34,6 @@ const userSchema = new mongoose.Schema({
 
     employeeId : {
         type : String,
-        required : function(){
-            return this.role === 'employee'
-        },
         sparse : true,
         unique : true,
         trim :  true

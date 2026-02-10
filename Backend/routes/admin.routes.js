@@ -24,7 +24,8 @@ const {
     payIndividual,
     deleteDepartment,
     updateDepartment,
-    updateProfile
+    updateProfile,
+    getAllEmployeesByDepartement
 } = require("../controllers/adminController.js");
 
 const { protect} = require('../middleware/auth');
@@ -60,6 +61,8 @@ router.route("/employee/:id")
 .get(getEmployeebyId)
 .put(upload.single('profilePhoto'),updateEmployee)
 .delete(deleteEmployee);
+
+router.route("/employees/bydepartment").get(getAllEmployeesByDepartement)
 
 
 // tasks , based on Head and Admin
