@@ -1,55 +1,57 @@
 const User = require("../models/user");
-const Department =  require("../models/Department");
+const Department = require("../models/Department");
 const Leave = require("../models/Leave");
-const {status} = require("http-status");
+const { status } = require("http-status");
 const Salary = require("../models/Salary");
 const Task = require("../models/tasks");
 const SupportTicket = require("../models/supportTicket");
-const {sendEmployeeRegistrationEmail , sendSalaryReceiptEmail} = require("../services/emailService.js");
+const { sendEmployeeRegistrationEmail, sendSalaryReceiptEmail } = require("../services/emailService.js");
 const mongoose = require("mongoose");
 // const logActivity = require("../models/Activity.js");
 const logActivity = require("../utils/activityLogger.js");
+const generateEmployeeId = require("../utils/generateEmployeeId");
 
-const getDashboardstats = async (req,res,next) => {
+const getDashboardstats = async (req, res, next) => {
   try {
-    let Admin = await User.findOne({_id : req.user._id});
-    let totalEmployees = await User.countDocuments({role : "employee"});
-    let totalDepartments =  await Department.countDocuments({isActive : true});
-    let activeEmployess =  await User.countDocuments({
-      role : "employee",
-      isActive : true});
+    let Admin = await User.findOne({ _id: req.user._id });
+    let totalEmployees = await User.countDocuments({ role: "employee" });
+    let totalDepartments = await Department.countDocuments({ isActive: true });
+    let activeEmployess = await User.countDocuments({
+      role: "employee",
+      isActive: true
+    });
 
 
-const pendingLeaves = await Leave.countDocuments({
-      status : "pending",
-      });
-      const departmentsManager = await Department.find({}).select("name manager").populate("manager" , "firstName");
+    const pendingLeaves = await Leave.countDocuments({
+      status: "pending",
+    });
+    const departmentsManager = await Department.find({}).select("name manager").populate("manager", "firstName");
 
-  
+
 
     res.status(200).json({
-      success : true,
-      data : {
-        stats : {
+      success: true,
+      data: {
+        stats: {
           Admin,
           totalEmployees,
           activeEmployess,
           totalDepartments,
           departmentsManager,
-         
+
           pendingLeaves,
-          
+
         },
       }
     })
 
-   
-  }catch(err){
-    console.log("Dashboard data Error" , err);
-   res.status(500).json({
-    success : "false",
-    message : "error fetching dashboard details"
-   })
+
+  } catch (err) {
+    console.log("Dashboard data Error", err);
+    res.status(500).json({
+      success: "false",
+      message: "error fetching dashboard details"
+    })
   }
 }
 
@@ -59,7 +61,7 @@ const createEmployee = async (req, res, next) => {
     let url = null;
     let filename = null;
     console.log(req.file);
-    
+
     if (req.file) {
       url = req.file.path;
       filename = req.file.filename;
@@ -109,29 +111,12 @@ const createEmployee = async (req, res, next) => {
       });
     }
 
-    // Generate employee ID
-    const generateEmployeeId = async () => {
-      const lastEmployee = await User.findOne(
-        { role: "employee" },
-        { employeeId: true }
-      ).sort({ createdAt: -1 });
-
-      let nextNum = 2025;
-      if (lastEmployee && lastEmployee.employeeId) {
-        const match = lastEmployee.employeeId.match(/EMP-(\d+)/);
-        if (match && match[1]) {
-          nextNum = parseInt(match[1]) + 1;
-        }
-      }
-      return `EMP-${nextNum}`;
-    };
-
     const employeeId = await generateEmployeeId();
 
-    
+
     const departmentName = department;
-    const departmentInfo = await Department.findOne({ 
-      name: departmentName 
+    const departmentInfo = await Department.findOne({
+      name: departmentName
     }).populate("manager", "firstName lastName");
 
     // Check if department exists
@@ -167,8 +152,8 @@ const createEmployee = async (req, res, next) => {
       position,
       gender,
       dob,
-      reportingManager: departmentInfo?.manager 
-        ? `${departmentInfo.manager.firstName} ${departmentInfo.manager.lastName}` 
+      reportingManager: departmentInfo?.manager
+        ? `${departmentInfo.manager.firstName} ${departmentInfo.manager.lastName}`
         : "NOT ALLOTED",
       joiningDate: joinningDate,
       jobType,
@@ -185,7 +170,7 @@ const createEmployee = async (req, res, next) => {
     const emp = await employee.save();
 
     const salaryDetail = new Salary({
-      employee: emp._id, 
+      employee: emp._id,
       employeeId,
       baseSalary,
       allowances,
@@ -197,19 +182,19 @@ const createEmployee = async (req, res, next) => {
     await salaryDetail.save();
 
     // Log activity
-    await logActivity('employee_added', emp._id , {
-      department: departmentInfo.name, 
+    await logActivity('employee_added', emp._id, {
+      department: departmentInfo.name,
       targetUserId: employee._id,
       relatedModel: 'User',
       relatedId: employee._id,
       metadata: {
         position: position,
         department: departmentInfo.name,
-        email: personalEmail 
+        email: personalEmail
       }
     });
 
-   
+
     const savedEmployee = await User.findById(employee._id)
       .select('employeeId firstName lastName personalEmail position')
       .populate('department', 'name');
@@ -231,23 +216,23 @@ const createEmployee = async (req, res, next) => {
 };
 
 
-const sentEmail = async(req,res) => {
+const sentEmail = async (req, res) => {
   try {
-    const { employeeId , formData} = req.body;
-    
+    const { employeeId, formData } = req.body;
 
-    
+
+
     const emailResult = await sendEmployeeRegistrationEmail({
       email: formData.personalEmail,
       employeeId: employeeId,
       name: `${formData.firstName} ${formData.lastName}`
     });
-    
+
     res.status(201).json({
       success: true,
       message: 'Registration email sent.',
     });
-    
+
   } catch (error) {
     console.error('Employee registration error email cant sent:', error);
     res.status(500).json({
@@ -259,52 +244,52 @@ const sentEmail = async(req,res) => {
 }
 
 
-const getEmployeebyId = async(req,res,next) => {
+const getEmployeebyId = async (req, res, next) => {
   try {
     // console.log(req.params);
-    const employee = await User.findById(req.params.id).select("+resetPasswordToken").populate("department" , "name manager code").populate("createdBy" , "firstName lastName");
+    const employee = await User.findById(req.params.id).select("+resetPasswordToken").populate("department", "name manager code").populate("createdBy", "firstName lastName");
 
 
-    if(!employee){
+    if (!employee) {
       return res.status(status.NOT_FOUND).json({
-        success : false,
-        message : "Employee Not found"
-            })
+        success: false,
+        message: "Employee Not found"
+      })
     }
-    
-    if(employee.role != "employee"){
+
+    if (employee.role != "employee") {
       return res.status(status.NOT_FOUND).json({
-        success : false,
-        message : "User is not an Employee"
-            })
+        success: false,
+        message: "User is not an Employee"
+      })
     }
-    const employeeTasks = await Task.find({employee : req.params.id});
-    const employeeLeave = await Leave.find({employee : req.params.id});
-       const employeeSalaries = await Salary.find({employee : req.params.id});
+    const employeeTasks = await Task.find({ employee: req.params.id });
+    const employeeLeave = await Leave.find({ employee: req.params.id });
+    const employeeSalaries = await Salary.find({ employee: req.params.id });
 
 
     res.status(200).json({
-      success : true,
-      data : employee,
-       tasks : employeeTasks,
-leaves : employeeLeave,
-Salaries :  employeeSalaries
+      success: true,
+      data: employee,
+      tasks: employeeTasks,
+      leaves: employeeLeave,
+      Salaries: employeeSalaries
     })
-  }catch(err){
+  } catch (err) {
 
-    console.log("get employee error" , err);
-   
+    console.log("get employee error", err);
+
     if (err.name === 'CastError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid employee ID'
-            });
-        }
-        
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching employee'
-        });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid employee ID'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching employee'
+    });
 
   }
 }
@@ -315,12 +300,12 @@ const updateEmployee = async (req, res) => {
     const updatedData = req.body;
     console.log("Update Data:", updatedData);
 
-    const { 
-      department, 
-      personalLeave, 
-      sickLeave, 
+    const {
+      department,
+      personalLeave,
+      sickLeave,
       annualLeave,
-      ...otherData 
+      ...otherData
     } = updatedData;
 
     // Prepare update object
@@ -329,11 +314,11 @@ const updateEmployee = async (req, res) => {
     // Handle department update
     if (department) {
       const departmentInfo = await Department.findOne({ name: department }).populate("manager", "firstName lastName");
-      
+
       if (departmentInfo) {
         updateFields.department = departmentInfo._id;
-        updateFields.reportingManager = departmentInfo?.manager 
-          ? `${departmentInfo.manager.firstName} ${departmentInfo.manager.lastName}` 
+        updateFields.reportingManager = departmentInfo?.manager
+          ? `${departmentInfo.manager.firstName} ${departmentInfo.manager.lastName}`
           : "NOT ALLOTED";
       }
     }
@@ -349,13 +334,13 @@ const updateEmployee = async (req, res) => {
     if (personalLeave !== undefined || sickLeave !== undefined || annualLeave !== undefined) {
       // Get current employee to preserve existing leave balance
       const currentEmployee = await User.findById(id);
-      
+
       updateFields.leaveBalance = {
         personal: personalLeave !== undefined ? parseInt(personalLeave) : (currentEmployee?.leaveBalance?.personal || 0),
         sick: sickLeave !== undefined ? parseInt(sickLeave) : (currentEmployee?.leaveBalance?.sick || 0),
         annual: annualLeave !== undefined ? parseInt(annualLeave) : (currentEmployee?.leaveBalance?.annual || 0)
       };
-      
+
       console.log("Updated Leave Balance:", updateFields.leaveBalance);
     }
 
@@ -365,8 +350,8 @@ const updateEmployee = async (req, res) => {
       { $set: updateFields },
       { new: true, runValidators: true }
     )
-    .select('-password')
-    .populate('department', 'name');
+      .select('-password')
+      .populate('department', 'name');
 
     console.log("Updated Employee:", employee);
 
@@ -385,7 +370,7 @@ const updateEmployee = async (req, res) => {
 
   } catch (err) {
     console.log("Update employee error:", err);
-    
+
     if (err.name === 'CastError') {
       return res.status(400).json({
         success: false,
@@ -409,19 +394,19 @@ const updateProfile = async (req, res) => {
     console.log("Request File:", req.file);
 
     const userId = req.user._id; // Get user ID from authenticated user
-    const { 
-      firstName, 
-      lastName, 
-      email, 
-      contactNumber, 
-      position, 
-      AccessKey, 
-      address 
+    const {
+      firstName,
+      lastName,
+      email,
+      contactNumber,
+      position,
+      AccessKey,
+      address
     } = req.body;
 
     // Find the current user
     const currentUser = await User.findById(userId);
-    
+
     if (!currentUser) {
       return res.status(404).json({
         success: false,
@@ -432,7 +417,7 @@ const updateProfile = async (req, res) => {
     // // Verify AccessKey if provided (for security - optional)
     // if (AccessKey) {
     //   const isAccessKeyValid = await .compare(currentUser.password);
-      
+
     //   if (!isAccessKeyValid) {
     //     return res.status(401).json({
     //       success: false,
@@ -443,11 +428,11 @@ const updateProfile = async (req, res) => {
 
     // Check if email is being changed and if it already exists
     if (email && email !== currentUser.email) {
-      const existingUser = await User.findOne({ 
-        email, 
-        _id: { $ne: userId } 
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: userId }
       });
-      
+
       if (existingUser) {
         return res.status(400).json({
           success: false,
@@ -465,14 +450,14 @@ const updateProfile = async (req, res) => {
     if (contactNumber) updateFields.contactNumber = contactNumber;
     if (position) updateFields.position = position;
     if (address) updateFields.address = address;
-    if (AccessKey) updateFields.AccessKey =  AccessKey;
+    if (AccessKey) updateFields.AccessKey = AccessKey;
 
     // Handle profile photo update
     if (typeof req.file !== "undefined") {
       const url = req.file.path;
       const filename = req.file.filename;
       updateFields.profilePhoto = { url, filename };
-      
+
       console.log("Profile Photo Updated:", updateFields.profilePhoto);
     }
 
@@ -482,8 +467,8 @@ const updateProfile = async (req, res) => {
       { $set: updateFields },
       { new: true, runValidators: true }
     )
-    .select('-password') // Exclude password from response
-    .populate('department', 'name code');
+      .select('-password') // Exclude password from response
+      .populate('department', 'name code');
 
     console.log("Updated User:", updatedUser);
 
@@ -502,7 +487,7 @@ const updateProfile = async (req, res) => {
 
   } catch (err) {
     console.error("Update profile error:", err);
-    
+
     // Handle specific errors
     if (err.name === 'ValidationError') {
       const errors = Object.values(err.errors).map(e => e.message);
@@ -529,73 +514,74 @@ const updateProfile = async (req, res) => {
   }
 };
 
-const deleteEmployee = async(req,res) => {
-  try{
+const deleteEmployee = async (req, res) => {
+  try {
     const { id } = req.params;
     console.log(id);
     const password = req.headers['x-password'];
     const hardDelete = req.headers['x-hard-delete'];
     const status = req.headers['x-status'];
-   
-    
-    if(hardDelete){
-     
-        const user = req.user;
-       const Admin = await User.findOne({_id : user._id}).select("+password");
-               const isPasswordValid = await Admin.comparePassword(password);
-              
 
-        if(isPasswordValid){
-          console.log(isPasswordValid);
-         
 
- const employee = await User.findByIdAndDelete(id).populate("department" , "name");
-          await Salary.deleteMany({employee : employee._id});
-          await Task.deleteMany({ employee: employee._id });
-          await Leave.deleteMany({employee : employee._id});
-          await SupportTicket.deleteMany({employee : employee._id});
-await logActivity('employee_deleted', req.user._id, { 
-    relatedModel: 'User',
-    relatedId: id,
-    metadata: {
-        employeeName : employee?.firstName, 
-        department: employee?.department?.name,  
-        email: employee?.personalEmail, 
-        deletionType: 'permanent'
-    }
-});
-       if(!employee){
-        return res.status(400).json({
-          success : false,
-          message : "Employee Not found"
+    if (hardDelete) {
+
+      const user = req.user;
+      const Admin = await User.findOne({ _id: user._id }).select("+password");
+      const isPasswordValid = await Admin.comparePassword(password);
+
+
+      if (isPasswordValid) {
+        console.log(isPasswordValid);
+
+
+        const employee = await User.findByIdAndDelete(id).populate("department", "name");
+        await Salary.deleteMany({ employee: employee._id });
+        await Task.deleteMany({ employee: employee._id });
+        await Leave.deleteMany({ employee: employee._id });
+        await SupportTicket.deleteMany({ employee: employee._id });
+        await logActivity('employee_deleted', req.user._id, {
+          relatedModel: 'User',
+          relatedId: id,
+          metadata: {
+            employeeName: employee?.firstName,
+            department: employee?.department?.name,
+            email: employee?.personalEmail,
+            deletionType: 'permanent'
+          }
         });
+        if (!employee) {
+          return res.status(400).json({
+            success: false,
+            message: "Employee Not found"
+          });
 
-       }
-       
-               return res.status(200).json({
-                success: true,
-                message: 'Employee permanently deleted'
-            });
-       }else if(isPasswordValid === false){
-         return res.status(400).json({
-          success : false,
-          message : "Wrong password can't Delete Employee"
-        });}
+        }
 
-      
-    }else{
-      if(status === "active"){
- const employee = await User.findByIdAndUpdate(id , {
-        status : "inactive",
-        isActive : false
-      });
-       if(!employee){
-        return res.status(400).json({
-          success : false,
-          message : "Employee Not found"
+        return res.status(200).json({
+          success: true,
+          message: 'Employee permanently deleted'
         });
-       }
-       await logActivity('employee_updated',employee._id, {
+      } else if (isPasswordValid === false) {
+        return res.status(400).json({
+          success: false,
+          message: "Wrong password can't Delete Employee"
+        });
+      }
+
+
+    } else {
+      if (status === "active") {
+        const employee = await User.findByIdAndUpdate(id, {
+          status: "inactive",
+          isActive: false
+        });
+        if (!employee) {
+          return res.status(400).json({
+            success: false,
+            message: "Employee Not found"
+          });
+        }
+        await logActivity('employee_updated', employee._id, {
           targetUserId: employee._id,
           relatedModel: 'User',
           relatedId: employee._id,
@@ -606,21 +592,21 @@ await logActivity('employee_deleted', req.user._id, {
             newStatus: 'inactive'
           }
         });
-       return res.status(200).json({
-        success : true,
-         message : "Employee Account deactivated succesfully"
-       })
-      }else{
-        const employee = await User.findByIdAndUpdate(id , {
-        status : "active",
-        isActive : true
-      });
-       if(!employee){
-        return res.status(400).json({
-          success : false,
-          message : "Employee Not found"
+        return res.status(200).json({
+          success: true,
+          message: "Employee Account deactivated succesfully"
+        })
+      } else {
+        const employee = await User.findByIdAndUpdate(id, {
+          status: "active",
+          isActive: true
         });
-       }
+        if (!employee) {
+          return res.status(400).json({
+            success: false,
+            message: "Employee Not found"
+          });
+        }
         await logActivity('employee_updated', employee._id, {
           targetUserId: employee._id,
           relatedModel: 'User',
@@ -632,51 +618,51 @@ await logActivity('employee_deleted', req.user._id, {
             newStatus: 'active'
           }
         });
-       return res.status(200).json({
-        success : true,
-         message : "Employee Activated succesfully"
-       })
+        return res.status(200).json({
+          success: true,
+          message: "Employee Activated succesfully"
+        })
 
       }
 
-     
+
 
     }
-   }catch(err){
-    console.log("delete employee error" , err);
+  } catch (err) {
+    console.log("delete employee error", err);
     if (err.name === 'CastError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid employee ID'
-            });
-        }
-        
-        res.status(500).json({
-            success: false,
-            message: 'Error deleting employee'
-        });
-   }
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid employee ID'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting employee'
+    });
+  }
 }
 
 
 // route   GET /api/v1/admin/departments
-const getAlldepartments =  async(req,res) => {
-  try{
-    const departments = await Department.find({isActive : true})
-    .populate('manager' , 'firstName lastname email')
-    .sort({name : 1});
-console.log()
+const getAlldepartments = async (req, res) => {
+  try {
+    const departments = await Department.find({ isActive: true })
+      .populate('manager', 'firstName lastname email')
+      .sort({ name: 1 });
+    console.log()
     res.status(status.OK).json({
-      success : true,
-      data : departments
+      success: true,
+      data: departments
     })
 
-  }catch(err){
+  } catch (err) {
     console.error('Get departments error:', err);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching departments'
-        });
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching departments'
+    });
   }
 }
 
@@ -698,7 +684,7 @@ const createDepartment = async (req, res) => {
     if (manager) {
       // Check if the user exists and is a Department Head
       const managerUser = await User.findById(manager);
-      
+
       if (!managerUser) {
         return res.status(404).json({
           success: false,
@@ -715,9 +701,9 @@ const createDepartment = async (req, res) => {
       }
 
       // Check if this Department Head is already managing another department
-      const existingDepartment = await Department.findOne({ 
+      const existingDepartment = await Department.findOne({
         manager: manager,
-        isActive: true 
+        isActive: true
       });
 
       if (existingDepartment) {
@@ -737,7 +723,7 @@ const createDepartment = async (req, res) => {
       budget: budget || 0
     });
 
-   const departmentInfo =  await department.save();
+    const departmentInfo = await department.save();
 
     // Populate manager details for response
     await department.populate('manager', 'firstName lastName email employeeId');
@@ -828,7 +814,7 @@ const updateDepartment = async (req, res) => {
     if (manager && manager !== existingDept.manager?.toString()) {
       // Check if the new manager exists and is a Department Head
       const managerUser = await User.findById(manager);
-      
+
       if (!managerUser) {
         return res.status(404).json({
           success: false,
@@ -845,10 +831,10 @@ const updateDepartment = async (req, res) => {
       }
 
       // Check if this Department Head is already managing another department
-      const otherDepartment = await Department.findOne({ 
+      const otherDepartment = await Department.findOne({
         manager: manager,
         _id: { $ne: id },  // Exclude current department
-        isActive: true 
+        isActive: true
       });
 
       if (otherDepartment) {
@@ -892,7 +878,7 @@ const updateDepartment = async (req, res) => {
         { department: updatedDepartment._id },
         { $set: { reportingManager: newManagerFullName } }
       );
-      
+
       console.log(`Updated reporting manager to "${newManagerFullName}" for all employees in ${updatedDepartment.name}`);
     }
 
@@ -921,14 +907,14 @@ const updateDepartment = async (req, res) => {
 };
 
 //todo getAllEmployees 
-const getAllEmployees = async(req,res) => {
+const getAllEmployees = async (req, res) => {
 
   try {
     const { search, department, status, page = 1, limit = 50 } = req.query;
-    
-   
+
+
     const filter = {};
-    
+
     // Search filter (searches in name, email, employeeId, position)
     if (search) {
       filter.$or = [
@@ -938,12 +924,12 @@ const getAllEmployees = async(req,res) => {
         { position: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     // Department filter
     if (department && department !== 'all') {
       filter.department = { $regex: new RegExp(department, 'i') };
     }
-    
+
     // Status filter
     if (status && status !== 'all') {
       let statusValue = status.toLowerCase();
@@ -951,28 +937,28 @@ const getAllEmployees = async(req,res) => {
       if (statusValue === 'on leave') statusValue = 'on_leave';
       filter.status = statusValue;
     }
-    
+
     // Pagination
     const skip = (page - 1) * limit;
-    
+
     // Execute query
     filter.role = 'employee';
     const employees = await User.find(filter)
       .select('-__v')
       .sort({ createdAt: -1 })
-      .populate("department" , "name")
+      .populate("department", "name")
       .limit(parseInt(limit));
-    
-    
+
+
     const total = await User.countDocuments(filter);
-    
+
     res.status(200).json({
       success: true,
       count: employees.length,
       total,
       data: employees
     });
-    
+
   } catch (error) {
     console.error('Error fetching employees:', error);
     res.status(500).json({
@@ -987,18 +973,18 @@ const getAllEmployees = async(req,res) => {
 const getleavesDetail = async (req, res) => {
   try {
     const { role, _id } = req.user;
-    
+
     let employeeLeaves;
-    
+
     // If Department Head, show only their department's employees' leaves
     if (role === 'Department Head') {
-      
+
       // Find the department where this user is the manager
-      const managedDepartment = await Department.findOne({ 
+      const managedDepartment = await Department.findOne({
         manager: _id,
-        isActive: true 
+        isActive: true
       });
-      
+
       // If no department found
       if (!managedDepartment) {
         return res.status(200).json({
@@ -1007,43 +993,43 @@ const getleavesDetail = async (req, res) => {
           data: []
         });
       }
-      
+
       console.log(`Department Head managing: ${managedDepartment.name}`);
-      
+
       // Find all employees in this department
-      const departmentEmployees = await User.find({ 
+      const departmentEmployees = await User.find({
         department: managedDepartment._id, // Assuming User has department field as ObjectId
         isActive: true
       }).select('_id firstName lastName');
-      
+
       // Also include the department head themselves
       const employeeIds = [_id, ...departmentEmployees.map(emp => emp._id)];
-      
+
       console.log(`Found ${employeeIds.length} employees in department (including head)`);
-      
+
       // Get leaves for these employees only
-      employeeLeaves = await Leave.find({ 
-        employee: { $in: employeeIds } 
+      employeeLeaves = await Leave.find({
+        employee: { $in: employeeIds }
       })
-      .populate("employee", "firstName lastName employeeId")
-      .sort({ createdAt: -1 });
-      
+        .populate("employee", "firstName lastName employeeId")
+        .sort({ createdAt: -1 });
+
     } else {
       // For Admin or other roles, show all leaves
       employeeLeaves = await Leave.find({})
         .populate("employee", "firstName lastName employeeId")
         .sort({ createdAt: -1 });
     }
-    
+
     console.log(`Total leaves returned: ${employeeLeaves.length}`);
-    
+
     return res.status(200).json({
       message: "success",
       success: true,
       data: employeeLeaves
     });
 
-  } catch(error) {
+  } catch (error) {
     console.error('Error fetching employees leave detail:', error);
     res.status(500).json({
       success: false,
@@ -1067,15 +1053,15 @@ const leaveAction = async (req, res) => {
     console.log(updatedLeave);
 
     if (!updatedLeave) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Leave request not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Leave request not found'
       });
     }
 
     if (action === 'Approved' || action === 'approved') {
       const employee = await User.findById(updatedLeave.employee._id).select('leaveBalance firstName lastName');
-      
+
       if (employee) {
         const leaveType = updatedLeave.leaveType; // 'personal', 'annual', or 'sick'
         const daysToDeduct = updatedLeave.duration || updatedLeave.totalDays;
@@ -1086,9 +1072,9 @@ const leaveAction = async (req, res) => {
           console.log(`Deducted ${daysToDeduct} days from ${leaveType} leave`);
         } else {
           // ADD RETURN HERE to stop execution
-          return res.status(401).json({ 
-            success: false, 
-            message: `Insufficient ${leaveType} leave balance` 
+          return res.status(401).json({
+            success: false,
+            message: `Insufficient ${leaveType} leave balance`
           });
         }
       }
@@ -1131,39 +1117,39 @@ const leaveAction = async (req, res) => {
     }
 
     console.log(updatedLeave);
-    
+
     // SINGLE RESPONSE at the end
-    return res.status(200).json({ 
-      message: `Successfully ${action} leave`, 
+    return res.status(200).json({
+      message: `Successfully ${action} leave`,
       success: true,
     });
 
-  } catch(error) {
+  } catch (error) {
     console.error('Error action on leave', error);
     // ADD RETURN here too
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Server Error', 
-      error: error.message 
+    return res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
     });
   }
 };
 
 
-const getEmployeesSalary = async (req,res) => {
-  try{
-      const employeesSalary = await Salary.find({}).populate("employee" , "firstName lastName position jobType status bankDetails");
-      // console.log(employeeLeaves);
+const getEmployeesSalary = async (req, res) => {
+  try {
+    const employeesSalary = await Salary.find({}).populate("employee", "firstName lastName position jobType status bankDetails");
+    // console.log(employeeLeaves);
 
-      return res.status(200).json({
-        message : "working",
-        success : true,
-        data : employeesSalary
-            })
-    
+    return res.status(200).json({
+      message: "working",
+      success: true,
+      data: employeesSalary
+    })
 
-  }catch(error){
- console.error('Error fetching employees salary details :', error);
+
+  } catch (error) {
+    console.error('Error fetching employees salary details :', error);
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -1172,79 +1158,44 @@ const getEmployeesSalary = async (req,res) => {
   }
 }
 
-const updateSalary = async(req,res) => {
-   try{
-  const {updateData} = req.body;
-  console.log(updateData);
-  if(!updateData){
-     return res.status(400).json({
-        message : "Fill the fields properly",
-        success : false,
-       
-            })
-  }
+const updateSalary = async (req, res) => {
+  try {
+    const { updateData } = req.body;
+    console.log(updateData);
+    if (!updateData) {
+      return res.status(400).json({
+        message: "Fill the fields properly",
+        success: false,
 
-      const updatedSalary = await Salary.findByIdAndUpdate(updateData.id, {
-        baseSalary : updateData.baseSalary,
-        allowances : updateData.allowances,
-        taxApply : updateData.taxApply,
-        deductions : updateData.deductions,
-        netSalary : updateData.netSalary
-      });
+      })
+    }
 
-       if(!updatedSalary){
-     return res.status(400).json({
-        message : "no salary data of this employee",
-        success : false,
-       
-            })
-  }
-      console.log(updatedSalary);
-
-      return res.status(200).json({
-        message : "Salary updated succesfully",
-        success : true,
-      
-            })
-    
-
-  }catch(error){
- console.error('Error updating salary details :', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error',
-      error: error.message
+    const updatedSalary = await Salary.findByIdAndUpdate(updateData.id, {
+      baseSalary: updateData.baseSalary,
+      allowances: updateData.allowances,
+      taxApply: updateData.taxApply,
+      deductions: updateData.deductions,
+      netSalary: updateData.netSalary
     });
-  }
-}
+
+    if (!updatedSalary) {
+      return res.status(400).json({
+        message: "no salary data of this employee",
+        success: false,
+
+      })
+    }
+    console.log(updatedSalary);
+
+    return res.status(200).json({
+      message: "Salary updated succesfully",
+      success: true,
+
+    })
 
 
-const runPayroll = async(req,res) => {
-   try{
-   
-
-const updatedSalaries = await Salary.updateMany(
-  { Status: "due" }, 
-  { $set: { Status: "paid" } }
-);
-       if(!updatedSalaries){
-     return res.status(400).json({
-        message : "no salary data to run payroll",
-        success : false,
-       
-            })
-  }
-      // console.log(updatedSalaries);
-
-      return res.status(200).json({
-        message : "succesfully executed payroll",
-        success : true,
-      
-            })
-    
-
-  }catch(error){
- console.error('payroll error :', error);
+  } catch (error) {
+    console.error('Error updating salary details :', error);
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -1254,28 +1205,63 @@ const updatedSalaries = await Salary.updateMany(
 }
 
 
+const runPayroll = async (req, res) => {
+  try {
 
-const addTask = async(req,res) => {
-  try{
-      const {id} = req.params;
-      // console.log(req.body);
-      const {taskName , description , dueDate , priority} = req.body;
-      
-      
-      const newTask = new Task({
 
-        employee : id,
-        taskName,
-        description,
-        dueDate,
-        priority,
-        startDate : Date.now()
-      });
+    const updatedSalaries = await Salary.updateMany(
+      { Status: "due" },
+      { $set: { Status: "paid" } }
+    );
+    if (!updatedSalaries) {
+      return res.status(400).json({
+        message: "no salary data to run payroll",
+        success: false,
 
-     const task = await newTask.save();
-    
+      })
+    }
+    // console.log(updatedSalaries);
 
-await logActivity('task_assigned', req.user._id, {
+    return res.status(200).json({
+      message: "succesfully executed payroll",
+      success: true,
+
+    })
+
+
+  } catch (error) {
+    console.error('payroll error :', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+}
+
+
+
+const addTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // console.log(req.body);
+    const { taskName, description, dueDate, priority } = req.body;
+
+
+    const newTask = new Task({
+
+      employee: id,
+      taskName,
+      description,
+      dueDate,
+      priority,
+      startDate: Date.now()
+    });
+
+    const task = await newTask.save();
+
+
+    await logActivity('task_assigned', req.user._id, {
       targetUserId: id, // The employee who got the task
       // relatedModel: 'Task',
       relatedId: task._id,
@@ -1287,15 +1273,15 @@ await logActivity('task_assigned', req.user._id, {
       }
     });
 
-      return res.status(200).json({
-        message : "working",
-        success : true,
-       
-            })
-    
+    return res.status(200).json({
+      message: "working",
+      success: true,
 
-  }catch(error){
- console.error('Error fetching employees salary details :', error);
+    })
+
+
+  } catch (error) {
+    console.error('Error fetching employees salary details :', error);
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -1357,53 +1343,53 @@ const deleteTask = async (req, res) => {
 }
 
 
-const getDepartmentTasks = async(req,res) => {
-  try{
-     const {id} = req.user._id;
-     let departmentDetails;
-     let departmentEmployees;
-     let departmentTasks;
-     if(req.user.role === "Admin" || req.user.role === "Department Head"){
-       departmentDetails = await Department.find({}).populate("manager" , "firstName lastName");
-departmentEmployees = await User.find({
-  role: { $in: ["employee", "Department Head"] }
-});   
-  }else{
- departmentDetails = await Department.findOne({
-  manager: new mongoose.Types.ObjectId(id)
-}).populate("manager", "firstName lastName");
-      departmentEmployees = await User.find({department : departmentDetails._id});
+const getDepartmentTasks = async (req, res) => {
+  try {
+    const { id } = req.user._id;
+    let departmentDetails;
+    let departmentEmployees;
+    let departmentTasks;
+    if (req.user.role === "Admin" || req.user.role === "Department Head") {
+      departmentDetails = await Department.find({}).populate("manager", "firstName lastName");
+      departmentEmployees = await User.find({
+        role: { $in: ["employee", "Department Head"] }
+      });
+    } else {
+      departmentDetails = await Department.findOne({
+        manager: new mongoose.Types.ObjectId(id)
+      }).populate("manager", "firstName lastName");
+      departmentEmployees = await User.find({ department: departmentDetails._id });
 
-     }
- 
-     if(!departmentDetails){
+    }
+
+    if (!departmentDetails) {
       return res.status(201).json({
-        success : false,
-        message : "No department Details"
-     })
-     }
-     
-      departmentTasks = await Task.find({});
+        success: false,
+        message: "No department Details"
+      })
+    }
 
-     if(!departmentEmployees){
-       return res.status(201).json({
-        success : false,
-        message : "No Employees in the department"
-     })
-     }
+    departmentTasks = await Task.find({});
+
+    if (!departmentEmployees) {
+      return res.status(201).json({
+        success: false,
+        message: "No Employees in the department"
+      })
+    }
     return res.status(200).json({
-      success : true,
-      data : {
-        role : req.user.role,
+      success: true,
+      data: {
+        role: req.user.role,
         departmentDetails,
         departmentEmployees,
         departmentTasks,
 
       }
-     })
- 
-  }catch(err){
-   console.error('Error getting department Task:', err);
+    })
+
+  } catch (err) {
+    console.error('Error getting department Task:', err);
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -1421,7 +1407,7 @@ const payIndividual = async (req, res) => {
 
     // Find the salary record
     const salaryRecord = await Salary.findById(salaryId).populate('employee');
-    
+
     if (!salaryRecord) {
       return res.status(404).json({
         success: false,
@@ -1491,25 +1477,25 @@ const payIndividual = async (req, res) => {
 
 
 module.exports = {
-    getDashboardstats, 
-    getAllEmployees,
-    getEmployeebyId,
-    createEmployee,
-    updateEmployee,
-    deleteEmployee,
-    getAlldepartments,
-    createDepartment,
-    deleteDepartment,
-    updateDepartment,
-    getleavesDetail,
-    getEmployeesSalary,
-    updateSalary,
-    addTask,
-    deleteTask,
-    updateProfile,
-    runPayroll,
-    leaveAction,
-    sentEmail,
-    getDepartmentTasks,
-    payIndividual
+  getDashboardstats,
+  getAllEmployees,
+  getEmployeebyId,
+  createEmployee,
+  updateEmployee,
+  deleteEmployee,
+  getAlldepartments,
+  createDepartment,
+  deleteDepartment,
+  updateDepartment,
+  getleavesDetail,
+  getEmployeesSalary,
+  updateSalary,
+  addTask,
+  deleteTask,
+  updateProfile,
+  runPayroll,
+  leaveAction,
+  sentEmail,
+  getDepartmentTasks,
+  payIndividual
 }

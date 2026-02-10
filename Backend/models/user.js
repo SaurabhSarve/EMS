@@ -3,44 +3,44 @@ const bcrypt = require('bcryptjs');
 // const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
-     
+
     // for admin login activity
 
-    email : {
-        type : String,
-        required : function(){
+    email: {
+        type: String,
+        required: function () {
             return this.role === 'Admin' || this.role === 'Department Head';
         },
-        unique : true,
-        sparse : true,
-        lowercase : true,
-        trim : true
+        unique: true,
+        sparse: true,
+        lowercase: true,
+        trim: true
     },
 
-    password : {
-        type :  String,
-        unique : true,
-        sparse : true,
-        trim : true,
-        select : false
-    } ,
+    password: {
+        type: String,
+        unique: true,
+        sparse: true,
+        trim: true,
+        select: false
+    },
 
     // for employee
-    organizationBalance : {
-        type : Number,
-        default : 5250000
+    organizationBalance: {
+        type: Number,
+        default: 5250000
     }
     ,
 
-    employeeId : {
-        type : String,
-        required : function(){
-            return this.role === 'employee'
+    employeeId: {
+        type: String,
+        required: function () {
+            return this.role === 'employee' || this.role === 'Admin' || this.role === 'Department Head'
         },
-        sparse : true,
-        unique : true,
-        trim :  true
-    } ,
+        sparse: true,
+        unique: true,
+        trim: true
+    },
 
     // info of admin and employees depend on the user role
     firstName: {
@@ -48,35 +48,35 @@ const userSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    
+
     lastName: {
         type: String,
-       
+
         trim: true
     },
 
-    contactNumber : {
-        type : Number,
-        required : true
+    contactNumber: {
+        type: Number,
+        required: true
     },
-    
-    personalEmail : {
-        type : String,
-        trim : true,
-        required : function(){
+
+    personalEmail: {
+        type: String,
+        trim: true,
+        required: function () {
             return this.role === 'employee'
         },
     },
-    
+
     dob: Date,
-    
+
     gender: {
         type: String,
         enum: ['male', 'female', 'other', 'prefer-not-to-say']
     },
 
     //  employment (naukri) information company mai 
-    department : {
+    department: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Department"
     },
@@ -89,66 +89,66 @@ const userSchema = new mongoose.Schema({
     },
 
     profilePhoto: {
-        url : String,
-        filename : String,
+        url: String,
+        filename: String,
     },
 
-    position : {
-        type : String,
+    position: {
+        type: String,
         trim: true,
-        default : function(){
-            if(this.role == "Admin"){
+        default: function () {
+            if (this.role == "Admin") {
                 return "manager"
-            }else{
+            } else {
                 return "Department Head"
             }
         }
     },
-     
-    joiningDate : {
-        type : Date,
-        default : Date.now
+
+    joiningDate: {
+        type: Date,
+        default: Date.now
     },
 
-    jobType : {
-        type : String,
-        enum : ['full-time' , 'part-time' , 'intern'],
-        default : 'full-time'
-    }, 
+    jobType: {
+        type: String,
+        enum: ['full-time', 'part-time', 'intern'],
+        default: 'full-time'
+    },
 
-    address : {
-        type : String,
-        default  : "India"
-    }, 
+    address: {
+        type: String,
+        default: "India"
+    },
 
     //    others credentials - system needs
-    role : {
-        type : String,
-        enum : ['Admin' , 'employee' , 'Department Head' ],
-        required : true
+    role: {
+        type: String,
+        enum: ['Admin', 'employee', 'Department Head'],
+        required: true
     },
-    
-    reportingManager : {
-        type : String,
-        default : "not alloted"
+
+    reportingManager: {
+        type: String,
+        default: "not alloted"
     },
-    
+
     isActive: {
         type: Boolean,
         default: true
     },
-    
+
     status: {
         type: String,
-        enum: ['active', 'inactive', 'on leave'],  
-        default: 'active' 
+        enum: ['active', 'inactive', 'on leave'],
+        default: 'active'
     },
-    
+
     lastLogin: {
         type: Date
     },
-    AccessKey : {
-type : String,
+    AccessKey: {
+        type: String,
     },
 
 
@@ -185,25 +185,25 @@ type : String,
     },
 
     // mainly for employees
-    createdBy : {
-        type : mongoose.Schema.Types.ObjectId,
-        ref : 'User'
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     },
-    
-    updatedBy : {
-        type : mongoose.Schema.Types.ObjectId,
-        ref : 'User'
+
+    updatedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 }, {
-    timestamps : true   // createdAt and updatedAt
+    timestamps: true   // createdAt and updatedAt
 });
 
 
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
     try {
         if (this.password) {
             const isAlreadyHashed = this.password.startsWith('$2b$');
-            
+
             if (!isAlreadyHashed) {
                 const salt = await bcrypt.genSalt(10);
                 this.password = await bcrypt.hash(this.password, salt);
@@ -221,7 +221,7 @@ userSchema.pre('save', async function(next) {
     }
 });
 
-userSchema.methods.comparePassword = async function(enteredCurrPass){
+userSchema.methods.comparePassword = async function (enteredCurrPass) {
     if (!this.password) {
         const userWithPassword = await this.constructor.findById(this._id).select('+password');
         return await bcrypt.compare(enteredCurrPass, userWithPassword.password);
