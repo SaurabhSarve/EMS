@@ -25,14 +25,13 @@ const {
     deleteDepartment,
     updateDepartment,
     updateProfile,
-    getEmployeesForDepartmentHead,
     getAllEmployeesByDepartment,
     getCurrentMonthPaidEmployees,
     getPaidEmployeesByDateRange,
     getAllEmployeesDuePayment
 } = require("../controllers/adminController.js");
 
-const {downloadInvoice} = require("../controllers/downloadInvoice");
+const { downloadInvoice } = require("../controllers/downloadInvoice");
 
 const { protect } = require('../middleware/auth');
 const { getAdminTickets, updateTicket, updateTicketStatus } = require('../controllers/supportTicketController.js');
@@ -56,7 +55,7 @@ router.route("/employees")
     .get(getAllEmployees)
     .post(upload.single('profilePhoto'), createEmployee);
 
-router.get("/department-head/employees", getEmployeesForDepartmentHead);
+router.get("/department-head/employees", getAllEmployeesByDepartment);
 
 // after registraion (after adding employee)
 router.post("/employees/sent-email", sentEmail);
@@ -68,7 +67,7 @@ router.route("/employee/:id")
     .put(upload.single('profilePhoto'), updateEmployee)
     .delete(deleteEmployee);
 
-router.route("/employees/bydepartment").get(getAllEmployeesByDepartment)
+// router.route("/employees/bydepartment").get(getAllEmployeesByDepartment)
 
 
 // tasks , based on Head and Admin
