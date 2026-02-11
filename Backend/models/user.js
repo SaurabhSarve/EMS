@@ -34,9 +34,6 @@ const userSchema = new mongoose.Schema({
 
     employeeId: {
         type: String,
-        required: function () {
-            return this.role === 'employee' || this.role === 'Admin' || this.role === 'Department Head'
-        },
         sparse: true,
         unique: true,
         trim: true
@@ -119,6 +116,31 @@ const userSchema = new mongoose.Schema({
     address: {
         type: String,
         default: "India"
+    },
+
+    baseSalary: {
+        type: Number,
+        default: 0
+    },
+
+    allowances: {
+        type: Number,
+        default: 0
+    },
+
+    deductions: {
+        type: Number,
+        default: 0
+    },
+
+    taxApply: {
+        type: Number,
+        default: 0
+    },
+
+    netSalary: {
+        type: Number,
+        default: 0
     },
 
     //    others credentials - system needs

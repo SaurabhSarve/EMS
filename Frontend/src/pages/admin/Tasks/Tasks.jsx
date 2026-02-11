@@ -774,7 +774,10 @@ export default function Tasks() {
                       <div className="flex gap-2 ml-2 flex-shrink-0">
                         <button
                           type="button"
-                          onClick={() => openEditModal(dept)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openEditModal(dept)
+                          }}
                           className="p-2 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Edit Department"
                         >
@@ -783,7 +786,10 @@ export default function Tasks() {
 
                         <button
                           type="button"
-                          onClick={() => openDeleteModal(dept)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openDeleteModal(dept)
+                          }}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete Department"
                         >

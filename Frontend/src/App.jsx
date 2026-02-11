@@ -32,7 +32,8 @@ import NotFound from "./pages/common/NotFoundPage";
 import AdminProfile from "./pages/admin/profile";
 import Tickets from "./pages/admin/Ticekts";
 import AdminPaymentHistory from "./pages/admin/AdminPaymentHistory";
-import DepartmentEmployee from "./pages/admin/DepartmentEmployee"
+import DepartmentEmployee from "./pages/admin/DepartmentEmployee";
+import PaymentHistory from './pages/admin/PaymentHistory';
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
 
@@ -104,6 +105,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
                 <AdminPaymentHistory />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/PaymentHistory"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
+                <PaymentHistory/>
               </ProtectedRoute>
             }
           />
