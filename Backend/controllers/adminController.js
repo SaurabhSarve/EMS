@@ -10,6 +10,10 @@ const mongoose = require("mongoose");
 // const logActivity = require("../models/Activity.js");
 const logActivity = require("../utils/activityLogger.js");
 const Counter = require("../models/counter");
+const generateInvoiceNo = require("../utils/generateInvoiceNo.js");
+const generateInvoicePDF = require("../utils/generateInvoicePDF.js");
+const uploadInvoicePDF = require("../utils/uploadInvoiceToCloudinary.js");
+const cron = require("node-cron");
 
 const getDashboardstats = async (req, res, next) => {
   try {
@@ -92,8 +96,6 @@ const createEmployee = async (req, res, next) => {
       branchName
     } = req.body;
 
-    console.log(address);
-
     // Validation
     if (!firstName || !personalEmail || !position || !department) {
       return res.status(400).json({
@@ -129,11 +131,11 @@ const createEmployee = async (req, res, next) => {
 
     const generateEmployeeId = async () => {
       const counter = await Counter.findOneAndUpdate(
-        { name: "employeeId" },    
-        { $inc: { seq: 1 } },      
+        { name: "employeeId" },
+        { $inc: { seq: 1 } },
         {
           new: true,
-          upsert: true              
+          upsert: true
         }
       );
 
@@ -157,8 +159,6 @@ const createEmployee = async (req, res, next) => {
       });
     }
 
-    console.log(departmentInfo);
-
     // Prepare bank details object (only if data is provided)
     const bankDetails = {};
     if (accountHolderName || accountNumber || ifscCode || bankName || branchName) {
@@ -169,6 +169,10 @@ const createEmployee = async (req, res, next) => {
       if (branchName) bankDetails.branchName = branchName;
       bankDetails.addedAt = new Date();
     }
+
+    const currentDate = new Date();
+    const currentMonth = currentDate.toLocaleString('default', { month: 'long' });
+    const currentYear = currentDate.getFullYear();
 
     // Create employee
     const employee = new User({
@@ -187,6 +191,11 @@ const createEmployee = async (req, res, next) => {
         : "NOT ALLOTED",
       joiningDate: joinningDate,
       jobType,
+      baseSalary: baseSalary || 0,
+      allowances: allowances || 0,
+      deductions: deductions || 0,
+      taxApply: taxApply || 0,
+      netSalary: netSalary || 0,
       role: 'employee',
       profilePhoto: req.file ? {
         url: url,
@@ -202,6 +211,8 @@ const createEmployee = async (req, res, next) => {
     const salaryDetail = new Salary({
       employee: emp._id,
       employeeId,
+      month: currentMonth,
+      year: currentYear,
       baseSalary,
       allowances,
       deductions,
@@ -937,14 +948,14 @@ const updateDepartment = async (req, res) => {
 };
 
 //todo getAllEmployees 
-const getAllEmployees = async(req,res) => {
+const getAllEmployees = async (req, res) => {
 
   try {
     const { search, department, status, page = 1, limit = 50 } = req.query;
-    
-   
+
+
     const filter = {};
-    
+
     // Search filter (searches in name, email, employeeId, position)
     if (search) {
       filter.$or = [
@@ -954,12 +965,12 @@ const getAllEmployees = async(req,res) => {
         { position: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     // Department filter
     if (department && department !== 'all') {
       filter.department = { $regex: new RegExp(department, 'i') };
     }
-    
+
     // Status filter
     if (status && status !== 'all') {
       let statusValue = status.toLowerCase();
@@ -967,7 +978,7 @@ const getAllEmployees = async(req,res) => {
       if (statusValue === 'on leave') statusValue = 'on_leave';
       filter.status = statusValue;
     }
-    
+
     // Pagination
     const skip = (page - 1) * limit;
 
@@ -1001,20 +1012,19 @@ const getAllEmployees = async(req,res) => {
 
 const getAllEmployeesByDepartement = async (req, res) => {
   try {
-    const { search, department, status, page = 1, limit = 50 } = req.query;
-
-    const pageNum = Number(page);
-    const limitNum = Number(limit);
-    const skip = (pageNum - 1) * limitNum;
+    const { search, department, status } = req.query;
 
     const employeeMatch = { role: "employee" };
 
-    if (search) {
+    if (search && search.trim() !== "") {
+      const searchValue = search.trim();
+
       employeeMatch.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { employeeId: { $regex: search, $options: "i" } },
-        { position: { $regex: search, $options: "i" } },
+        { firstName: { $regex: searchValue, $options: "i" } },
+        { lastName: { $regex: searchValue, $options: "i" } },
+        { personalEmail: { $regex: searchValue, $options: "i" } },
+        { employeeId: { $regex: searchValue, $options: "i" } },
+        { position: { $regex: searchValue, $options: "i" } }
       ];
     }
 
@@ -1024,7 +1034,7 @@ const getAllEmployeesByDepartement = async (req, res) => {
       employeeMatch.status = statusValue;
     }
 
-    const employeePipeline = [
+    const pipeline = [
       { $match: employeeMatch },
       {
         $lookup: {
@@ -1035,27 +1045,27 @@ const getAllEmployeesByDepartement = async (req, res) => {
         },
       },
       { $unwind: "$department" },
-      ...(department && department !== "all"
-        ? [
-            {
-              $match: {
-                "department.name": { $regex: department, $options: "i" },
-              },
-            },
-          ]
-        : []),
-      { $sort: { createdAt: -1 } },
-      { $skip: skip },
-      { $limit: limitNum },
-      { $project: { __v: 0 } },
     ];
 
-    const employees = await User.aggregate(employeePipeline);
+    if (department && department !== "all") {
+      pipeline.push({
+        $match: {
+          "department.name": { $regex: department, $options: "i" },
+        },
+      });
+    }
+
+    pipeline.push(
+      { $sort: { createdAt: -1 } },
+      { $project: { __v: 0 } }
+    );
+
+    const employees = await User.aggregate(pipeline);
 
     let departmentHead = null;
 
     if (department && department !== "all") {
-      const managerPipeline = [
+      const managerResult = await Department.aggregate([
         { $match: { name: { $regex: department, $options: "i" } } },
         {
           $lookup: {
@@ -1074,49 +1084,79 @@ const getAllEmployeesByDepartement = async (req, res) => {
         {
           $project: {
             _id: 0,
-            manager: {
-              _id: "$manager._id",
-              firstName: "$manager.firstName",
-              lastName: "$manager.lastName",
-              email: "$manager.email",
-              position: "$manager.position",
-              employeeId: "$manager.employeeId",
-              status: "$manager.status",
-              joiningDate: "$manager.joiningDate"
-            },
+            manager: 1,
           },
         },
-      ];
+      ]);
 
-      const managerResult = await Department.aggregate(managerPipeline);
       departmentHead = managerResult[0]?.manager || null;
     }
-
-    const countPipeline = employeePipeline.filter(
-      stage => !stage.$skip && !stage.$limit && !stage.$sort
-    );
-
-    const totalResult = await User.aggregate([
-      ...countPipeline,
-      { $count: "total" },
-    ]);
-
-    const total = totalResult[0]?.total || 0;
 
     res.status(200).json({
       success: true,
       departmentHead,
       count: employees.length,
-      total,
-      page: pageNum,
-      pages: Math.ceil(total / limitNum),
       data: employees,
     });
+
   } catch (error) {
     res.status(500).json({
       success: false,
       message: "Server Error",
       error: error.message,
+    });
+  }
+};
+
+const getAllEmployeesDuePayment = async (req, res) => {
+  try {
+    const now = new Date();
+
+    // Start of current month
+    const startOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0
+    );
+
+    // End of current month
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999
+    );
+
+    const paidEmployees = await Salary.find({
+      Status: "due",
+      updatedAt: {
+        $gte: startOfMonth,
+        $lte: endOfMonth
+      }
+    }).populate(
+      "employee",
+      "firstName lastName position jobType status bankDetails"
+    );
+
+    res.status(200).json({
+      success: true,
+      month: now.toLocaleString("default", { month: "long" }),
+      year: now.getFullYear(),
+      count: paidEmployees.length,
+      data: paidEmployees
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 };
@@ -1356,14 +1396,12 @@ const updateSalary = async (req, res) => {
   }
 }
 
-
 const runPayroll = async (req, res) => {
   try {
 
-
     const updatedSalaries = await Salary.updateMany(
       { Status: "due" },
-      { $set: { Status: "paid" } }
+      { $set: { Status: "paid", salaryPayDate: new Date() } }
     );
     if (!updatedSalaries) {
       return res.status(400).json({
@@ -1390,6 +1428,108 @@ const runPayroll = async (req, res) => {
     });
   }
 }
+
+const getCurrentMonthPaidEmployees = async (req, res) => {
+  try {
+    const now = new Date();
+
+    // Start of current month
+    const startOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0
+    );
+
+    // End of current month
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999
+    );
+
+    const paidEmployees = await Salary.find({
+      Status: "paid",
+      updatedAt: {
+        $gte: startOfMonth,
+        $lte: endOfMonth
+      }
+    }).populate(
+      "employee",
+      "firstName lastName position jobType status bankDetails"
+    );
+
+    res.status(200).json({
+      success: true,
+      month: now.toLocaleString("default", { month: "long" }),
+      year: now.getFullYear(),
+      count: paidEmployees.length,
+      data: paidEmployees
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+
+const getPaidEmployeesByDateRange = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate && !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one of startDate or endDate is required",
+      });
+    }
+
+    const dateFilter = {};
+
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      dateFilter.$gte = start;
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      dateFilter.$lte = end;
+    }
+
+    const paidEmployees = await Salary.find({
+      Status: "paid",
+      createdAt: dateFilter,
+    }).populate(
+      "employee",
+      "firstName lastName position jobType status bankDetails"
+    );
+
+    res.status(200).json({
+      success: true,
+      startDate: startDate || null,
+      endDate: endDate || null,
+      count: paidEmployees.length,
+      data: paidEmployees,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 
 
@@ -1552,80 +1692,204 @@ const getDepartmentTasks = async (req, res) => {
 
 
 
+// const payIndividual = async (req, res) => {
+//   try {
+//     const { salaryId } = req.params;
+//     console.log(salaryId);
+
+//     // Find the salary record
+//     const salaryRecord = await Salary.findById(salaryId).populate('employee');
+
+//     if (!salaryRecord) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Salary record not found'
+//       });
+//     }
+
+//     // Check if already paid
+//     if (salaryRecord.Status.toLowerCase() === 'paid') {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Payment already processed for this employee'
+//       });
+//     }
+
+//     // Check if bank details exist
+//     if (!salaryRecord.employee.bankDetails || !salaryRecord.employee.bankDetails.accountNumber) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Bank details not found for this employee'
+//       });
+//     }
+
+//     // Update status to Paid
+//     salaryRecord.Status = 'paid';
+//     salaryRecord.paymentDate = new Date();
+//     await salaryRecord.save();
+
+//     // Send confirmation email to employee
+//     // const emailSent = await sendPaymentConfirmationEmail(
+//     //   salaryRecord.employee.email,
+//     //   {
+//     //     employeeName: `${salaryRecord.employee.firstName} ${salaryRecord.employee.lastName}`,
+//     //     amount: salaryRecord.netSalary,
+//     //     month: salaryRecord.month,
+//     //     accountNumber: salaryRecord.employee.bankDetails.accountNumber.slice(-4),
+//     //     bankName: salaryRecord.employee.bankDetails.bankName
+//     //   }
+//     // );
+
+//     return res.status(200).json({
+//       success: true,
+//       message: 'Payment processed successfully',
+//       data: {
+//         salaryRecord,
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error('Error processing individual payment:', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Failed to process payment',
+//       error: error.message
+//     });
+//   }
+// };
+
 const payIndividual = async (req, res) => {
   try {
     const { salaryId } = req.params;
-    console.log(salaryId);
 
-    // Find the salary record
-    const salaryRecord = await Salary.findById(salaryId).populate('employee');
 
-    if (!salaryRecord) {
-      return res.status(404).json({
-        success: false,
-        message: 'Salary record not found'
-      });
+    const salary = await Salary.findById(salaryId).populate("employee");
+
+    if (!salary) {
+      return res.status(404).json({ success: false, message: "Salary not found" });
     }
 
-    // Check if already paid
-    if (salaryRecord.Status.toLowerCase() === 'paid') {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment already processed for this employee'
-      });
+    if (salary.Status === "paid") {
+      return res.status(400).json({ success: false, message: "Already paid" });
     }
 
-    // Check if bank details exist
-    if (!salaryRecord.employee.bankDetails || !salaryRecord.employee.bankDetails.accountNumber) {
-      return res.status(400).json({
-        success: false,
-        message: 'Bank details not found for this employee'
-      });
+    if (!salary.employee.bankDetails?.accountNumber) {
+      return res.status(400).json({ success: false, message: "Bank details missing" });
     }
 
-    // Update status to Paid
-    salaryRecord.Status = 'paid';
-    salaryRecord.paymentDate = new Date();
-    await salaryRecord.save();
+    const invoiceNo = await generateInvoiceNo();
 
-    // Send confirmation email to employee
-    // const emailSent = await sendPaymentConfirmationEmail(
-    //   salaryRecord.employee.email,
-    //   {
-    //     employeeName: `${salaryRecord.employee.firstName} ${salaryRecord.employee.lastName}`,
-    //     amount: salaryRecord.netSalary,
-    //     month: salaryRecord.month,
-    //     accountNumber: salaryRecord.employee.bankDetails.accountNumber.slice(-4),
-    //     bankName: salaryRecord.employee.bankDetails.bankName
-    //   }
-    // );
+    const pdfPath = await generateInvoicePDF(salary, invoiceNo);
 
-    return res.status(200).json({
+    const invoiceUrl = await uploadInvoicePDF(pdfPath, invoiceNo);
+
+    salary.Status = "paid";
+    salary.salaryPayDate = new Date();
+    salary.invoice = {
+      invoiceNo,
+      invoiceDate: new Date(),
+      amount: parseFloat(salary.netSalary),
+      invoiceUrl,
+    };
+
+    await salary.save();
+
+    res.status(200).json({
       success: true,
-      message: 'Payment processed successfully',
+      message: "Payment successful & invoice generated",
       data: {
-        salaryRecord,
-      }
+        invoiceNo,
+        invoiceUrl,
+      },
     });
 
   } catch (error) {
-    console.error('Error processing individual payment:', error);
-    return res.status(500).json({
+    console.error(error);
+    res.status(500).json({
       success: false,
-      message: 'Failed to process payment',
-      error: error.message
+      message: "Payment failed",
+      error: error.message,
     });
+  }
+}
+
+
+const getCurrentMonthYear = () => {
+  const now = new Date();
+
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  return {
+    month: monthNames[now.getMonth() + 1],
+    year: now.getFullYear()
+  };
+};
+
+
+const generateMonthlySalary = async () => {
+  try {
+
+    const { month, year } = getCurrentMonthYear();
+
+    console.log(`Running payroll for ${month} ${year}`);
+
+    // Fetch active employees
+    const employees = await User.find({
+      $or: [
+        { status: "active" },
+        { status: "on leave" }
+      ]
+    });
+
+    for (let emp of employees) {
+
+      console.log(emp)
+
+      const baseSalary = Number(emp.baseSalary || 0);
+      const allowances = Number(emp.allowances || 0);
+      const deductions = Number(emp.deductions || 0);
+      const taxApply = Number(emp.taxApply || 0);
+
+      const taxAmount = (baseSalary * taxApply) / 100;
+
+      const netSalary =
+        baseSalary + allowances - deductions - taxAmount;
+
+
+      await Salary.findOneAndUpdate(
+        { employee: emp._id, month, year },
+        {
+          $setOnInsert: {
+            employeeId: emp.employeeId,
+            baseSalary,
+            allowances,
+            deductions,
+            taxApply,
+            netSalary,
+            Status: "due"
+          }
+        },
+        { upsert: true }
+      );
+
+      console.log(`Salary processed for ${emp.employeeId}`);
+    }
+
+    console.log("Monthly payroll completed successfully");
+
+  } catch (err) {
+    console.error("Payroll Cron Error:", err);
   }
 };
 
 
-
-
-
-
-
-
-
+cron.schedule("1 0 1 * *", async () => {
+  console.log("Running Monthly Salary Cron...");
+  await generateMonthlySalary();
+});
 
 
 module.exports = {
@@ -1650,5 +1914,8 @@ module.exports = {
   sentEmail,
   getDepartmentTasks,
   payIndividual,
-  getAllEmployeesByDepartement
+  getAllEmployeesByDepartement,
+  getCurrentMonthPaidEmployees,
+  getPaidEmployeesByDateRange,
+  getAllEmployeesDuePayment
 }

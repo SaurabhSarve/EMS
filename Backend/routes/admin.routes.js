@@ -25,8 +25,13 @@ const {
     deleteDepartment,
     updateDepartment,
     updateProfile,
-    getAllEmployeesByDepartement
+    getAllEmployeesByDepartement,
+    getCurrentMonthPaidEmployees,
+    getPaidEmployeesByDateRange,
+    getAllEmployeesDuePayment
 } = require("../controllers/adminController.js");
+
+const {downloadInvoice} = require("../controllers/downloadInvoice");
 
 const { protect} = require('../middleware/auth');
 const { getAdminTickets, updateTicket, updateTicketStatus } = require('../controllers/supportTicketController.js');
@@ -85,9 +90,6 @@ router.route("/employees/salary")
 .post(updateSalary);
 
 
-
-
-
 // secureDashboard routes
 router.post("/employees/salary/run-payroll" , runPayroll);
 router.post('/salary/pay-individual/:salaryId',payIndividual);
@@ -122,5 +124,10 @@ router.route("/departments/:id")
 
 router.route("/me")
 .put(upload.single('profilePhoto'),updateProfile);
+
+router.route("/employees/salary/history").get(getCurrentMonthPaidEmployees);
+router.route("/employees/salary/customHistory").get(getPaidEmployeesByDateRange)
+router.route("/employees/salary/invoice/:salaryId").get(downloadInvoice);
+router.route("/employees/salary/allDue").get(getAllEmployeesDuePayment)
 
 module.exports = router;

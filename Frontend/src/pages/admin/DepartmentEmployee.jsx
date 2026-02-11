@@ -5,6 +5,7 @@ import AdminSidebar from "../../Components/AdminSidebar.jsx";
 import { employeeService } from "../../services/employeeServices.js";
 import { capitalize } from "../../utils/helper.js";
 import { useLocation } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 export default function DepartmentEmployeesList() {
 
@@ -18,7 +19,7 @@ export default function DepartmentEmployeesList() {
     const [searchTerm, setSearchTerm] = useState("");
     const [departmentFilter, setDepartmentFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
-    const [departmentHeadData, setDepartmentHeadData] = useState({})
+    const [departmentHeadData, setDepartmentHeadData] = useState(null)
 
 
     useEffect(() => {
@@ -97,21 +98,64 @@ export default function DepartmentEmployeesList() {
                             <div className="absolute -top-10 -right-10 w-36 h-36 bg-white/10 rounded-full blur-2xl" />
                             <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
                             <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center border border-white/30 shadow-md">
-                                        <span className="text-white text-lg font-bold">👥</span>
+                                <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+
+                                    {/* Left Section */}
+                                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8 mb-6">
+
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+
+                                            {/* Left Section */}
+                                            <div className="flex items-start sm:items-center gap-4">
+
+                                                {/* Back Button */}
+                                                <button
+                                                    onClick={() => navigate(-1)}
+                                                    className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 transition"
+                                                >
+                                                    <ArrowLeft size={20} className="text-gray-700" />
+                                                </button>
+
+                                                {/* Title Section */}
+                                                <div>
+                                                    <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                                                        Employee Directory
+                                                    </h1>
+
+                                                    <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                                        {department && (
+                                                            <span className="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-600 rounded-full">
+                                                                {department}
+                                                            </span>
+                                                        )}
+
+                                                        <span className="text-sm text-gray-500">
+                                                            {loading
+                                                                ? "Loading employees..."
+                                                                : `${filteredEmployees.length} employees`}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Right Section */}
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-right">
+                                                    <p className="text-xs text-gray-500 uppercase tracking-wide">
+                                                        Total Employees
+                                                    </p>
+                                                    <p className="text-2xl font-bold text-gray-900">
+                                                        {loading ? "--" : filteredEmployees.length}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h1 className="text-2xl sm:text-3xl font-bold">
-                                            Employee Directory {department}
-                                        </h1>
-                                        <p className="text-blue-100 mt-1 text-sm sm:text-base">
-                                            {loading
-                                                ? "Loading..."
-                                                : `${filteredEmployees.length} employees found`}
-                                        </p>
-                                    </div>
+
+
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -197,7 +241,7 @@ export default function DepartmentEmployeesList() {
                         <>
                             {/* Desktop Table View */}
 
-                            <div className="hidden md:block bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+                            <div className="hidden md:block bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 mb-4">
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400">
@@ -211,7 +255,7 @@ export default function DepartmentEmployeesList() {
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
 
-                                            {(Object.keys(departmentHeadData).length > 0) ? (
+                                            {(departmentHeadData && departmentHeadData._id && department) ? (
                                                 <tr
                                                     key={departmentHeadData._id}
                                                     className="hover:bg-blue-50/60 cursor-pointer transition-colors"

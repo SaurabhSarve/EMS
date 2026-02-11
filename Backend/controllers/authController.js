@@ -5,6 +5,8 @@ const dotenv = require("dotenv");
 const Department = require("../models/Department");
 const OTP = require("../models/Otp");
 const Counter = require("../models/counter");
+const Salary = require("../models/Salary")
+const bcrypt = require("bcryptjs");
 
 const { sendOtp } = require("../services/emailService");
 dotenv.config();
@@ -458,60 +460,53 @@ const getCurrentUser = async (req, res, next) => {
   }
 }
 
-
 const register = async (req, res) => {
   try {
     const { form } = req.body;
+
     const {
       fullName,
       email,
       mobileNumber,
-      password, //admin123
+      password,
       confirmPassword,
-
       registerAs,
       secretKey
     } = form;
-    // console.log(req.body);
-    // Validation
+
     if (!fullName || !email || !password || !confirmPassword || !registerAs) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required fields'
+        message: "Please provide all required fields"
       });
     }
 
-    // Validate email format
     const emailRegex = /\S+@\S+\.\S+/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a valid email address'
+        message: "Invalid email format"
       });
     }
 
-
-    // Check password match
     if (password !== confirmPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Passwords do not match'
+        message: "Passwords do not match"
       });
     }
-
 
     if (password.length < 6) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 6 characters long'
+        message: "Password must be at least 6 characters"
       });
     }
 
-    // registerAs
-    if (!['Department Head', 'Admin'].includes(registerAs)) {
+    if (!["Admin", "Department Head"].includes(registerAs)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid registration type. Must be Department Head or Admin'
+        message: "Invalid registration type"
       });
     }
 
@@ -519,101 +514,106 @@ const register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User with this email already exists'
+        message: "User already exists with this email"
       });
     }
 
     const nameParts = fullName.trim().split(/\s+/);
-
     const firstName = nameParts[0];
-    const lastName = nameParts.length > 1
-      ? nameParts.slice(1).join(' ')
-      : "";
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
 
+    const counter = await Counter.findOneAndUpdate(
+      { name: "employeeId" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+
+    const employeeId = `EMP-${counter.seq}`;
 
     const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY;
-    const DEPARTMENT_HEAD_SECRET_KEY = process.env.DEPARTMENT_HEAD_SECRET_KEY;
+    const DEPARTMENT_HEAD_SECRET_KEY =
+      process.env.DEPARTMENT_HEAD_SECRET_KEY;
 
-    const generateEmployeeId = async () => {
-      const counter = await Counter.findOneAndUpdate(
-        { name: "employeeId" },     // one counter for employees
-        { $inc: { seq: 1 } },       // atomic increment
-        {
-          new: true,
-          upsert: true              // create if not exists
-        }
-      );
+    let role = "";
 
-      return `EMP-${counter.seq}`;
-    };
-
-
-
-    const employeeId = await generateEmployeeId();
-
-    if (registerAs === 'Admin' && secretKey === ADMIN_SECRET_KEY) {
-      const user = await User.create({
-        firstName,
-        lastName,
-        email,
-        contactNumber: mobileNumber || null,
-        password, // Will be hashed by pre-save middleware
-        employeeId,
-        role: registerAs,
-        isActive: true,
-        status: 'active',
-        AccessKey: ADMIN_SECRET_KEY
-      });
-
-    } else if (registerAs === 'Department Head' && secretKey === DEPARTMENT_HEAD_SECRET_KEY) {
-      const user = await User.create({
-        firstName,
-        lastName,
-        email,
-        contactNumber: mobileNumber || null,
-        password, // Will be hashed by pre-save middleware
-        employeeId,
-        role: registerAs,
-        isActive: true,
-        status: 'active',
-        AccessKey: DEPARTMENT_HEAD_SECRET_KEY
-      });
-      // const departmentInfo = await Department.findOneAndUpdate(
-      //     { name : department }, 
-      //     { manager: user._id }, 
-      //     { 
-      //         new: true, 
-      //         upsert: false 
-      //     }
-      // );
-
-      // console.log(departmentInfo);
-
-
-
+    if (registerAs === "Admin" && secretKey === ADMIN_SECRET_KEY) {
+      role = "Admin";
+    } else if (
+      registerAs === "Department Head" &&
+      secretKey === DEPARTMENT_HEAD_SECRET_KEY
+    ) {
+      role = "Department Head";
     } else {
       return res.status(403).json({
         success: false,
-        message: 'Invalid secret key. Only authorized Head can register.'
+        message: "Invalid secret key"
       });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
 
+    const employee = await User.create({
+      firstName,
+      lastName,
+      email,
+      contactNumber: mobileNumber || null,
+      password: hashedPassword,
+      employeeId,
+      role,
+      isActive: true,
+      status: "active",
+      AccessKey: secretKey
+    });
 
-    res.status(201).json({
+    try {
+      const currentDate = new Date();
+      const currentMonth = currentDate.toLocaleString("default", {
+        month: "long"
+      });
+      const currentYear = currentDate.getFullYear();
+
+      const salaryDetail = new Salary({
+        employee: employee._id,
+        employeeId,
+        month: currentMonth,
+        year: currentYear,
+        baseSalary: 0,
+        allowances: 0,
+        deductions: 0,
+        taxApply: false,
+        netSalary: 0
+      });
+
+      await salaryDetail.save();
+
+    } catch (salaryError) {
+      // Rollback user if salary fails
+      await User.findByIdAndDelete(employee._id);
+
+      return res.status(500).json({
+        success: false,
+        message: "Salary creation failed. Registration rolled back.",
+        error: salaryError.message
+      });
+    }
+
+    return res.status(201).json({
       success: true,
-      message: 'Registration successful',
+      message: "Registration successful with salary initialized",
+      employeeId
     });
 
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({
+    console.error("Registration Error:", error);
+    return res.status(500).json({
       success: false,
-      message: 'Error registering user',
+      message: "Error registering user",
       error: error.message
     });
   }
 };
+
+module.exports = { register };
 
 
 
