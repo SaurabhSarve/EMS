@@ -25,7 +25,8 @@ const {
     deleteDepartment,
     updateDepartment,
     updateProfile,
-    getEmployeesForDepartmentHead
+    getEmployeesForDepartmentHead,
+    getAllEmployeesByDepartment
 } = require("../controllers/adminController.js");
 
 const { protect } = require('../middleware/auth');
@@ -62,7 +63,7 @@ router.route("/employee/:id")
     .put(upload.single('profilePhoto'), updateEmployee)
     .delete(deleteEmployee);
 
-router.route("/employees/bydepartment").get(getAllEmployeesByDepartement)
+router.route("/employees/bydepartment").get(getAllEmployeesByDepartment)
 
 
 // tasks , based on Head and Admin

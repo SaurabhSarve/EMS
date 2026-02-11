@@ -134,18 +134,18 @@ const createEmployee = async (req, res, next) => {
 
     const generateEmployeeId = async () => {
       const counter = await Counter.findOneAndUpdate(
-        { name: "employeeId" },    
-        { $inc: { seq: 1 } },      
+        { name: "employeeId" },
+        { $inc: { seq: 1 } },
         {
           new: true,
-          upsert: true              
+          upsert: true
         }
       );
 
       return `EMP-${counter.seq}`;
     };
 
- a785dcc8d4c4756c718d58e369ccb8f8498f2eb3
+    a785dcc8d4c4756c718d58e369ccb8f8498f2eb3
     const employeeId = await generateEmployeeId();
 
 
@@ -1004,7 +1004,7 @@ const getAllEmployees = async (req, res) => {
   }
 };
 
-const getAllEmployeesByDepartement = async (req, res) => {
+const getAllEmployeesByDepartment = async (req, res) => {
   try {
     const { search, department, status, page = 1, limit = 50 } = req.query;
 
@@ -1042,12 +1042,12 @@ const getAllEmployeesByDepartement = async (req, res) => {
       { $unwind: "$department" },
       ...(department && department !== "all"
         ? [
-            {
-              $match: {
-                "department.name": { $regex: department, $options: "i" },
-              },
+          {
+            $match: {
+              "department.name": { $regex: department, $options: "i" },
             },
-          ]
+          },
+        ]
         : []),
       { $sort: { createdAt: -1 } },
       { $skip: skip },
@@ -1711,6 +1711,5 @@ module.exports = {
   sentEmail,
   getDepartmentTasks,
   payIndividual,
-  payIndividual,
-  getAllEmployeesByDepartement
+  getAllEmployeesByDepartment
 }
