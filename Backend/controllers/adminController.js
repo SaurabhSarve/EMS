@@ -147,7 +147,7 @@ const createEmployee = async (req, res, next) => {
       return `EMP-${counter.seq}`;
     };
 
-    a785dcc8d4c4756c718d58e369ccb8f8498f2eb3
+
     const employeeId = await generateEmployeeId();
 
 
@@ -1900,7 +1900,6 @@ cron.schedule("1 0 1 * *", async () => {
 module.exports = {
   getDashboardstats,
   getAllEmployees,
-  getEmployeesForDepartmentHead,
   getEmployeebyId,
   createEmployee,
   updateEmployee,
