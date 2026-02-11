@@ -8,8 +8,8 @@ export const employeeService = {
         } catch (error) {
             throw error;
         }
-    }
-    ,
+    },
+
     getTickets: async () => {
         try {
             const response = await api.get('/admin/tickets');
@@ -17,8 +17,8 @@ export const employeeService = {
         } catch (error) {
             throw error;
         }
-    }
-    ,
+    },
+
     getAdminDashboardStats: async () => {
         try {
             const response = await api.get('/admin/dashboard/stats');
@@ -27,29 +27,25 @@ export const employeeService = {
             throw error;
         }
     },
-<<<<<<< HEAD
+
     getAllEmployees: async () => {
         try {
             const response = await api.get('/admin/employees');
-=======
-    getAllEmployees : async() => {
-       try {
-            const response = await api.get('/admin/employees',);
             return response.data;
         } catch (error) {
             throw error;
         }
     },
 
-    getAllEmployeesByDeparment : async(department) => {
-       try {
-            const response = await api.get(`/admin/employees/bydepartment?department=${department}`,);
->>>>>>> a785dcc8d4c4756c718d58e369ccb8f8498f2eb3
+    getAllEmployeesByDepartment: async (department) => {
+        try {
+            const response = await api.get(`/admin/employees/bydepartment?department=${department}`);
             return response.data;
         } catch (error) {
             throw error;
         }
     },
+
     getDepartmentHeadEmployees: async () => {
         try {
             const response = await api.get('/admin/department-head/employees');
@@ -63,11 +59,10 @@ export const employeeService = {
         try {
             const response = await api.post('/admin/employees', data, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'  // Override default
+                    'Content-Type': 'multipart/form-data'
                 }
             });
             return response.data;
-
         } catch (error) {
             throw error;
         }
@@ -77,7 +72,6 @@ export const employeeService = {
         try {
             const response = await api.get(`/admin/employee/${id}`);
             return response.data;
-
         } catch (error) {
             throw error;
         }
@@ -87,7 +81,6 @@ export const employeeService = {
         try {
             const response = await api.post(`/admin/employee/${employeeId}/addtask`, tasksData);
             return response.data;
-
         } catch (error) {
             throw error;
         }
@@ -97,7 +90,6 @@ export const employeeService = {
         try {
             const response = await api.get(`/admin/employees/leaves`);
             return response.data;
-
         } catch (error) {
             throw error;
         }
@@ -107,11 +99,10 @@ export const employeeService = {
         try {
             const response = await api.put(`/admin/employee/${id}`, updatedData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'  // Override default
+                    'Content-Type': 'multipart/form-data'
                 }
             });
             return response.data;
-
         } catch (error) {
             throw error;
         }
@@ -121,20 +112,16 @@ export const employeeService = {
         try {
             const response = await api.put(`/admin/me`, formDatatoSend, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'  // Override default
+                    'Content-Type': 'multipart/form-data'
                 }
             });
             return response.data;
-
         } catch (error) {
             throw error;
         }
     },
 
-
-
     deleteEmployee: async (id, password, hardDelete, status) => {
-
         try {
             const response = await api.delete(`/admin/employee/${id}`, {
                 headers: {
@@ -144,109 +131,98 @@ export const employeeService = {
                 }
             });
             return response.data;
-
         } catch (error) {
             throw error;
         }
     },
 
     getEmployeedashboardStats: async () => {
-
         try {
             const response = await api.get(`/employee/dashboard`);
             return response.data;
-
         } catch (error) {
             throw error;
         }
     },
+
     getDepartmentTasks: async () => {
         try {
             const response = await api.get(`/admin/employees/tasks`);
             return response.data;
-
         } catch (error) {
             throw error;
         }
     },
 
     getTasks: async () => {
-
         try {
             const response = await api.get(`/employee/tasks`);
             return response.data;
-
         } catch (error) {
             throw error;
         }
-    }
-    ,
+    },
+
     updateTask: async (taskId) => {
         try {
             const response = await api.post(`/employee/tasks`, { taskId });
             return response.data;
-
         } catch (error) {
             throw error;
         }
-    }
-    ,
+    },
+
     deleteTask: async (taskId) => {
         try {
             const response = await api.delete(`/admin/tasks/${taskId}`);
             return response.data;
-
         } catch (error) {
             throw error;
         }
-    }
-    ,
+    },
+
     updateTicket: async (ticketId) => {
         try {
             const response = await api.patch(`/admin/support-tickets/${ticketId}/mark-read`, { ticketId });
             return response.data;
-
         } catch (error) {
             throw error;
         }
-    }
-    ,
+    },
+
     updateTicketStatus: async (ticketId, status) => {
         try {
             const response = await api.patch(`/admin/support-tickets/${ticketId}/status`, { status });
             return response.data;
-
         } catch (error) {
             throw error;
         }
-    }
-    ,
+    },
+
     getProfile: async () => {
         try {
             const response = await api.get(`/employee/me`);
             return response.data;
-
         } catch (error) {
             throw error;
         }
     },
+
     changePassword: async (data) => {
         try {
             const response = await api.post(`/employee/change-password`, data);
             return response.data;
-
         } catch (error) {
             throw error;
         }
     },
+
     updateSecurityKey: async (data) => {
         try {
             const response = await api.put(`/employee/update-security-key`, data);
             return response.data;
-
         } catch (error) {
             throw error;
         }
     }
-}
-
+};

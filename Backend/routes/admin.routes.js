@@ -34,8 +34,6 @@ const {
 
 const {downloadInvoice} = require("../controllers/downloadInvoice");
 
-const {downloadInvoice} = require("../controllers/downloadInvoice");
-
 const { protect } = require('../middleware/auth');
 const { getAdminTickets, updateTicket, updateTicketStatus } = require('../controllers/supportTicketController.js');
 const { ActivatePaymentMode, UpdateBankDetails } = require("../controllers/paymentController.js");
