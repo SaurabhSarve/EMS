@@ -4,6 +4,7 @@ const { status } = require('http-status');
 const dotenv = require("dotenv");
 const Department = require("../models/Department");
 const OTP = require("../models/Otp");
+const generateEmployeeId = require("../utils/generateEmployeeId");
 const Counter = require("../models/counter");
 const Salary = require("../models/Salary")
 const bcrypt = require("bcryptjs");

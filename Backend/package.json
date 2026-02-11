@@ -24,12 +24,14 @@
     "googleapis": "^171.4.0",
     "http-status": "^2.1.0",
     "jsonwebtoken": "^9.0.3",
+    "lodash": "^4.17.23",
     "mongoose": "^9.0.2",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.12",
-    "pdfkit": "^0.17.2"
+    "pdfkit": "^0.17.2",
+    "qs": "^6.14.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
