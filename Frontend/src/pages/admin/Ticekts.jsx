@@ -9,7 +9,13 @@ export default function Tickets() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  // 🔐 Logged-in user
+  const [comment, setComment] = useState({});
+  const [statusDraft, setStatusDraft] = useState(tickets.status || {});
+  const [submitting, setSubmitting] = useState({});
+  const [successMsg, setSuccessMsg] = useState({});
+  const [ticketVersion, setTicketVersion] = useState({});
+
+  //  Logged-in user
   const user = JSON.parse(localStorage.getItem("user"));
 
   console.log("Logged-in user:", user);
@@ -34,10 +40,11 @@ export default function Tickets() {
 
   // Role based filtering
   const roleBasedTickets = tickets.filter((ticket) => {
-    // Normal Admin → no employee tickets
-    if (user?.role === "Admin") return false;
+    if (user?.role === "Admin") {
+      return ticket.forwardedToAdmin === true;
+    }
 
-    // Department Head → only own department tickets
+    // Head → sirf apne department ke tickets
     if (user?.role === "Department Head") {
       return ticket.employee?.department === user.department;
     }
@@ -88,7 +95,6 @@ export default function Tickets() {
     }
   };
 
-
   // Search + Status filter
   const filteredTickets = roleBasedTickets.filter((ticket) => {
     const matchesStatus =
@@ -119,7 +125,6 @@ export default function Tickets() {
     { Open: 0, "In Progress": 0, Resolved: 0, Closed: 0, Reopened: 0 },
   );
 
-
   const handleStatusChange = async (ticketId, nextStatus) => {
     if (!ticketId || !nextStatus) return;
     try {
@@ -136,6 +141,82 @@ export default function Tickets() {
       }
     } catch (err) {
       console.error("Error updating ticket status:", err);
+    }
+  };
+
+  // handle status change with comment (for head)
+
+  const handleStatusWithComment = async (ticketId) => {
+    const status = statusDraft[ticketId] || "Open";
+    const remark = comment[ticketId];
+
+    if (!remark?.trim()) {
+      alert("Comment is required");
+      return;
+    }
+
+    try {
+      setSubmitting((prev) => ({ ...prev, [ticketId]: true }));
+
+      const res = await employeeService.updateTicketStatus(ticketId, {
+        status,
+        comment: remark,
+      });
+
+      if (res?.success) {
+        // update ticket list
+        setTickets((prev) =>
+          prev.map((t) => (t._id === ticketId ? res.ticket : t)),
+        );
+
+        // ✅ CLEAR INPUTS (FORCE RESET)
+        setComment((prev) => {
+          const copy = { ...prev };
+          delete copy[ticketId];
+          return copy;
+        });
+
+        setStatusDraft((prev) => {
+          const copy = { ...prev };
+          delete copy[ticketId];
+          return copy;
+        });
+
+        // ✅ SHOW SUCCESS
+        setSuccessMsg((prev) => ({
+          ...prev,
+          [ticketId]: "Update submitted successfully ✅",
+        }));
+
+        // auto hide
+        setTimeout(() => {
+          setSuccessMsg((prev) => {
+            const copy = { ...prev };
+            delete copy[ticketId];
+            return copy;
+          });
+        }, 2000);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
+    } finally {
+      setSubmitting((prev) => ({ ...prev, [ticketId]: false }));
+    }
+  };
+
+  const handleForwardToAdmin = async (ticketId) => {
+    try {
+      const result = await employeeService.forwardTicketToAdmin(ticketId);
+      if (result?.success) {
+        setTickets((prev) =>
+          prev.map((t) =>
+            t._id === ticketId ? { ...t, forwardedToAdmin: true } : t,
+          ),
+        );
+      }
+    } catch (err) {
+      console.error("Error forwarding ticket:", err);
     }
   };
 
@@ -246,7 +327,7 @@ export default function Tickets() {
                   >
                     <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-blue-500 via-indigo-500 to-sky-400" />
 
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center justify-between gap-4">
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 font-bold flex items-center justify-center">
                           {(ticket.employee?.firstName || "U").charAt(0)}
@@ -266,36 +347,93 @@ export default function Tickets() {
                       >
                         {ticket.status}
                       </span>
+
+                      {user?.role === "Department Head" && (
+                        <button
+                          onClick={() => handleForwardToAdmin(ticket._id)}
+                          disabled={ticket.forwardedToAdmin}
+                          className={`text-xs flex items-center justify-center font-semibold px-3 py-1.5 rounded-lg rounded-md transition
+                          ${
+                            ticket.forwardedToAdmin
+                              ? "bg-purple-200 text-purple-700 cursor-not-allowed"
+                              : "bg-purple-600 text-white hover:bg-purple-700"
+                          }
+                          `}
+                        >
+                          {ticket.forwardedToAdmin ? "Forwarded" : "Forward"}
+                        </button>
+                      )}
+
+                      {user?.role === "Admin" && ticket.forwardedToAdmin && (
+                        <span className="inline-block text-xs font-semibold px-3 py-1.5 rounded-lg bg-purple-100 text-purple-700">
+                          Forwarded
+                        </span>
+                      )}
                     </div>
 
                     <p className="text-sm text-slate-600 mt-3 line-clamp-2">
                       {ticket.description}
                     </p>
 
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <label className="text-sm text-slate-500">
-                        Update Status
-                      </label>
-                      <select
-                        value={ticket.status}
-                        onChange={(e) =>
-                          handleStatusChange(ticket._id, e.target.value)
-                        }
-                        className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        {[
-                          "Open",
-                          "In Progress",
-                          "Resolved",
-                          "Closed",
-                          "Reopened",
-                        ].map((status) => (
-                          <option key={status} value={status}>
-                            {status}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {["Department Head", "Admin"].includes(user?.role) && (
+                      <div className="mt-4 space-y-2">
+                        <select
+                          value={statusDraft[ticket._id] || ticket.status}
+                          onChange={(e) =>
+                            setStatusDraft((prev) => ({
+                              ...prev,
+                              [ticket._id]: e.target.value,
+                            }))
+                          }
+                          className="w-full border rounded-lg px-3 py-2"
+                        >
+                          {[
+                            "Open",
+                            "In Progress",
+                            "Resolved",
+                            "Closed",
+                            "Reopened",
+                          ].map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+
+                        <textarea
+                          value={comment[ticket._id] ?? ""}
+                          onChange={(e) =>
+                            setComment((prev) => ({
+                              ...prev,
+                              [ticket._id]: e.target.value,
+                            }))
+                          }
+                          placeholder="Add remark for employee..."
+                          className="w-full border rounded-lg px-3 py-2 text-sm"
+                        />
+
+                        <button
+                          onClick={() => handleStatusWithComment(ticket._id)}
+                          disabled={submitting[ticket._id]}
+                          className={`px-4 py-2 rounded-lg text-sm text-white
+                              ${
+                                submitting[ticket._id]
+                                  ? "bg-gray-400 cursor-not-allowed"
+                                  : "bg-blue-600 hover:bg-blue-700"
+                              }
+                            `}
+                        >
+                          {submitting[ticket._id]
+                            ? "Submitting..."
+                            : "Submit Update"}
+                        </button>
+                        {successMsg[ticket._id] && (
+                          <p className="text-green-600 text-sm mt-2">
+                            {successMsg[ticket._id]}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="flex flex-wrap items-center gap-2 mt-4">
                       <span
