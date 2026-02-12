@@ -120,7 +120,7 @@ export default function EmployeeDashboard() {
           {/* Decorative Background Elements */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl transform translate-x-32 -translate-y-32 animate-pulse"></div>
           <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-900/20 rounded-full blur-2xl transform -translate-x-20 translate-y-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
-
+          
           <div className="relative z-10 px-6 py-6 sm:px-8 sm:py-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               {/* Profile Info */}
@@ -182,7 +182,7 @@ export default function EmployeeDashboard() {
               <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Current Salary</p>
               <div className="flex items-baseline gap-2 mb-3">
                 <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
-                  ₹{Number(salarydetails[0]?.baseSalary || 0).toLocaleString("en-IN")}
+                 ₹{Number(salarydetails[0]?.baseSalary || 0).toLocaleString("en-IN")}
                 </h3>
                 <span className="text-slate-400 text-sm group-hover:text-slate-600 transition-colors">/ month</span>
               </div>
@@ -349,7 +349,7 @@ const TaskItem = ({ title, priority, color, due }) => {
     amber: "text-amber-600 bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200",
     blue: "text-blue-600 bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200",
   };
-
+  
   // Format due date
   const formatDueDate = (dueDate) => {
     if (!dueDate) return "No due date";
@@ -376,7 +376,7 @@ const TaskItem = ({ title, priority, color, due }) => {
       return `Due ${date.toLocaleDateString('en-US', options)}`;
     }
   };
-
+  
   return (
     <div className="group flex items-start gap-3 p-4 rounded-xl bg-white border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all cursor-pointer">
       <div className="flex-1 min-w-0">
@@ -424,9 +424,8 @@ const SalaryHistory = ({ salarydetails }) => {
 
   return (
     <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-xl border border-slate-100 flex flex-col hover:shadow-lg transition-shadow min-h-[520px]">
-      {/* This is the section in the employee dashboard that shows the salary history of the employee */}
       {/* HEADER */}
-      {/*<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-xl flex items-center justify-center">
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -439,13 +438,13 @@ const SalaryHistory = ({ salarydetails }) => {
           </div>
         </div>
 
-         <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2.5 rounded-xl text-sm font-semibold flex gap-2 items-center w-full sm:w-auto justify-center shadow-lg hover:shadow-lg transition-all hover:scale-102">
+        {/* <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2.5 rounded-xl text-sm font-semibold flex gap-2 items-center w-full sm:w-auto justify-center shadow-lg hover:shadow-lg transition-all hover:scale-102">
           <Download size={18} /> Download Payslip
-        </button> 
-      </div>*/}
+        </button> */}
+      </div>
 
       {/* ================= TABLE VIEW (Tablet + Desktop) ================= */}
-      {/* <div className="hidden sm:block overflow-x-auto lg:overflow-visible flex-1 min-h-0">
+      <div className="hidden sm:block overflow-x-auto lg:overflow-visible flex-1 min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
@@ -486,44 +485,43 @@ const SalaryHistory = ({ salarydetails }) => {
                     calcDeduction={calcDeduction}
                   />
                 ))}
-    </tbody>
-            </table >
-          </div >
+              </tbody>
+            </table>
+          </div>
         )}
-      </div >*/}
+      </div>
 
       {/* ================= MOBILE CARD VIEW ================= */}
-      < div className="sm:hidden space-y-4 flex-1 min-h-0 overflow-auto max-h-[360px]" >
-        {
-          isLoading ? (
-            <div className="flex items-center justify-center py-8" >
-              <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+      <div className="sm:hidden space-y-4 flex-1 min-h-0 overflow-auto max-h-[360px]">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          </div>
+        ) : salarydetails && salarydetails.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mb-4">
+              <FileText className="h-10 w-10 text-slate-400" />
             </div>
-          ) : salarydetails && salarydetails.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mb-4">
-                <FileText className="h-10 w-10 text-slate-400" />
-              </div>
-              <p className="text-slate-500 text-sm font-medium">No salary records found</p>
-              <p className="text-slate-400 text-xs mt-1">Check back later for updates</p>
-            </div>
-          ) : (
-            salarydetails?.map((salary) => (
-              <MobileSalaryCard
-                key={salary._id || salary.id}
-                month={salary.month}
-                year={new Date().getFullYear()}
-                baseSalary={salary.baseSalary}
-                taxApply={salary?.taxApply}
-                deduction={salary.deductions}
-                netSalary={salary.netSalary}
-                status={salary.Status}
-                formatINR={formatINR}
-                calcDeduction={calcDeduction}
-              />
-            ))
-          )}
-      </div >
+            <p className="text-slate-500 text-sm font-medium">No salary records found</p>
+            <p className="text-slate-400 text-xs mt-1">Check back later for updates</p>
+          </div>
+        ) : (
+          salarydetails?.map((salary) => (
+            <MobileSalaryCard
+              key={salary._id || salary.id}
+              month={salary.month}
+              year={new Date().getFullYear()}
+              baseSalary={salary.baseSalary}
+              taxApply={salary?.taxApply}
+              deduction={salary.deductions}
+              netSalary={salary.netSalary}
+              status={salary.Status}
+              formatINR={formatINR}
+              calcDeduction={calcDeduction}
+            />
+          ))
+        )}
+      </div>
 
       {/* FOOTER
       <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-xl sticky bottom-0">
@@ -531,7 +529,7 @@ const SalaryHistory = ({ salarydetails }) => {
           View All Payslips ({salarydetails?.length || 0})
         </button>
       </div> */}
-    </div >
+    </div>
   );
 };
 
@@ -548,10 +546,11 @@ const SalaryRow = ({ month, year, baseSalary, taxApply, deduction, net, status, 
       <td className="text-center px-4 font-semibold text-red-600">- {formatINR(calcDeduction(baseSalary, taxApply, deduction))}</td>
       <td className="text-center px-4 font-bold text-green-600">{formatINR(net)}</td>
       <td className="text-center px-4">
-        <span className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 ${normalizedStatus === 'paid' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-300' :
+        <span className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 ${
+          normalizedStatus === 'paid' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-300' :
           normalizedStatus === 'processing' ? 'bg-gradient-to-r from-blue-100 to-sky-100 text-blue-700 border border-blue-300' :
-            'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 border border-yellow-300'
-          }`}>
+          'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 border border-yellow-300'
+        }`}>
           {normalizedStatus === 'paid' && (
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -574,10 +573,11 @@ const MobileSalaryCard = ({ month, year, baseSalary, taxApply, deduction, netSal
           <p className="font-bold text-slate-900 text-lg">{month}</p>
           <p className="text-xs text-slate-400 font-medium">{year}</p>
         </div>
-        <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${normalizedStatus === 'paid' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-300' :
+        <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
+          normalizedStatus === 'paid' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-300' :
           normalizedStatus === 'processing' ? 'bg-gradient-to-r from-blue-100 to-sky-100 text-blue-700 border border-blue-300' :
-            'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 border border-yellow-300'
-          }`}>
+          'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 border border-yellow-300'
+        }`}>
           {capitalize(normalizedStatus || 'pending')}
         </span>
       </div>

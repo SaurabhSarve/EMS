@@ -1,49 +1,49 @@
 const mongoose = require("mongoose");
 
 const departmentSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        unique: true,
-        trim: true,
-        required: [true, "Department name is required"]
-    },
+   name : {
+    type : String,
+    unique :  true,
+    trim : true,
+    required : [true ,  "Department name is required"]
+   },
 
-    code: {
-        type: String,
-        unique: true,
-        trim: true,
-        uppercase: true
-    },
+   code : {
+    type : String,
+    unique : true,
+    trim : true,
+    uppercase : true
+   },
 
-    description: {
-        type: String,
-        trim: true
-    },
+   description : {
+    type : String,
+    trim : true
+   } ,
 
-    manager: {
-        type: mongoose.Schema.ObjectId,
-        ref: 'User'
+   manager : {
+    type : mongoose.Schema.ObjectId,
+    ref : 'User'
 
-    },
+   } ,
 
-    totalEmployees: {
-        type: Number,
-        default: 0
-    },
+   totalEmployees : {
+    type : Number,
+    default : 0
+   } ,
 
-    budget: {
-        type: Number,
-        default: 0
-    },
-    isActive: {
-        type: Boolean,
-        default: true
-    }
+    budget : {
+    type : Number,
+    default : 0
+   } ,
+   isActive : {
+    type : Boolean , 
+    default : true
+   }
 
-}, {
-    timestamps: true
+} , {
+    timestamps : true
 });
 
-const Department = mongoose.model("Department", departmentSchema);
+Department = mongoose.model("Department" , departmentSchema);
 
 module.exports = Department;
