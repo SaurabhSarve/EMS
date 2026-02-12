@@ -2038,7 +2038,7 @@ const updateEmployeesPermantentSalary = async (req, res) => {
   try{
     const {employeeId, baseSalary, allowances,taxApply,netSalary} = req.body;
 
-    const userDetail =await User.findByIdAndUpdate(employeeId,
+    await User.findByIdAndUpdate(employeeId,
       {
         baseSalary,
         allowances,
