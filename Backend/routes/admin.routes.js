@@ -28,7 +28,9 @@ const {
     getAllEmployeesByDepartment,
     getCurrentMonthPaidEmployees,
     getPaidEmployeesByDateRange,
-    getAllEmployeesDuePayment
+    getAllEmployeesDuePayment,
+    employeePromotion,
+    updateEmployeesPermantentSalary
 } = require("../controllers/adminController.js");
 
 const { downloadInvoice } = require("../controllers/downloadInvoice");
@@ -67,7 +69,7 @@ router.route("/employee/:id")
     .put(upload.single('profilePhoto'), updateEmployee)
     .delete(deleteEmployee);
 
-// router.route("/employees/bydepartment").get(getAllEmployeesByDepartment)
+router.route("/employees/bydepartment").get(getAllEmployeesByDepartment)
 
 
 // tasks , based on Head and Admin
@@ -128,6 +130,8 @@ router.route("/me")
 router.route("/employees/salary/history").get(getCurrentMonthPaidEmployees);
 router.route("/employees/salary/customHistory").get(getPaidEmployeesByDateRange)
 router.route("/employees/salary/invoice/:salaryId").get(downloadInvoice);
-router.route("/employees/salary/allDue").get(getAllEmployeesDuePayment)
+router.route("/employees/salary/allDue").get(getAllEmployeesDuePayment);
+router.route("/employees/promotion").put(employeePromotion);
+router.route("/employees/permententSalaryUpdate").patch(updateEmployeesPermantentSalary)
 
 module.exports = router;

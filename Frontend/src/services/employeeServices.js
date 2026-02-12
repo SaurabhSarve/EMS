@@ -224,5 +224,15 @@ export const employeeService = {
         } catch (error) {
             throw error;
         }
+    },
+
+    employeePromotion : async (department, formData) => {
+        try{
+            const apiResponse = await api.put(`/admin/employees/promotion?department=${department}`, {formData})
+            return apiResponse.data
+        }
+        catch(err){
+            throw err
+        }
     }
 };

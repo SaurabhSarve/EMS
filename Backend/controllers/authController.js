@@ -614,8 +614,6 @@ const register = async (req, res) => {
   }
 };
 
-module.exports = { register };
-
 
 
 const createPassword = async (req, res) => {
@@ -656,6 +654,9 @@ const createPassword = async (req, res) => {
 
 
     employee.password = password;
+
+    console.log(employee)
+
     await employee.save();
 
     return res.status(200).json({
