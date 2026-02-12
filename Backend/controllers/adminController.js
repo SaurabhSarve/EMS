@@ -9,14 +9,11 @@ const { sendEmployeeRegistrationEmail, sendSalaryReceiptEmail } = require("../se
 const mongoose = require("mongoose");
 // const logActivity = require("../models/Activity.js");
 const logActivity = require("../utils/activityLogger.js");
-
-const generateEmployeeId = require("../utils/generateEmployeeId");
 const Counter = require("../models/counter");
 const generateInvoiceNo = require("../utils/generateInvoiceNo.js");
 const generateInvoicePDF = require("../utils/generateInvoicePDF.js");
 const uploadInvoicePDF = require("../utils/uploadInvoiceToCloudinary.js");
 const cron = require("node-cron");
-
 
 const getDashboardstats = async (req, res, next) => {
   try {
@@ -116,8 +113,6 @@ const createEmployee = async (req, res, next) => {
       });
     }
 
-
-
     // Generate employee ID
     // const generateEmployeeId = async () => {
     //   const lastEmployee = await User.findOne(
@@ -147,7 +142,7 @@ const createEmployee = async (req, res, next) => {
       return `EMP-${counter.seq}`;
     };
 
-    a785dcc8d4c4756c718d58e369ccb8f8498f2eb3
+
     const employeeId = await generateEmployeeId();
 
 
@@ -1015,7 +1010,7 @@ const getAllEmployees = async (req, res) => {
   }
 };
 
-const getAllEmployeesByDepartment = async (req, res) => {
+const getAllEmployeesByDepartement = async (req, res) => {
   try {
     const { search, department, status } = req.query;
 
@@ -1900,7 +1895,6 @@ cron.schedule("1 0 1 * *", async () => {
 module.exports = {
   getDashboardstats,
   getAllEmployees,
-  getEmployeesForDepartmentHead,
   getEmployeebyId,
   createEmployee,
   updateEmployee,
@@ -1920,7 +1914,7 @@ module.exports = {
   sentEmail,
   getDepartmentTasks,
   payIndividual,
-  getAllEmployeesByDepartment,
+  getAllEmployeesByDepartement,
   getCurrentMonthPaidEmployees,
   getPaidEmployeesByDateRange,
   getAllEmployeesDuePayment
