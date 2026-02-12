@@ -1,9 +1,37 @@
 const mongoose = require("mongoose");
 
+
+const commentSchema = new mongoose.Schema(
+    {
+        message: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        commentedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
+        role: {
+            type: String,
+            enum: ["Department Head", "Admin"],
+            required: true,
+        },
+        statusAtThatTime: {
+            type: String,
+            enum: ["Open", "In Progress", "Resolved", "Closed", "Reopened"],
+            required: true,
+        },
+    },
+    { timestamps: true }
+);
+
+
 const supportTicketSchema = new mongoose.Schema({
     // Employee who raised the ticket
     employee: {
-        type:  mongoose.Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
@@ -66,15 +94,22 @@ const supportTicketSchema = new mongoose.Schema({
         default: 'Open'
     },
 
- isReadByAdmin: {
+    isReadByAdmin: {
         type: Boolean,
         default: false
     },
 
     isReadByEmployee: {
         type: Boolean,
-        default: true  
+        default: true
     },
+
+    forwardedToAdmin: {
+        type: Boolean,
+        default: false,
+    },
+
+    comments: [commentSchema],
 
 }, {
     timestamps: true

@@ -140,7 +140,7 @@ const createTicket = async (req, res) => {
 // Get all tickets for admin (department head)
 const getAdminTickets = async (req, res) => {
     try {
-        const adminId = req.user.id; 
+        const adminId = req.user.id;
         let query = {};
         if (req.user.role === "Department Head") {
             query = { assignedTo: adminId };
@@ -150,11 +150,11 @@ const getAdminTickets = async (req, res) => {
             .populate("employee", "firstName lastName profilePhoto employeeId personalEmail")
             .populate("assignedTo", "firstName lastName email")
             .sort({ createdAt: -1 });
-     
-    // const id = tickets[0].employee;
-    // console.log(id);
-    //        const employee = await User.findById(id);
-    //        console.log(employee);
+
+        // const id = tickets[0].employee;
+        // console.log(id);
+        //        const employee = await User.findById(id);
+        //        console.log(employee);
 
         console.log(tickets);
 
@@ -175,52 +175,13 @@ const getAdminTickets = async (req, res) => {
 };
 
 
-const updateTicket = async(req,res) =>{
+const updateTicket = async (req, res) => {
     try {
-    const ticket = await SupportTicket.findByIdAndUpdate(
-      req.params.id,
-      { isReadByAdmin: true },
-      { new: true }
-    );
-
-    if (!ticket) {
-      return res.status(404).json({
-        success: false,
-        message: 'Ticket not found'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      ticket
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-}
-
-const updateTicketStatus = async (req, res) => {
-    try {
-        const { status } = req.body;
-        const allowed = ['Open', 'In Progress', 'Resolved', 'Closed', 'Reopened'];
-
-        if (!allowed.includes(status)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid status value'
-            });
-        }
-
         const ticket = await SupportTicket.findByIdAndUpdate(
             req.params.id,
-            { status },
+            { isReadByAdmin: true },
             { new: true }
-        )
-            .populate('employee', 'firstName lastName email employeeId')
-            .populate('assignedTo', 'firstName lastName email');
+        );
 
         if (!ticket) {
             return res.status(404).json({
@@ -229,17 +190,74 @@ const updateTicketStatus = async (req, res) => {
             });
         }
 
-        return res.status(200).json({
+        res.status(200).json({
             success: true,
             ticket
         });
     } catch (error) {
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             message: error.message
         });
     }
 }
+
+const updateTicketStatus = async (req, res) => {
+    try {
+        const { status, comment } = req.body;
+
+        const allowed = ['Open', 'In Progress', 'Resolved', 'Closed', 'Reopened'];
+        if (!allowed.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status value',
+            });
+        }
+
+        const ticket = await SupportTicket.findById(req.params.id);
+
+        if (!ticket) {
+            return res.status(404).json({
+                success: false,
+                message: 'Ticket not found',
+            });
+        }
+
+        // Status update
+        ticket.status = status;
+
+        if (comment && comment.trim()) {
+            let roleForComment = "Admin";
+            if (req.user.role === "department_head") {
+                roleForComment = "Department Head";
+            }
+
+            ticket.comments.push({
+                message: comment,
+                commentedBy: req.user._id,
+                role: roleForComment,
+                statusAtThatTime: status,
+            });
+            // employee ke liye unread
+            ticket.isReadByEmployee = false;
+        }
+
+        await ticket.save();
+
+        await ticket.populate('employee', 'firstName lastName email employeeId');
+        await ticket.populate('assignedTo', 'firstName lastName email');
+
+        return res.status(200).json({
+            success: true,
+            ticket,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
 
 // // Get employee's own tickets
 // exports.getMyTickets = async (req, res) => {
@@ -299,12 +317,41 @@ const updateTicketStatus = async (req, res) => {
 //     }
 // };
 
+// forwaredd to admin 
+
+const forwardToAdmin = async (req, res) => {
+    try {
+        const ticketId = req.params.id;
+
+        const ticket = await SupportTicket.findById(ticketId);
+
+        if (!ticket) {
+            return res.status(404).json({ message: "Ticket not found" });
+        }
+
+        //  MAIN FIX
+        ticket.forwardedToAdmin = true;
+
+        await ticket.save(); // ❗ REQUIRED
+
+        res.status(200).json({
+            success: true,
+            ticket,
+            message: "Ticket forwarded to admin successfully",
+        });
+    } catch (error) {
+        console.error("Forward error:", error);
+        res.status(500).json({ message: "Forwarding failed" });
+    }
+};
+
 
 
 module.exports = {
-   createTicket,
-   getAdminTickets,
+    createTicket,
+    getAdminTickets,
     updateTicket,
-    updateTicketStatus
-    
+    updateTicketStatus,
+    forwardToAdmin
+
 }
