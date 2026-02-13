@@ -2,11 +2,18 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
     MdDashboard,
-    MdPeople,
-    MdEventAvailable,
+    MdGroup,
+    MdTaskAlt,
     MdLogout,
     MdMenu,
-    MdClose
+    MdClose,
+    MdAssignment,
+    MdWork,
+    MdCalendarToday,
+    MdAttachMoney,
+    MdAccountCircle,
+    MdContactSupport,
+    MdBusiness
 } from "react-icons/md";
 import { useAuth } from '../context/AuthContext';
 
@@ -19,7 +26,7 @@ const AdminSidebar = () => {
 
     useEffect(() => {
         const checkScreenSize = () => {
-            const mobile = window.innerWidth < 1024; // Standard Tailwind 'lg' breakpoint
+            const mobile = window.innerWidth < 1120;
             setIsMobile(mobile);
             if (!mobile) {
                 setIsOpen(true);
@@ -35,18 +42,28 @@ const AdminSidebar = () => {
 
     const isDepartmentHead = user?.role === "Department Head";
     const roleSpecificItem = isDepartmentHead
-        ? { icon: <MdEventAvailable />, label: "Tasks", path: "/admin/employees/tasks" }
-        : { icon: <MdPeople />, label: "Departments", path: "/admin/employees/tasks" };
+        ? { icon: <MdTaskAlt />, label: "Tasks", path: "/admin/employees/tasks" }
+        : { icon: <MdBusiness />, label: "Departments", path: "/admin/employees/tasks" };
+    const projectMenuItem = isDepartmentHead
+        ? { icon: <MdWork />, label: "Projects", path: "/head/projects" }
+        : { icon: <MdWork />, label: "Projects", path: "/admin/projects" };
+    const taskCenterItem = !isDepartmentHead
+        ? { icon: <MdAssignment />, label: "TaskCenter", path: "/admin/task-center" }
+        : null;
+    const leaveMenuItem = { icon: <MdCalendarToday />, label: "Leaves", path: "/admin/employees/leaves" };
+    const payrollPath = isDepartmentHead ? "/head/payroll" : "/admin/employees/salary";
 
     const menuItems = [
         { icon: <MdDashboard />, label: "Dashboard", path: "/admin/dashboard" },
-        { icon: <MdPeople />, label: "Employees", path: "/admin/employees" },
+        { icon: <MdGroup />, label: "Employees", path: "/admin/employees" },
+        ...(projectMenuItem ? [projectMenuItem] : []),
         roleSpecificItem,
-        { icon: <MdPeople />, label: "Leaves", path: "/admin/employees/leaves" },
-        { icon: <MdPeople />, label: "Payroll", path: "/admin/employees/salary" },
-        { icon: <MdPeople />, label: "Profile", path: "/admin/me" },
-        { icon: <MdPeople />, label: "Tickets", path: "/admin/tickets" },
-        { icon: <MdEventAvailable />, label: "Settings", path: "/admin/settings" }
+        ...(taskCenterItem ? [taskCenterItem] : []),
+        leaveMenuItem,
+        { icon: <MdAttachMoney />, label: "Payroll", path: payrollPath },
+        { icon: <MdAccountCircle />, label: "Profile", path: "/admin/me" },
+        { icon: <MdContactSupport />, label: "Tickets", path: "/admin/tickets" }
+
     ];
 
     const handleLogout = () => {
@@ -72,7 +89,7 @@ const AdminSidebar = () => {
             {/* Sidebar */}
             <aside
                 className={`
-                    fixed w-64 h-screen bg-gradient-to-b from-slate-50 to-white border-r border-gray-200 text-gray-800 flex flex-col
+                    fixed w-64 min-h-screen bg-gradient-to-b from-slate-50 to-white border-r border-gray-200 text-gray-800 flex flex-col
                     transform transition-transform duration-300 ease-in-out z-40
                     ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                     ${!isMobile ? 'lg:translate-x-0' : ''}
@@ -89,6 +106,18 @@ const AdminSidebar = () => {
                         className="h-16 mx-auto object-contain"
                     />
                 </div>
+
+                {/* Mobile Header - Shows only on mobile when sidebar is open */}
+                {/* {isMobile && (
+                    <div className="px-6 py-6 border-b border-gray-200 bg-white/80 backdrop-blur-sm lg:hidden">
+                        <div className="flex items-center justify-between px-5">
+                            <div>
+                                <h1 className="text-lg font-bold text-gray-900 tracking-tight">EMS Portal</h1>
+                                <p className="text-xs text-gray-500 font-medium ">Enterprise Admin</p>
+                            </div>
+                        </div>
+                    </div>
+                )} */}
 
                 {/* MENU */}
                 <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -107,29 +136,31 @@ const AdminSidebar = () => {
                 </nav>
 
                 {/* USER CARD & LOGOUT */}
-                <div className="p-4 border-t border-gray-200 space-y-3 bg-gradient-to-b from-gray-50 to-slate-50 flex-shrink-0">
-                    <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
-                            <span className="text-white font-bold text-sm">{user?.firstName.charAt(0) || "Admin"}</span>
+                <div className="p-4 border-t border-gray-200 bg-gradient-to-b from-gray-50 to-slate-50">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-0">
+                            <div className="w-11 h-11 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
+                                <span className="text-white font-bold text-base">{user?.firstName?.charAt(0) || "A"}</span>
+                            </div>
+                            <div className="overflow-hidden flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 truncate">{user?.firstName || "Admin"}</p>
+                                <p className="text-xs text-gray-500 font-medium truncate">{user?.role === "Department Head" ? "Head" : "Admin"}</p>
+                            </div>
                         </div>
-                        <div className="overflow-hidden">
-                            <p className="text-base font-semibold text-gray-900 truncate">{user?.firstName}</p>
-                            <p className="text-sm text-gray-500 font-medium">{user?.role === "Department Head" ? "Head" : "Admin"}</p>
-                        </div>
-                    </div>
 
-                    {/* Logout Button */}
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl 
+                        {/* Logout Button */}
+                        <button
+                            onClick={handleLogout}
+                            aria-label="Logout"
+                            title="Logout"
+                            className="flex items-center justify-center w-11 h-11 rounded-xl 
     bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 
     text-white hover:from-indigo-700 hover:via-blue-700 hover:to-sky-600 
-    active:scale-[0.97] transition-all duration-200 font-semibold text-base shadow-md hover:shadow-lg"
-                    >
-
-                        <MdLogout size={18} />
-                        <span>Logout</span>
-                    </button>
+    active:scale-95 transition-all duration-200 shadow-md hover:shadow-lg flex-shrink-0"
+                        >
+                            <MdLogout size={20} />
+                        </button>
+                    </div>
                 </div>
             </aside>
 
@@ -143,8 +174,8 @@ const AdminSidebar = () => {
 
             {/* CSS for responsive behavior */}
             <style>{`
-                /* On screens 1024px and above, sidebar is always visible */
-                @media (min-width: 1024px) {
+                /* On screens 1120px and above, sidebar is always visible */
+                @media (min-width: 1120px) {
                     aside {
                         transform: translateX(0) !important;
                     }
@@ -154,8 +185,8 @@ const AdminSidebar = () => {
                     }
                 }
                 
-                /* On screens below 1024px */
-                @media (max-width: 1023px) {
+                /* On screens below 1120px */
+                @media (max-width: 1119px) {
                     aside {
                         transform: translateX(-100%);
                     }
@@ -200,10 +231,10 @@ const MenuItem = ({ icon, label, active, onClick }) => (
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-600 to-blue-700 rounded-r-full shadow-md"></div>
         )}
 
-        <div className={`text-lg transition-colors ${active ? "text-blue-600" : "text-gray-500 group-hover:text-gray-700"}`}>
+        <div className={`text-base transition-colors ${active ? "text-blue-600" : "text-gray-500 group-hover:text-gray-700"}`}>
             {icon}
         </div>
-        <span className="text-base font-medium">{label}</span>
+        <span className="text-sm font-medium">{label}</span>
 
         {/* Hover effect */}
         {!active && (

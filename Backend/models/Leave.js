@@ -33,6 +33,10 @@ const leaveSchema = new mongoose.Schema({
     },
     totalDays: {
         type: Number
+    },
+    isHeadRequest: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true

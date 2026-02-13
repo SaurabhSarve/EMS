@@ -5,6 +5,8 @@ const { status } = require("http-status");
 const Salary = require("../models/Salary");
 const Task = require("../models/tasks");
 const SupportTicket = require("../models/supportTicket");
+const Project = require("../models/Project");
+const ProjectUpdate = require("../models/ProjectUpdate");
 const { sendEmployeeRegistrationEmail, sendSalaryReceiptEmail } = require("../services/emailService.js");
 const mongoose = require("mongoose");
 // const logActivity = require("../models/Activity.js");
@@ -816,6 +818,14 @@ const deleteDepartment = async (req, res) => {
       });
     }
 
+    const projects = await Project.find({ department: id }).select("_id");
+    const projectIds = projects.map((project) => project._id);
+
+    if (projectIds.length > 0) {
+      await ProjectUpdate.deleteMany({ project: { $in: projectIds } });
+      await Project.deleteMany({ _id: { $in: projectIds } });
+    }
+
     // Delete department
     await Department.findByIdAndDelete(id);
 
@@ -1014,6 +1024,7 @@ const getAllEmployees = async (req, res) => {
 const getAllEmployeesByDepartement = async (req, res) => {
   try {
     const { search, department, status } = req.query;
+     const requestingUser = req.user;
 
     const employeeMatch = { role: "employee" };
 
@@ -1252,6 +1263,28 @@ const leaveAction = async (req, res) => {
       });
     }
 
+    // Permission check: Only Admin or the Department Head of the employee's department can approve/reject
+    const isAdmin = userRole === 'Admin';
+    let isDepartmentHeadOfEmployee = false;
+
+    if (userRole === 'Department Head') {
+      // Check if this head manages the employee's department
+      const employeeDept = await Department.findOne({
+        _id: updatedLeave.employee.department,
+        manager: userId,
+        isActive: true
+      });
+      isDepartmentHeadOfEmployee = !!employeeDept;
+    }
+
+    // If neither Admin nor the Head managing this employee's department, deny permission
+    if (!isAdmin && !isDepartmentHeadOfEmployee) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to approve/reject this leave request'
+      });
+    }
+
     if (action === 'Approved' || action === 'approved') {
       const employee = await User.findById(updatedLeave.employee._id).select('leaveBalance firstName lastName');
 
@@ -1277,7 +1310,7 @@ const leaveAction = async (req, res) => {
       await updatedLeave.save();
 
       // LOG ACTIVITY - Leave Approved
-      await logActivity('leave_approved', employee._id, {
+     await logActivity('leave_approved', userId, {
         targetUserId: updatedLeave.employee._id,
         relatedModel: 'Leave',
         relatedId: updatedLeave._id,
@@ -1285,7 +1318,8 @@ const leaveAction = async (req, res) => {
           leaveType: updatedLeave.leaveType,
           numberOfDays: updatedLeave.duration || updatedLeave.totalDays,
           employeeName: `${updatedLeave.employee.firstName} ${updatedLeave.employee.lastName}`,
-          approvedBy: req.user._id
+          approvedBy: userId,
+          approverRole: userRole
         }
       });
 
@@ -1303,7 +1337,8 @@ const leaveAction = async (req, res) => {
           leaveType: updatedLeave.leaveType,
           numberOfDays: updatedLeave.duration || updatedLeave.totalDays,
           employeeName: `${updatedLeave.employee.firstName} ${updatedLeave.employee.lastName}`,
-          rejectedBy: req.user._id,
+          rejectedBy: userId,
+          rejectorRole: userRole,
           reason: updatedLeave.rejectionReason || 'No reason provided'
         }
       });
@@ -1537,7 +1572,8 @@ const addTask = async (req, res) => {
   try {
     const { id } = req.params;
     // console.log(req.body);
-    const { taskName, description, dueDate, priority } = req.body;
+        const { taskName, description, dueDate, priority, startDate, assignmentType } = req.body;
+
 
 
     const newTask = new Task({
@@ -1547,7 +1583,8 @@ const addTask = async (req, res) => {
       description,
       dueDate,
       priority,
-      startDate: Date.now()
+      startDate: startDate || Date.now(),
+      assignmentType: assignmentType || "single"
     });
 
     const task = await newTask.save();
@@ -1561,7 +1598,8 @@ const addTask = async (req, res) => {
         taskName,
         priority,
         dueDate,
-        assignedTo: id
+        assignedTo: id,
+        assignmentType: assignmentType || "single"
       }
     });
 
@@ -1634,6 +1672,86 @@ const deleteTask = async (req, res) => {
   }
 }
 
+
+
+const updateTaskByAdmin = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { taskName, description, dueDate, priority, status, startDate } = req.body;
+
+    if (!['Admin', 'Department Head'].includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update tasks'
+      });
+    }
+
+    // Fetch the current task to get existing values
+    const currentTask = await Task.findById(taskId);
+    if (!currentTask) {
+      return res.status(404).json({
+        success: false,
+        message: 'Task not found'
+      });
+    }
+
+    if (req.user.role === 'Department Head') {
+      const employee = await User.findById(currentTask.employee).select('department');
+      let departmentId = req.user.department;
+
+      if (!departmentId) {
+        const dept = await Department.findOne({ manager: req.user._id }).select('_id');
+        departmentId = dept?._id;
+      }
+
+      if (!employee || !employee.department || !departmentId || employee.department.toString() !== departmentId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only update tasks from your department'
+        });
+      }
+    }
+
+    // Determine the startDate to validate against
+    const finalStartDate = startDate ? new Date(startDate) : new Date(currentTask.startDate);
+    const finalDueDate = dueDate ? new Date(dueDate) : new Date(currentTask.dueDate);
+
+    // Validate that dueDate is after or equal to startDate
+    if (finalDueDate < finalStartDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Due date must be after or equal to start date'
+      });
+    }
+
+    const updatePayload = {};
+    if (taskName) updatePayload.taskName = taskName;
+    if (description) updatePayload.description = description;
+    if (dueDate) updatePayload.dueDate = dueDate;
+    if (priority) updatePayload.priority = priority;
+    if (status) updatePayload.status = status;
+    if (startDate) updatePayload.startDate = startDate;
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      updatePayload,
+      { new: true, runValidators: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Task updated successfully',
+      data: updatedTask
+    });
+  } catch (error) {
+    console.error('Error updating task:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+}
 
 const getDepartmentTasks = async (req, res) => {
   try {
@@ -2306,6 +2424,7 @@ module.exports = {
   updateSalary,
   addTask,
   deleteTask,
+  updateTaskByAdmin,
   updateProfile,
   runPayroll,
   leaveAction,
