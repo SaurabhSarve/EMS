@@ -133,12 +133,12 @@ export default function SecureSalaryManagement() {
 
       let baseSalary = parseFloat(updateFormData.baseSalary);
       let allowances = parseFloat(updateFormData.allowances);
-        let taxApply = parseFloat(updateFormData.taxApply);
+      let taxApply = parseFloat(updateFormData.taxApply);
 
-        let taxPrice = (baseSalary * taxApply) / 100;
-        let netSalary = baseSalary+allowances-taxPrice;
+      let taxPrice = (baseSalary * taxApply) / 100;
+      let netSalary = baseSalary + allowances - taxPrice;
       const formData = {
-      employeeId:updateFormData.employeeId,
+        employeeId: updateFormData.employeeId,
         baseSalary,
         allowances,
         taxApply,
@@ -286,29 +286,41 @@ export default function SecureSalaryManagement() {
       const response = await paymentService.payIndividual(paymentEmployee._id);
 
       if (response && response.success) {
-        // Update local state
+
+        // ✅ Remove from duePayment
+        const updatedDue = duePayment.filter(
+          (emp) => emp._id !== paymentEmployee._id
+        );
+        setDuePayment(updatedDue);
+
+        // ✅ Add to paymentHistory
+        const newHistoryEntry = {
+          ...paymentEmployee,
+          Status: "Paid",
+          createdAt: new Date().toISOString(),
+        };
+
+        setPaymentHistory((prev) => [newHistoryEntry, ...prev]);
+
+        // ✅ Update main employee list
         const updatedEmployees = employees.map((emp) =>
           emp._id === paymentEmployee._id
             ? { ...emp, Status: "Paid" }
             : emp
         );
-
         setEmployees(updatedEmployees);
 
-        // Update selected employee if it's the one being paid
-        if (selectedEmployee._id === paymentEmployee._id) {
-          setSelectedEmployee({ ...selectedEmployee, Status: "Paid" });
-        }
+        setOrganizationBalance((prev) => prev - paymentAmount);
 
-        setOrganizationBalance(organizationBalance - paymentAmount);
         setShowPaymentConfirmModal(false);
         setPaymentEmployee(null);
 
         showToast(
-          `Payment of ${"₹" + paymentAmount.toLocaleString()} processed successfully!`,
+          `Payment of ₹${paymentAmount.toLocaleString()} processed successfully!`,
           "success"
         );
       }
+
     } catch (err) {
       console.log("Error processing individual payment", err);
       showToast(
@@ -769,7 +781,7 @@ export default function SecureSalaryManagement() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Account Number:</span>
                     <span className="font-medium font-mono">
-                      •••• •••• •••• {paymentEmployee.employee.bankDetails.accountNumber.slice(-4)}
+                      •••• •••• •••• {paymentEmployee.employee.bankDetails.accountNumber}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -981,7 +993,7 @@ export default function SecureSalaryManagement() {
                         {emp?.employee?.bankDetails?.accountHolderName ? (
                           <div className="text-left sm:text-right">
                             <p className="text-xs sm:text-sm text-gray-600">
-                              A/C: •••• {emp.employee.bankDetails.accountNumber.slice(-4)}
+                              A/C: •••• {emp.employee.bankDetails.accountNumber}
                             </p>
                             <p className="text-xs sm:text-sm text-gray-600">
                               IFSC: {emp.employee?.bankDetails.ifscCode || ""}
@@ -1553,7 +1565,7 @@ export default function SecureSalaryManagement() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Account Number:</span>
                     <span className="font-medium font-mono">
-                      •••• •••• •••• {paymentEmployee.employee.bankDetails.accountNumber.slice(-4)}
+                      •••• •••• •••• {paymentEmployee.employee.bankDetails.accountNumber}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1927,7 +1939,7 @@ export default function SecureSalaryManagement() {
 
       {/* CSS for responsive behavior */}
       <style>{`
-        @media (min-width: 1024px) {
+        @media (min-width: 1120px) {
           .lg\\:ml-64 {
             margin-left: 16rem;
           }
