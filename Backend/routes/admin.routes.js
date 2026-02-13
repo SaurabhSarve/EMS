@@ -35,8 +35,8 @@ const {
 
 const { downloadInvoice } = require("../controllers/downloadInvoice");
 
-const { protect } = require('../middleware/auth');
-const { getAdminTickets, updateTicket, updateTicketStatus } = require('../controllers/supportTicketController.js');
+const { protect, authorize } = require('../middleware/auth');
+const { getAdminTickets, updateTicket, updateTicketStatus, forwardToAdmin } = require('../controllers/supportTicketController.js');
 const { ActivatePaymentMode, UpdateBankDetails } = require("../controllers/paymentController.js");
 const { getRecentActivities } = require('../controllers/activityController.js');
 // middleware
@@ -47,9 +47,16 @@ router.use(protect);
 // Dashboard routes
 router.get("/dashboard/stats", getDashboardstats);
 router.get("/recent-activities", getRecentActivities);
+
+
 router.get("/tickets", getAdminTickets);
 router.patch("/support-tickets/:id/mark-read", updateTicket);
 router.patch("/support-tickets/:id/status", updateTicketStatus);
+
+// fowarded to admin 
+router.put(
+    "/tickets/:id/forward-to-admin", forwardToAdmin );
+
 
 
 // Employee management routes
