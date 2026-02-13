@@ -141,29 +141,39 @@ const updateTask = async (req, res) => {
 const getProfile = async (req, res) => {
   try {
     const id = req.user.id;
-    const profile = await User.findById(id).populate("department", "name description");
+
+    const profile = await User.findById(id)
+      .populate({
+        path: "department",
+        select: "name description",
+        populate: {
+          path: "manager",
+          select: "firstName lastName"
+        }
+      })
+      .select("-password"); // remove password
+
     if (!profile) {
       return res.status(400).json({
-        message: "no employee with this id",
-        success: false
-      })
+        success: false,
+        message: "No employee with this id"
+      });
     }
 
     return res.status(200).json({
-
       success: true,
       data: profile
-    })
+    });
 
   } catch (error) {
-    console.error('Error fetching employee profile:', error);
     res.status(500).json({
       success: false,
-      message: 'Server Error',
-      error: error.message
+      message: "Server Error"
     });
   }
-}
+};
+
+
 
 
 const getAppliedLeave = async (req, res) => {

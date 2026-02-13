@@ -16,6 +16,7 @@ const generateInvoiceNo = require("../utils/generateInvoiceNo.js");
 const generateInvoicePDF = require("../utils/generateInvoicePDF.js");
 const uploadInvoicePDF = require("../utils/uploadInvoiceToCloudinary.js");
 const cron = require("node-cron");
+const XLSX = require("xlsx");
 
 
 const getDashboardstats = async (req, res, next) => {
@@ -1787,6 +1788,8 @@ const payIndividual = async (req, res) => {
 
     const invoiceUrl = await uploadInvoicePDF(pdfPath, invoiceNo);
 
+    console.log("Invoice URL", invoiceUrl)
+
     salary.Status = "paid";
     salary.salaryPayDate = new Date();
     salary.invoice = {
@@ -1827,7 +1830,7 @@ const getCurrentMonthYear = () => {
   ];
 
   return {
-    month: monthNames[now.getMonth() + 1],
+    month: monthNames[now.getMonth()],
     year: now.getFullYear()
   };
 };
@@ -1947,18 +1950,19 @@ const employeePromotion = async (req, res) => {
           email: promotedEmployee.personalEmail,
           AccessKey: "Head123",
           $unset: { email: "" },
-          $unset:{personalEmail: ""},
+          $unset: { personalEmail: "" },
           department: promotedEmployee.department,
           reportingManager: "not alloted"
         },
         { new: true }
-      );
 
-      const oldEmployee = await User.findById(oldEmployeeId);
+      );
 
 
 
       if (oldEmployeeId) {
+        const oldEmployee = await User.findById(oldEmployeeId);
+
         await User.findByIdAndUpdate(
           oldEmployeeId,
           {
@@ -1970,7 +1974,7 @@ const employeePromotion = async (req, res) => {
             taxApply: Number(newSalary.taxApply),
             netSalary: Number(newSalary.netSalary),
             department: departmentDetails._id,
-            $unset:{position: ""},
+            $unset: { position: "" },
             $unset: { email: "" },
             AccessKey: "",
             personalEmail: oldEmployee.email
@@ -2035,8 +2039,8 @@ const employeePromotion = async (req, res) => {
 };
 
 const updateEmployeesPermantentSalary = async (req, res) => {
-  try{
-    const {employeeId, baseSalary, allowances,taxApply,netSalary} = req.body;
+  try {
+    const { employeeId, baseSalary, allowances, taxApply, netSalary } = req.body;
 
     await User.findByIdAndUpdate(employeeId,
       {
@@ -2048,12 +2052,183 @@ const updateEmployeesPermantentSalary = async (req, res) => {
       { new: true, runValidators: true }
     )
 
-    return res.status(200).json({message: "Salary Update Successfull"});
+    return res.status(200).json({ message: "Salary Update Successfull" });
   }
-  catch(err){
-    return res.status(500).json({error: err.message})
+  catch (err) {
+    return res.status(500).json({ error: err.message })
   }
 }
+
+
+const employeeFilterPayRoll = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, month, year, status } = req.body;
+
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    let query = {
+      employee: req.user._id
+    };
+
+    if (month && month !== "all") {
+      query.month = month;
+    }
+
+    if (year && year !== "all") {
+      query.year = year;
+    }
+
+    if (status && status !== "all") {
+      query.Status = status.toLowerCase();
+    }
+
+    const employeePayRoll = await Salary.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNumber);
+
+    const totalRecords = await Salary.countDocuments(query);
+
+    return res.status(200).json({
+      success: true,
+      currentPage: pageNumber,
+      totalPages: Math.ceil(totalRecords / limitNumber),
+      totalRecords,
+      employeeData: employeePayRoll
+    });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const bulkHiring = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const workbook = XLSX.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json(worksheet);
+
+    const currentMonth = new Date().toLocaleString("en-US", { month: "long" });
+    const currentYear = new Date().getFullYear();
+
+    let successCount = 0;
+
+    const generateEmployeeId = async () => {
+      const counter = await Counter.findOneAndUpdate(
+        { name: "employeeId" },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true, session }
+      );
+
+      return `EMP-${counter.seq}`;
+    };
+
+    for (let row of data) {
+
+      if (!row.firstName || !row.role || !row.contactNumber) {
+        continue;
+      }
+
+
+      if (row.email) {
+        const existingEmail = await User.findOne({ email: row.email }).session(session);
+        if (existingEmail) continue;
+      }
+
+      if (row.personalEmail) {
+        const existingPersonal = await User.findOne({ personalEmail: row.personalEmail }).session(session);
+        if (existingPersonal) continue;
+      }
+
+
+      const employeeId = await generateEmployeeId();
+
+      const baseSalary = Number(row.baseSalary) || 0;
+      const allowances = Number(row.allowances) || 0;
+      const deductions = Number(row.deductions) || 0;
+      const taxApply = Number(row.taxApply) || 0;
+
+      const taxAmount = (baseSalary * taxApply) / 100;
+      const netSalary = baseSalary + allowances - deductions - taxAmount;
+
+      const createdUser = await User.create([{
+        role: row.role,
+        firstName: row.firstName,
+        lastName: row.lastName || undefined,
+        contactNumber: row.contactNumber,
+        personalEmail: row.personalEmail || undefined,
+        email: row.email || undefined,
+        password: row.password || undefined,
+        employeeId,
+        department: row.department && row.department.trim() !== ""
+          ? row.department
+          : undefined,
+        baseSalary,
+        allowances,
+        deductions,
+        taxApply,
+        netSalary
+      }], { session });
+
+      const userDoc = createdUser[0];
+
+      const existingSalary = await Salary.findOne({
+        employee: userDoc._id,
+        month: currentMonth,
+        year: currentYear
+      }).session(session);
+
+      if (existingSalary) {
+        continue;
+      }
+
+      await Salary.create([{
+        employee: userDoc._id,
+        employeeId,
+        month: currentMonth,
+        year: currentYear,
+        baseSalary,
+        allowances,
+        deductions,
+        taxApply,
+        netSalary,
+        status: "due"
+      }], { session });
+
+      successCount++;
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({
+      message: "Bulk hiring completed successfully",
+      insertedEmployees: successCount
+    });
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
+    console.error(error);
+
+    res.status(500).json({
+      message: "Bulk hiring failed",
+      error: error.message
+    });
+  }
+};
+
 
 
 
@@ -2084,5 +2259,8 @@ module.exports = {
   getPaidEmployeesByDateRange,
   getAllEmployeesDuePayment,
   employeePromotion,
-  updateEmployeesPermantentSalary
+  updateEmployeesPermantentSalary,
+  // employeePayRollById,
+  employeeFilterPayRoll,
+  bulkHiring
 }

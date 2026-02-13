@@ -34,6 +34,8 @@ import Tickets from "./pages/admin/Ticekts";
 import AdminPaymentHistory from "./pages/admin/AdminPaymentHistory";
 import DepartmentEmployee from "./pages/admin/DepartmentEmployee";
 import PaymentHistory from './pages/admin/PaymentHistory';
+import DepartmentHeadPayroll from "./pages/departmentHead/Payroll.jsx"
+import EmployeePayroll from './pages/employee/Payroll.jsx';
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
 
@@ -113,7 +115,7 @@ function App() {
             path="/admin/PaymentHistory"
             element={
               <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
-                <PaymentHistory/>
+                <PaymentHistory />
               </ProtectedRoute>
             }
           />
@@ -250,6 +252,24 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["employee"]}>
                 <MyProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/employee/payroll"
+            element={
+              <ProtectedRoute allowedRoles={["employee"]}>
+                <EmployeePayroll />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/head/payroll"
+            element={
+              <ProtectedRoute allowedRoles={['Department Head']}>
+                <DepartmentHeadPayroll />
               </ProtectedRoute>
             }
           />

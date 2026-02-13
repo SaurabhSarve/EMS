@@ -39,6 +39,7 @@ const EmployeesSidebar = () => {
         { icon: <MdPeople />, label: "Profile", path: "/employee/profile" },
         { icon: <MdEventAvailable />, label: "My tasks", path: "/employee/mytasks" },
         { icon: <MdPeople />, label: "Leaves", path: "/employee/apply-leave" },
+        { icon: <MdPeople />, label: "My Payroll", path: "/employee/payroll" },
         { icon: <MdPeople />, label: "Support System", path: "/employee/support-system" }
     ];
 

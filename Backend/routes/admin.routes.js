@@ -30,7 +30,10 @@ const {
     getPaidEmployeesByDateRange,
     getAllEmployeesDuePayment,
     employeePromotion,
-    updateEmployeesPermantentSalary
+    updateEmployeesPermantentSalary,
+    employeePayRollById,
+    employeeFilterPayRoll,
+    bulkHiring
 } = require("../controllers/adminController.js");
 
 const { downloadInvoice } = require("../controllers/downloadInvoice");
@@ -41,6 +44,8 @@ const { ActivatePaymentMode, UpdateBankDetails } = require("../controllers/payme
 const { getRecentActivities } = require('../controllers/activityController.js');
 // middleware
 router.use(protect);
+
+const uploadFile = multer({ dest: "uploads/" });
 
 // Admin AUTHORIZED AREA ROUTES
 
@@ -132,6 +137,9 @@ router.route("/employees/salary/customHistory").get(getPaidEmployeesByDateRange)
 router.route("/employees/salary/invoice/:salaryId").get(downloadInvoice);
 router.route("/employees/salary/allDue").get(getAllEmployeesDuePayment);
 router.route("/employees/promotion").put(employeePromotion);
-router.route("/employees/permententSalaryUpdate").patch(updateEmployeesPermantentSalary)
+router.route("/employees/permententSalaryUpdate").patch(updateEmployeesPermantentSalary);
+// router.route("/employees/id/payroll").get(employeePayRollById);
+router.route("/employees/id/filter").post(employeeFilterPayRoll);
+router.route("/bulkHiring").post(uploadFile.single("file"), bulkHiring)
 
 module.exports = router;

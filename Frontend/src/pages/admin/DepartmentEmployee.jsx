@@ -45,7 +45,7 @@ export default function DepartmentEmployeesList() {
                 setEmployees(result.data);
                 setDepartmentHeadData(result.departmentHead)
 
-                console.log(result.departmentHead)
+                console.log(result)
             }
             setLoading(false);
         } catch (error) {
