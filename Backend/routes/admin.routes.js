@@ -41,8 +41,9 @@ const {
 
 const { downloadInvoice } = require("../controllers/downloadInvoice");
 
+
 const { protect, authorize } = require('../middleware/auth');
-const { getAdminTickets, updateTicket, updateTicketStatus, forwardToAdmin } = require('../controllers/supportTicketController.js');
+const { getAdminTickets,getTickets, updateTicket, updateTicketStatus, forwardToAdmin, getDepartmentHeadQueries, getMyQueriesForDepartmentHead, getDepartmentEmployeesTickets } = require('../controllers/supportTicketController.js');
 const { ActivatePaymentMode, UpdateBankDetails } = require("../controllers/paymentController.js");
 const { getRecentActivities } = require('../controllers/activityController.js');
 const { 
@@ -73,13 +74,24 @@ router.get("/dashboard/stats", getDashboardstats);
 router.get("/recent-activities", getRecentActivities);
 
 
-router.get("/tickets", getAdminTickets);
-router.patch("/support-tickets/:id/mark-read", updateTicket);
-router.patch("/support-tickets/:id/status", updateTicketStatus);
+// router.get("/tickets", getAdminTickets);
+// router.patch("/support-tickets/:id/mark-read", updateTicket);
+// router.patch("/support-tickets/:id/status", updateTicketStatus);
 
-// fowarded to admin 
-router.put(
-    "/tickets/:id/forward-to-admin", forwardToAdmin );
+// // fowarded to admin 
+// router.put(
+//     "/tickets/:id/forward-to-admin", forwardToAdmin );
+
+
+// updated routes of support tickets
+router.get("/tickets", getAdminTickets);
+router.get("/tickets/department-head-queries", getDepartmentHeadQueries);
+router.get("/tickets/my-queries", getMyQueriesForDepartmentHead);
+router.get("/tickets/department-employees", getDepartmentEmployeesTickets);
+router.patch("/support-tickets/:id/update", updateTicket);
+router.patch("/support-tickets/:id/status", updateTicketStatus);
+router.put("/tickets/:id/forward-to-admin", forwardToAdmin);
+
 
 
 

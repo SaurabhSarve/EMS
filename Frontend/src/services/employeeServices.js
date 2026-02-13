@@ -274,10 +274,38 @@ const response = await api.patch(`/admin/tasks/${taskId}`, updateData);
         }
     },
 
+
     forwardTicketToAdmin: (ticketId) => {
         return api.put(`/admin/tickets/${ticketId}/forward-to-admin`);
     },
 
+    getDepartmentHeadQueries: async () => {
+        try {
+            const response = await api.get('/admin/tickets/department-head-queries');
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    getMyQueries: async () => {
+        try {
+            const response = await api.get('/admin/tickets/my-queries');
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    getDepartmentEmployeesTickets: async () => {
+        try {
+            const response = await api.get('/admin/tickets/department-employees');
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+  
     employeePromotion: async (department, formData) => {
         try {
             const apiResponse = await api.put(`/admin/employees/promotion?department=${department}`, { formData })
