@@ -35,8 +35,8 @@ export const salaryService = {
 
     getAllEmployeeDuePayment: async () => {
         try {
-            const response = await api.get('/admin/employees/salary/allDue');
-            return response.data;
+            const apiResponse = await api.get('/admin/employees/salary/allDue');
+            return apiResponse.data;
         } catch (error) {
             throw error;
         }
@@ -44,10 +44,20 @@ export const salaryService = {
 
     permantentSalary: async (formData) => {
         try {
-            const response = await api.patch('/admin/employees/permententSalaryUpdate', formData);
-            return response.data;
+            const apiResponse = await api.patch('/admin/employees/permententSalaryUpdate', formData);
+            return apiResponse.data;
         } catch (error) {
             throw error;
+        }
+    },
+
+    employeePayRollHistory: async (formData) => {
+        try {
+            const apiResponse = await api.post("/admin/employees/id/filter", formData);
+            return apiResponse.data
+        }
+        catch (err) {
+            throw err
         }
     }
 

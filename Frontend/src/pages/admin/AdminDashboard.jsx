@@ -16,11 +16,12 @@ import {
   HiExclamation,
   HiDocumentText,
 } from "react-icons/hi";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { capitalize } from "../../utils/helper";
 import { leaveService } from "../../services/leaveServive";
 import { IoMdPersonAdd } from "react-icons/io";
+import { useAuth } from "../../context/AuthContext";
 // Import additional icons for activities
 import { AiOutlineFileText, AiOutlineAlert } from "react-icons/ai";
 import { BiDollarCircle } from "react-icons/bi";
@@ -37,13 +38,164 @@ const data = [
 const AdminDashboard = () => {
 
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [stats, setStats] = useState();
   const [activities, setActivities] = useState([]);
   const [loadingActivities, setLoadingActivities] = useState(true);
   const [departments, setDepartments] = useState([]);
+  const [headTasks, setHeadTasks] = useState([]);
+  const [loadingHeadTasks, setLoadingHeadTasks] = useState(true);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskUpdate, setTaskUpdate] = useState({
+    status: "in-progress",
+    comment: "",
+  });
+  const [headTaskNotifications, setHeadTaskNotifications] = useState([]);
+  const isDepartmentHead = user?.role === "Department Head";
+
+  const sortedHeadTasks = useMemo(() => {
+    return [...headTasks]
+      .map((task) => ({
+        id: task._id || task.id,
+        title: task.taskName || task.title,
+        description: task.description,
+        dueDate: task.dueDate ? task.dueDate.slice(0, 10) : "—",
+        assignedDate:
+          task.createdAt || task.assignedDate || task.startDate || task.dueDate || "",
+        priority: task.priority || "low",
+        status: task.status || "pending",
+      }))
+      .sort((a, b) => (new Date(a.dueDate) > new Date(b.dueDate) ? 1 : -1));
+  }, [headTasks]);
+
+  const updateTaskStatus = (taskId, nextStatus) => {
+    setHeadTasks((prev) =>
+      prev.map((task) => {
+        const matchId = task._id || task.id;
+        return matchId === taskId ? { ...task, status: nextStatus } : task;
+      })
+    );
+  };
+
+  const getPriorityClass = (priority) => {
+    if (priority === "high") return "bg-red-100 text-red-700";
+    if (priority === "medium") return "bg-amber-100 text-amber-700";
+    return "bg-emerald-100 text-emerald-700";
+  };
+
+  const getStatusClass = (status) => {
+    if (status === "completed") return "bg-emerald-100 text-emerald-700";
+    if (status === "in-progress") return "bg-blue-100 text-blue-700";
+    return "bg-slate-100 text-slate-600";
+  };
+
+  const formatLabel = (value) => {
+    if (!value) return "";
+    return value
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  };
+
+  const formatDate = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+
+  const readStoredUpdates = () => {
+    try {
+      return JSON.parse(localStorage.getItem("headTaskUpdates") || "[]");
+    } catch (error) {
+      return [];
+    }
+  };
+
+  const readStoredNotifications = () => {
+    try {
+      return JSON.parse(localStorage.getItem("headTaskNotifications") || "[]");
+    } catch (error) {
+      return [];
+    }
+  };
+
+  const writeStoredUpdates = (updates) => {
+    localStorage.setItem("headTaskUpdates", JSON.stringify(updates));
+  };
+
+  const writeStoredNotifications = (notifications) => {
+    localStorage.setItem("headTaskNotifications", JSON.stringify(notifications));
+  };
+
+  const openTaskDetails = (task) => {
+    setSelectedTask(task);
+    setTaskUpdate({
+      status: task.status === "completed" ? "completed" : "in-progress",
+      comment: "",
+    });
+    setIsTaskModalOpen(true);
+  };
+
+  const closeTaskDetails = () => {
+    setSelectedTask(null);
+    setTaskUpdate({ status: "in-progress", comment: "" });
+    setIsTaskModalOpen(false);
+  };
+
+  const submitTaskUpdate = () => {
+    if (!selectedTask) return;
+    const comment = taskUpdate.comment.trim();
+    const updateEntry = {
+      id: `update-${Date.now()}`,
+      taskId: selectedTask.id,
+      taskTitle: selectedTask.title,
+      status: taskUpdate.status,
+      comment,
+      headName: user?.firstName
+        ? `${user.firstName} ${user?.lastName || ""}`.trim()
+        : "Department Head",
+      timestamp: new Date().toISOString(),
+    };
+
+    updateTaskStatus(selectedTask.id, taskUpdate.status);
+
+    const updates = readStoredUpdates();
+    writeStoredUpdates([updateEntry, ...updates]);
+
+    const notifications = readStoredNotifications();
+    const nextNotifications = [updateEntry, ...notifications].slice(0, 20);
+    writeStoredNotifications(nextNotifications);
+    setHeadTaskNotifications(nextNotifications);
+
+    closeTaskDetails();
+  };
 
   useEffect(() => {
     fetchEmployees();
+  }, []);
+
+  useEffect(() => {
+    if (isDepartmentHead) {
+      fetchHeadTasks();
+    }
+  }, [isDepartmentHead]);
+
+
+  useEffect(() => {
+    const syncNotifications = () => {
+      setHeadTaskNotifications(readStoredNotifications());
+    };
+
+    syncNotifications();
+    window.addEventListener("storage", syncNotifications);
+    return () => window.removeEventListener("storage", syncNotifications);
   }, []);
 
   const fetchEmployees = async () => {
@@ -72,6 +224,19 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error("Error:", error);
       setLoadingActivities(false);
+    }
+  };
+
+  const fetchHeadTasks = async () => {
+    try {
+      setLoadingHeadTasks(true);
+      const response = await employeeService.getTasks();
+      setHeadTasks(response?.data?.taskDetails || []);
+    } catch (error) {
+      console.error("Error fetching department head tasks:", error);
+      setHeadTasks([]);
+    } finally {
+      setLoadingHeadTasks(false);
     }
   };
 
@@ -264,42 +429,115 @@ const AdminDashboard = () => {
     </div>
   </div>
 
-  {/* DEPARTMENTS - Takes 1 column */}
+  {/* DEPARTMENTS / TASKS - Takes 1 column */}
   <div className="xl:col-span-1">
-    <div className="bg-white/95 backdrop-blur-sm rounded-3xl px-6 py-6 shadow-lg border border-blue-100 h-full min-h-[600px] flex flex-col hover:shadow-xl transition-all hover:border-blue-200">
-      <div className="flex items-center justify-between mb-6 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-md">
-            <BsBuilding className="text-white text-lg" />
+    {isDepartmentHead ? (
+      <div className="bg-white/95 backdrop-blur-sm rounded-3xl px-6 py-6 shadow-lg border border-blue-100 h-full min-h-[600px] flex flex-col hover:shadow-xl transition-all hover:border-blue-200">
+        <div className="flex items-center justify-between mb-6 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-md">
+              <MdOutlineApproval className="text-white text-lg" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">
+              My Tasks
+            </h3>
           </div>
-          <h3 className="text-lg font-bold text-slate-900">
-            Departments
-          </h3>
+          <button
+            onClick={() => navigate("/admin/employees/tasks")}
+            className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition"
+          >
+            View All →
+          </button>
         </div>
-        <button
-          onClick={() => navigate("/admin/employees/tasks")}
-          className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition"
-        >
-          View All →
-        </button>
-      </div>
 
-      <div className="space-y-3 flex-1 overflow-y-auto pr-2">
-        {departments.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-slate-400 text-sm">No departments found</p>
-          </div>
-        ) : (
-          departments.map((dept) => (
-            <DepartmentCard
-              key={dept._id}
-              departmentName={dept.name}
-              managerName={dept.manager ? dept.manager.firstName : 'Not Allotted'}
-            />
-          ))
-        )}
+        <div className="space-y-4 flex-1 overflow-y-auto pr-2">
+          {loadingHeadTasks ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-slate-400 text-sm">Loading tasks...</p>
+            </div>
+          ) : sortedHeadTasks.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-slate-400 text-sm">No assigned tasks</p>
+            </div>
+          ) : (
+            sortedHeadTasks.slice(0, 5).map((task) => (
+              <div
+                key={task.id}
+                className="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-blue-200 transition-all"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">{task.title}</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {task.description || "No description provided."}
+                    </p>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getPriorityClass(task.priority)}`}>
+                    {formatLabel(task.priority)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between mt-4 gap-3">
+                  <div className="text-xs text-slate-500 font-semibold">
+                    Assigned {formatDate(task.assignedDate)}
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusClass(task.status)}`}>
+                    {formatLabel(task.status)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between mt-4 gap-2 flex-wrap">
+                  <div className="text-xs text-slate-500 font-semibold">
+                    Due {task.dueDate}
+                  </div>
+                  <button
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
+                    onClick={() => navigate("/admin/employees/tasks", { state: { headTab: "my" } })}
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
-    </div>
+    ) : (
+      <div className="bg-white/95 backdrop-blur-sm rounded-3xl px-6 py-6 shadow-lg border border-blue-100 h-full min-h-[600px] flex flex-col hover:shadow-xl transition-all hover:border-blue-200">
+        <div className="flex items-center justify-between mb-6 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-md">
+              <BsBuilding className="text-white text-lg" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">
+              Departments
+            </h3>
+          </div>
+          <button
+            onClick={() => navigate("/admin/employees/tasks")}
+            className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition"
+          >
+            View All →
+          </button>
+        </div>
+
+        <div className="space-y-3 flex-1 overflow-y-auto pr-2">
+          {departments.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-slate-400 text-sm">No departments found</p>
+            </div>
+          ) : (
+            departments.map((dept) => (
+              <DepartmentCard
+                key={dept._id}
+                departmentName={dept.name}
+                managerName={dept.manager ? dept.manager.firstName : "Not Allotted"}
+              />
+            ))
+          )}
+        </div>
+      </div>
+    )}
   </div>
 </div>
 
@@ -356,6 +594,94 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+
+      {isTaskModalOpen && selectedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Task Details
+                </p>
+                <h3 className="text-xl font-bold text-slate-900">{selectedTask.title}</h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  {selectedTask.description || "No description provided."}
+                </p>
+              </div>
+              <button
+                className="text-sm font-semibold text-slate-500 hover:text-slate-700"
+                onClick={closeTaskDetails}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs uppercase text-slate-500">Assigned</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {formatDate(selectedTask.assignedDate)}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs uppercase text-slate-500">Due</p>
+                <p className="text-sm font-semibold text-slate-900">{selectedTask.dueDate}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs uppercase text-slate-500">Status</p>
+                <span className={`mt-1 inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusClass(selectedTask.status)}`}>
+                  {formatLabel(selectedTask.status)}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+              <h4 className="text-sm font-semibold text-slate-900">Task Progress Update</h4>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">Progress status</label>
+                  <select
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    value={taskUpdate.status}
+                    onChange={(event) =>
+                      setTaskUpdate((prev) => ({ ...prev, status: event.target.value }))
+                    }
+                  >
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">Comment</label>
+                  <textarea
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    rows="3"
+                    value={taskUpdate.comment}
+                    onChange={(event) =>
+                      setTaskUpdate((prev) => ({ ...prev, comment: event.target.value }))
+                    }
+                    placeholder="Add remarks or progress notes"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-end gap-3">
+                <button
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                  onClick={closeTaskDetails}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  onClick={submitTaskUpdate}
+                >
+                  Submit Update
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .dashboard-wrapper {

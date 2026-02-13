@@ -45,7 +45,7 @@ export default function DepartmentEmployeesList() {
                 setEmployees(result.data);
                 setDepartmentHeadData(result.departmentHead)
 
-                console.log(result.departmentHead)
+                console.log(result)
             }
             setLoading(false);
         } catch (error) {
@@ -592,7 +592,7 @@ export default function DepartmentEmployeesList() {
 
             {/* CSS for responsive layout */}
             <style>{`
-        @media (min-width: 1120px) {
+        @media (min-width: 1024px) {
           .main-content {
             margin-left: 256px;
             width: calc(100% - 256px);
