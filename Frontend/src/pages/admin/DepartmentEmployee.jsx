@@ -6,6 +6,8 @@ import { employeeService } from "../../services/employeeServices.js";
 import { capitalize } from "../../utils/helper.js";
 import { useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import PromotionForm from "../../Components/PromotionForm.jsx";
+
 
 export default function DepartmentEmployeesList() {
 
@@ -21,6 +23,15 @@ export default function DepartmentEmployeesList() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [departmentHeadData, setDepartmentHeadData] = useState(null)
 
+    const [showPromotionForm, setShowPromotionForm] = useState(false);
+    const [selectedEmployee, setSelectedEmployee] = useState(null);
+
+
+
+    const openPromotionForm = (employee = null) => {
+        setSelectedEmployee(employee);
+        setShowPromotionForm(true);
+    };
 
     useEffect(() => {
         fetchEmployees();
@@ -29,7 +40,7 @@ export default function DepartmentEmployeesList() {
     const fetchEmployees = async () => {
         try {
             setLoading(true);
-            const result = await employeeService.getAllEmployeesByDeparment(department);
+            const result = await employeeService.getAllEmployeesByDepartment(department);
             if (result && result.data) {
                 setEmployees(result.data);
                 setDepartmentHeadData(result.departmentHead)
@@ -92,6 +103,16 @@ export default function DepartmentEmployeesList() {
 
                 {/* Main Content */}
                 <main className="p-4 md:p-6 lg:p-8">
+
+                    {showPromotionForm && selectedEmployee && (
+                        <PromotionForm
+                            employee={selectedEmployee}
+                            department={department}
+                            departmentHead={departmentHeadData}
+                            onClose={() => setShowPromotionForm(false)}
+                        />
+                    )}
+
                     {/* Page Header */}
                     <div className="mb-6">
                         <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-3xl p-8 sm:p-10 text-white shadow-xl border border-white/20 relative overflow-hidden">
@@ -251,6 +272,7 @@ export default function DepartmentEmployeesList() {
                                                 <th className="p-4">ROLE & DEPT</th>
                                                 <th className="p-4">STATUS</th>
                                                 <th className="p-4 pr-6">JOINED DATE</th>
+                                                <th className="p-4 text-center">Promotion</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
@@ -331,6 +353,18 @@ export default function DepartmentEmployeesList() {
                                                                 : "N/A"}
                                                         </span>
                                                     </td>
+                                                    <td className="p-4 text-center">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openPromotionForm(departmentHeadData);
+                                                            }}
+                                                            className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                                                        >
+                                                            Promote
+                                                        </button>
+                                                    </td>
+
                                                 </tr>
                                             ) : (
                                                 <tr>
@@ -355,6 +389,7 @@ export default function DepartmentEmployeesList() {
                                                 <th className="p-4">ROLE & DEPT</th>
                                                 <th className="p-4">STATUS</th>
                                                 <th className="p-4 pr-6">JOINED DATE</th>
+                                                <th className="p-4 text-center">Promotion</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
@@ -432,6 +467,19 @@ export default function DepartmentEmployeesList() {
                                                                 : "N/A"}
                                                         </span>
                                                     </td>
+                                                    <td className="p-4 text-center">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openPromotionForm(employee);
+                                                            }}
+                                                            className="px-4 py-1.5 bg-blue-600 text-white rounded-lg"
+                                                        >
+                                                            Promote
+                                                        </button>
+                                                    </td>
+
+
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -517,6 +565,7 @@ export default function DepartmentEmployeesList() {
                                                                 })
                                                                 : "N/A"}
                                                         </p>
+
                                                     </div>
                                                 </div>
                                             </div>

@@ -42,5 +42,13 @@ export const salaryService = {
         }
     },
 
+    permantentSalary: async (formData) => {
+        try {
+            const response = await api.patch('/admin/employees/permententSalaryUpdate', formData);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    }
 
 }

@@ -31,12 +31,15 @@ const {
     getAllAdmins,
     updateAdminStatus,
     getAllEmployeesDuePayment
+    getAllEmployeesDuePayment,
+    employeePromotion,
+    updateEmployeesPermantentSalary
 } = require("../controllers/adminController.js");
 
 const { downloadInvoice } = require("../controllers/downloadInvoice");
 
-const { protect } = require('../middleware/auth');
-const { getAdminTickets, updateTicket, updateTicketStatus } = require('../controllers/supportTicketController.js');
+const { protect, authorize } = require('../middleware/auth');
+const { getAdminTickets, updateTicket, updateTicketStatus, forwardToAdmin } = require('../controllers/supportTicketController.js');
 const { ActivatePaymentMode, UpdateBankDetails } = require("../controllers/paymentController.js");
 const { getRecentActivities } = require('../controllers/activityController.js');
 // middleware
@@ -47,9 +50,16 @@ router.use(protect);
 // Dashboard routes
 router.get("/dashboard/stats", getDashboardstats);
 router.get("/recent-activities", getRecentActivities);
+
+
 router.get("/tickets", getAdminTickets);
 router.patch("/support-tickets/:id/mark-read", updateTicket);
 router.patch("/support-tickets/:id/status", updateTicketStatus);
+
+// fowarded to admin 
+router.put(
+    "/tickets/:id/forward-to-admin", forwardToAdmin );
+
 
 
 // Employee management routes
@@ -130,7 +140,9 @@ router.route("/me")
 router.route("/employees/salary/history").get(getCurrentMonthPaidEmployees);
 router.route("/employees/salary/customHistory").get(getPaidEmployeesByDateRange)
 router.route("/employees/salary/invoice/:salaryId").get(downloadInvoice);
-router.route("/employees/salary/allDue").get(getAllEmployeesDuePayment)
+router.route("/employees/salary/allDue").get(getAllEmployeesDuePayment);
+router.route("/employees/promotion").put(employeePromotion);
+router.route("/employees/permententSalaryUpdate").patch(updateEmployeesPermantentSalary)
 
 // Admin management routes
 router.get("/admins", getAllAdmins);

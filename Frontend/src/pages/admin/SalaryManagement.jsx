@@ -42,6 +42,8 @@ export default function SecureSalaryManagement() {
 
   const [activeSection, setActiveSection] = useState("bank");
 
+  const [selectedIntialBaseSalary, setSelectedIntialSalary] = useState()
+
 
   // Payment Mode States
   const [isPaymentMode, setIsPaymentMode] = useState(false);
@@ -71,6 +73,7 @@ export default function SecureSalaryManagement() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const [paymentHistory, setPaymentHistory] = useState([])
+  const [duePayment, setDuePayment] = useState([]);
 
   const [updateFormData, setUpdateFormData] = useState({
     baseSalary: "",
@@ -81,7 +84,8 @@ export default function SecureSalaryManagement() {
 
   useEffect(() => {
     fetchEmployeesSalary();
-    loadDefaultHistory()
+    loadDefaultHistory();
+    fetchEmployeeDuePayment();
   }, []);
 
   const loadDefaultHistory = async () => {
@@ -110,6 +114,46 @@ export default function SecureSalaryManagement() {
       showToast("Failed to fetch employee data", "error");
     }
   };
+
+  const fetchEmployeeDuePayment = async () => {
+    try {
+      const apiResponse = await salaryService.getAllEmployeeDuePayment();
+      console.log(apiResponse);
+      if (apiResponse && apiResponse.data && apiResponse.success) {
+        setDuePayment(apiResponse.data);
+      }
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      showToast("Failed to fetch employee data", "error");
+    }
+  }
+
+  const updatePermantentSalary = async () => {
+    try {
+
+      let baseSalary = parseFloat(updateFormData.baseSalary);
+      let allowances = parseFloat(updateFormData.allowances);
+        let taxApply = parseFloat(updateFormData.taxApply);
+
+        let taxPrice = (baseSalary * taxApply) / 100;
+        let netSalary = baseSalary+allowances-taxPrice;
+      const formData = {
+      employeeId:updateFormData.employeeId,
+        baseSalary,
+        allowances,
+        taxApply,
+        netSalary,
+      }
+
+      const apiResponse = await salaryService.permantentSalary(formData);
+      if (apiResponse && apiResponse.data && apiResponse.success) {
+        console.log(apiResponse.message)
+      }
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      showToast("Failed to fetch employee data", "error");
+    }
+  }
 
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
@@ -250,7 +294,6 @@ export default function SecureSalaryManagement() {
         );
 
         setEmployees(updatedEmployees);
-        loadDefaultHistory()
 
         // Update selected employee if it's the one being paid
         if (selectedEmployee._id === paymentEmployee._id) {
@@ -904,314 +947,321 @@ export default function SecureSalaryManagement() {
               </h2>
 
               <div className="space-y-3">
-                {employees
-                  .filter((emp) => emp.Status?.toLowerCase() === "due")
-                  .map((emp) => (
-                    <div
-                      key={emp._id}
-                      className={`border rounded-lg p-3 sm:p-4 ${!emp.employee?.bankDetails?.accountNumber
-                        ? "border-red-300 bg-red-50"
-                        : "border-gray-200"
-                        }`}
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
-                            {emp.employee.firstName.charAt(0)}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-800 truncate">
-                              {capitalize(emp.employee.firstName)}{" "}
-                              {capitalize(emp.employee.lastName)}
-                            </h3>
-                            <p className="text-xs sm:text-sm text-gray-600">
-                              {emp.employeeId} • {capitalize(emp.employee.position)}
-                            </p>
-                            <p className="text-xs sm:text-sm font-semibold text-blue-600 mt-1">
-                              Net Salary: ₹{emp.netSalary.toLocaleString()}
-                            </p>
-                          </div>
+                {duePayment.map((emp) => (
+                  <div
+                    key={emp._id}
+                    className={`border rounded-lg p-3 sm:p-4 ${!emp.employee?.bankDetails?.accountNumber
+                      ? "border-red-300 bg-red-50"
+                      : "border-gray-200"
+                      }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
+                          {emp.employee?.firstName.charAt(0) || ""}
                         </div>
 
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-800 truncate">
+                            {capitalize(emp.employee?.firstName || "")}{" "}
+                            {capitalize(emp.employee?.lastName || "")}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-gray-600">
+                            {emp.employeeId} • {capitalize(emp.employee?.position || "")}
+                          </p>
+                          <p className="text-xs sm:text-sm font-semibold text-blue-600 mt-1">
+                            Net Salary: ₹{emp.netSalary?.toLocaleString() || ""}
+                          </p>
+                        </div>
+                      </div>
 
-                          {/* ================= BANK DETAILS ================= */}
-                          {emp?.employee?.bankDetails?.accountHolderName ? (
-                            <div className="text-left sm:text-right">
-                              <p className="text-xs sm:text-sm text-gray-600">
-                                A/C: •••• {emp.employee.bankDetails.accountNumber.slice(-4)}
-                              </p>
-                              <p className="text-xs sm:text-sm text-gray-600">
-                                IFSC: {emp.employee.bankDetails.ifscCode}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {emp.employee.bankDetails.bankName}
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="text-xs sm:text-sm font-semibold text-red-600 flex items-center gap-1">
-                              <AlertCircle size={14} />
-                              No Bank Details
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+
+                        {/* ================= BANK DETAILS ================= */}
+                        {emp?.employee?.bankDetails?.accountHolderName ? (
+                          <div className="text-left sm:text-right">
+                            <p className="text-xs sm:text-sm text-gray-600">
+                              A/C: •••• {emp.employee.bankDetails.accountNumber.slice(-4)}
                             </p>
-                          )}
+                            <p className="text-xs sm:text-sm text-gray-600">
+                              IFSC: {emp.employee?.bankDetails.ifscCode || ""}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {emp.employee?.bankDetails.bankName || ""}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-xs sm:text-sm font-semibold text-red-600 flex items-center gap-1">
+                            <AlertCircle size={14} />
+                            No Bank Details
+                          </p>
+                        )}
 
-                          {/* Update Salary Modal */}
-                          {showUpdateModal && (
-                            <div className="fixed inset-0 backdrop-blur-lg bg-white/20 z-50 flex items-center justify-center p-4">
-                              <div className="bg-white/90 backdrop-blur-lg rounded-xl shadow-2xl max-w-md w-full p-6 border border-white/40">
-                                <div className="flex justify-between items-center mb-4 sm:mb-6">
-                                  <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-                                    Update Salary Details
-                                  </h3>
-                                  <button
-                                    onClick={() => setShowUpdateModal(false)}
-                                    className="text-gray-400 hover:text-gray-600"
-                                  >
-                                    <X size={24} />
-                                  </button>
+                        {/* Update Salary Modal */}
+                        {showUpdateModal && (
+                          <div className="fixed inset-0 backdrop-blur-lg bg-white/20 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white/90 backdrop-blur-lg rounded-xl shadow-2xl max-w-md w-full p-6 border border-white/40">
+                              <div className="flex justify-between items-center mb-4 sm:mb-6">
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                                  Update Salary Details
+                                </h3>
+                                <button
+                                  onClick={() => setShowUpdateModal(false)}
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  <X size={24} />
+                                </button>
+                              </div>
+
+                              <form
+                                onSubmit={async (e) => {
+                                  e.preventDefault();
+
+                                  try {
+                                    const baseSalary = parseFloat(updateFormData.baseSalary) || 0;
+                                    const allowances = parseFloat(updateFormData.allowances) || 0;
+                                    const deductions = parseFloat(updateFormData.deductions) || 0;
+                                    const taxApply = parseFloat(updateFormData.taxApply) || 0;
+                                    const taxAmount = (baseSalary * taxApply) / 100;
+                                    const netSalary = baseSalary + allowances - deductions - taxAmount;
+
+                                    const updateData = {
+                                      ...updateFormData,
+                                      netSalary: netSalary.toFixed(2)
+                                    };
+
+                                    const response = await salaryService.updateEmployeeSalary(updateData);
+
+
+
+                                    if (response.success) {
+                                      const updatedEmployees = duePayment.map((emp) =>
+                                        emp._id === selectedEmployee._id
+                                          ? {
+                                            ...emp,
+                                            baseSalary: parseFloat(updateFormData.baseSalary),
+                                            allowances: parseFloat(updateFormData.allowances),
+                                            taxApply: parseFloat(updateFormData.taxApply),
+                                            deductions: parseFloat(updateFormData.deductions),
+                                            netSalary: netSalary.toFixed(2),
+                                          }
+                                          : emp
+                                      );
+
+                                      setDuePayment(updatedEmployees);
+                                      setSelectedEmployee({
+                                        ...selectedEmployee,
+                                        baseSalary: parseFloat(updateFormData.baseSalary),
+                                        allowances: parseFloat(updateFormData.allowances),
+                                        taxApply: parseFloat(updateFormData.taxApply),
+                                        deductions: parseFloat(updateFormData.deductions),
+                                        netSalary: netSalary.toFixed(2),
+                                      });
+
+                                      showToast("Salary updated successfully!", "success");
+                                      setShowUpdateModal(false);
+                                    }
+                                  } catch (err) {
+                                    console.error("Error updating salary:", err);
+                                    showToast(
+                                      err.response?.data?.message || "Failed to update salary",
+                                      "error"
+                                    );
+                                  }
+                                }}
+                                className="space-y-4"
+                              >
+                                <div>
+                                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Base Salary (&#8377;)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    name="baseSalary"
+                                    value={updateFormData.baseSalary}
+                                    onChange={(e) =>
+                                      setUpdateFormData({
+                                        ...updateFormData,
+                                        baseSalary: e.target.value,
+                                      })
+                                    }
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                    min="0"
+                                    step="0.01"
+                                  />
                                 </div>
 
-                                <form
-                                  onSubmit={async (e) => {
-                                    e.preventDefault();
-
-                                    try {
-                                      const baseSalary = parseFloat(updateFormData.baseSalary) || 0;
-                                      const allowances = parseFloat(updateFormData.allowances) || 0;
-                                      const deductions = parseFloat(updateFormData.deductions) || 0;
-                                      const taxApply = parseFloat(updateFormData.taxApply) || 0;
-                                      const taxAmount = (baseSalary * taxApply) / 100;
-                                      const netSalary = baseSalary + allowances - deductions - taxAmount;
-
-                                      const updateData = {
+                                <div>
+                                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Allowances (&#8377;)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    name="allowances"
+                                    value={updateFormData.allowances}
+                                    onChange={(e) =>
+                                      setUpdateFormData({
                                         ...updateFormData,
-                                        netSalary: netSalary.toFixed(2)
-                                      };
-
-                                      const response = await salaryService.updateEmployeeSalary(updateData);
-
-                                      if (response.success) {
-                                        const updatedEmployees = employees.map((emp) =>
-                                          emp._id === selectedEmployee._id
-                                            ? {
-                                              ...emp,
-                                              baseSalary: parseFloat(updateFormData.baseSalary),
-                                              allowances: parseFloat(updateFormData.allowances),
-                                              taxApply: parseFloat(updateFormData.taxApply),
-                                              deductions: parseFloat(updateFormData.deductions),
-                                              netSalary: netSalary.toFixed(2),
-                                            }
-                                            : emp
-                                        );
-
-                                        setEmployees(updatedEmployees);
-                                        setSelectedEmployee({
-                                          ...selectedEmployee,
-                                          baseSalary: parseFloat(updateFormData.baseSalary),
-                                          allowances: parseFloat(updateFormData.allowances),
-                                          taxApply: parseFloat(updateFormData.taxApply),
-                                          deductions: parseFloat(updateFormData.deductions),
-                                          netSalary: netSalary.toFixed(2),
-                                        });
-
-                                        showToast("Salary updated successfully!", "success");
-                                        setShowUpdateModal(false);
-                                      }
-                                    } catch (err) {
-                                      console.error("Error updating salary:", err);
-                                      showToast(
-                                        err.response?.data?.message || "Failed to update salary",
-                                        "error"
-                                      );
+                                        allowances: e.target.value,
+                                      })
                                     }
-                                  }}
-                                  className="space-y-4"
-                                >
-                                  <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                      Base Salary (&#8377;)
-                                    </label>
-                                    <input
-                                      type="number"
-                                      name="baseSalary"
-                                      value={updateFormData.baseSalary}
-                                      onChange={(e) =>
-                                        setUpdateFormData({
-                                          ...updateFormData,
-                                          baseSalary: e.target.value,
-                                        })
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                    min="0"
+                                    step="0.01"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Tax (%)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    name="taxApply"
+                                    value={updateFormData.taxApply}
+                                    onChange={(e) =>
+                                      setUpdateFormData({
+                                        ...updateFormData,
+                                        taxApply: e.target.value,
+                                      })
+                                    }
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Deductions (&#8377;)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    name="deductions"
+                                    value={updateFormData.deductions}
+                                    onChange={(e) =>
+                                      setUpdateFormData({
+                                        ...updateFormData,
+                                        deductions: e.target.value,
+                                      })
+                                    }
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    required
+                                    min="0"
+                                    step="0.01"
+                                  />
+                                </div>
+
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                  <p className="text-sm text-gray-600 mb-1">
+                                    Calculated Net Salary:
+                                  </p>
+                                  <p className="text-xl sm:text-2xl font-bold text-blue-600">
+                                    &#8377;
+                                    {(
+                                      (parseFloat(updateFormData.baseSalary) || 0) +
+                                      (parseFloat(updateFormData.allowances) || 0) -
+                                      (parseFloat(updateFormData.deductions) || 0) -
+                                      ((parseFloat(updateFormData.baseSalary) || 0) *
+                                        (parseFloat(updateFormData.taxApply) || 0)) /
+                                      100
+                                    ).toFixed(2)}
+                                  </p>
+                                </div>
+
+                                <div className="flex gap-3 pt-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowUpdateModal(false)}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                                    onClick={() => {
+                                      if (selectedIntialBaseSalary !== updateFormData.baseSalary) {
+                                        updatePermantentSalary()
                                       }
-                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                      required
-                                      min="0"
-                                      step="0.01"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                      Allowances (&#8377;)
-                                    </label>
-                                    <input
-                                      type="number"
-                                      name="allowances"
-                                      value={updateFormData.allowances}
-                                      onChange={(e) =>
-                                        setUpdateFormData({
-                                          ...updateFormData,
-                                          allowances: e.target.value,
-                                        })
-                                      }
-                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                      required
-                                      min="0"
-                                      step="0.01"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                      Tax (%)
-                                    </label>
-                                    <input
-                                      type="number"
-                                      name="taxApply"
-                                      value={updateFormData.taxApply}
-                                      onChange={(e) =>
-                                        setUpdateFormData({
-                                          ...updateFormData,
-                                          taxApply: e.target.value,
-                                        })
-                                      }
-                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                      required
-                                      min="0"
-                                      max="100"
-                                      step="0.01"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                      Deductions (&#8377;)
-                                    </label>
-                                    <input
-                                      type="number"
-                                      name="deductions"
-                                      value={updateFormData.deductions}
-                                      onChange={(e) =>
-                                        setUpdateFormData({
-                                          ...updateFormData,
-                                          deductions: e.target.value,
-                                        })
-                                      }
-                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                      required
-                                      min="0"
-                                      step="0.01"
-                                    />
-                                  </div>
-
-                                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                    <p className="text-sm text-gray-600 mb-1">
-                                      Calculated Net Salary:
-                                    </p>
-                                    <p className="text-xl sm:text-2xl font-bold text-blue-600">
-                                      &#8377;
-                                      {(
-                                        (parseFloat(updateFormData.baseSalary) || 0) +
-                                        (parseFloat(updateFormData.allowances) || 0) -
-                                        (parseFloat(updateFormData.deductions) || 0) -
-                                        ((parseFloat(updateFormData.baseSalary) || 0) *
-                                          (parseFloat(updateFormData.taxApply) || 0)) /
-                                        100
-                                      ).toFixed(2)}
-                                    </p>
-                                  </div>
-
-                                  <div className="flex gap-3 pt-4">
-                                    <button
-                                      type="button"
-                                      onClick={() => setShowUpdateModal(false)}
-                                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-                                    >
-                                      Cancel
-                                    </button>
-                                    <button
-                                      type="submit"
-                                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-                                    >
-                                      Update Salary
-                                    </button>
-                                  </div>
-                                </form>
-                              </div>
+                                    }}
+                                  >
+                                    Update Salary
+                                  </button>
+                                </div>
+                              </form>
                             </div>
+                          </div>
+                        )}
+
+                        {/* ================= ACTION BUTTONS ================= */}
+                        <div className="flex items-center gap-2 flex-wrap">
+
+                          {/* Add/Edit Bank */}
+                          <button
+                            onClick={() => handleAddBankDetails(emp.employee._id)}
+                            className={`px-4 py-2 rounded-lg font-medium text-sm ${emp.employee?.bankDetails?.accountNumber
+                              ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              : "bg-blue-600 text-white hover:bg-blue-700"
+                              }`}
+                          >
+                            <Edit size={14} />
+                            {emp.employee?.bankDetails?.accountNumber ? "Edit" : "Add"}
+                          </button>
+
+                          {/* Pay Button */}
+                          {emp.Status.toLowerCase() === "due" && (
+                            <button
+                              onClick={() => handleIndividualPay(emp)}
+                              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-1"
+                            >
+                              <DollarSign size={14} />
+                              Pay
+                            </button>
                           )}
 
-                          {/* ================= ACTION BUTTONS ================= */}
-                          <div className="flex items-center gap-2 flex-wrap">
 
-                            {/* Add/Edit Bank */}
-                            <button
-                              onClick={() => handleAddBankDetails(emp.employee._id)}
-                              className={`px-4 py-2 rounded-lg font-medium text-sm ${emp.employee.bankDetails?.accountNumber
-                                ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                : "bg-blue-600 text-white hover:bg-blue-700"
-                                }`}
-                            >
-                              <Edit size={14} />
-                              {emp.employee.bankDetails?.accountNumber ? "Edit" : "Add"}
-                            </button>
+                          <button
+                            onClick={() => {
+                              setSelectedEmployee(emp);
+                              setUpdateFormData({
+                                id: emp._id,
+                                employeeId: emp.employee._id,
+                                baseSalary: emp.baseSalary?.toString() || "",
+                                allowances: emp.allowances?.toString() || "",
+                                taxApply: emp.taxApply?.toString() || "",
+                                deductions: emp.deductions?.toString() || "",
+                              });
+                              setShowUpdateModal(true);
+                              setSelectedIntialSalary(emp.baseSalary?.toString())
+                            }}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+                          >
+                            Update Salary
+                          </button>
 
-                            {/* Pay Button */}
-                            {emp.Status.toLowerCase() === "due" && (
-                              <button
-                                onClick={() => handleIndividualPay(emp)}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-1"
-                              >
-                                <DollarSign size={14} />
-                                Pay
-                              </button>
-                            )}
+                          {/* Status Badge */}
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${emp?.Status.toLowerCase() === "paid"
+                              ? "bg-green-100 text-green-700"
+                              : emp?.Status.toLowerCase() === "processing"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-orange-100 text-orange-700"
+                              }`}
+                          >
+                            {capitalize(emp?.Status)}
+                          </span>
 
-
-                            <button
-                              onClick={() => {
-                                setSelectedEmployee(emp);   // important
-                                setUpdateFormData({
-                                  id: emp._id,
-                                  baseSalary: emp.baseSalary?.toString() || "",
-                                  allowances: emp.allowances?.toString() || "",
-                                  taxApply: emp.taxApply?.toString() || "",
-                                  deductions: emp.deductions?.toString() || "",
-                                });
-                                setShowUpdateModal(true);
-                              }}
-                              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
-                            >
-                              Update Salary
-                            </button>
-
-                            {/* Status Badge */}
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-medium ${emp.Status.toLowerCase() === "paid"
-                                ? "bg-green-100 text-green-700"
-                                : emp.Status.toLowerCase() === "processing"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-orange-100 text-orange-700"
-                                }`}
-                            >
-                              {capitalize(emp.Status)}
-                            </span>
-
-                          </div>
                         </div>
-
                       </div>
+
                     </div>
-                  ))}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -1227,65 +1277,54 @@ export default function SecureSalaryManagement() {
               {paymentHistory.length === 0 ? (
                 <p className="text-gray-500 text-sm">No payment history found.</p>
               ) : (
-                <div className="space-y-3">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-6 py-4 text-left">Employee</th>
+                        <th className="px-6 py-4 text-left">Employee ID</th>
+                        <th className="px-6 py-4 text-left">Position</th>
+                        <th className="px-6 py-4 text-left">Month</th>
+                        <th className="px-6 py-4 text-left">Paid On</th>
+                        <th className="px-6 py-4 text-right">Amount</th>
+                      </tr>
+                    </thead>
 
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          <th className="px-6 py-4 text-left">Employee</th>
-                          <th className="px-6 py-4 text-left">Employee ID</th>
-                          <th className="px-6 py-4 text-left">Postion</th>
-                          <th className="px-6 py-4 text-left">Month</th>
-                          <th className="px-6 py-4 text-left">Paid On</th>
-                          <th className="px-6 py-4 text-right">Amount</th>
+                    <tbody>
+                      {paymentHistory.map((pay) => (
+                        <tr key={pay._id} className="border-t hover:bg-gray-50">
+                          <td className="px-6 py-4 font-medium text-gray-800">
+                            {`${pay.employee.firstName} ${pay.employee.lastName}`}
+                          </td>
+
+                          <td className="px-6 py-4">
+                            {pay.employeeId}
+                          </td>
+
+                          <td className="px-6 py-4">
+                            {pay.employee.position}
+                          </td>
+
+                          <td className="px-6 py-4">
+                            {pay.month}
+                          </td>
+
+                          <td className="px-6 py-4">
+                            {new Date(pay.createdAt).toLocaleDateString()}
+                          </td>
+
+                          <td className="px-6 py-4 text-right font-bold text-green-600">
+                            ₹{Number(pay.netSalary).toLocaleString()}
+                          </td>
                         </tr>
-                      </thead>
-
-                      <tbody>
-                        {paymentHistory.length === 0 ? (
-                          <tr>
-                            <td colSpan="5" className="text-center py-10 text-gray-500">
-                              No payment history found
-                            </td>
-                          </tr>
-                        ) : (
-                          paymentHistory.map((pay) => (
-                            <tr key={pay._id} className="border-t hover:bg-gray-50">
-                              <td className="px-6 py-4 font-medium text-gray-800">
-                                {`${pay.employee.firstName} ${pay.employee.lastName}`}
-                              </td>
-
-                              <td className="px-6 py-4">
-                                {pay.employeeId}
-                              </td>
-
-                              <td className="px-6 py-4">
-                                {pay.employee.position
-                                }
-                              </td>
-
-                              <td className="px-6 py-4">
-                                {pay.month}
-                              </td>
-
-                              <td className="px-6 py-4">
-                                {new Date(pay.createdAt).toLocaleDateString()}
-                              </td>
-
-                              <td className="px-6 py-4 text-right font-bold text-green-600">
-                                ₹{Number(pay.netSalary).toLocaleString()}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
           )}
+
 
           {/* Payment Action */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-6 sm:p-8 text-white">
@@ -1835,7 +1874,7 @@ export default function SecureSalaryManagement() {
                           Deductions
                         </p>
                         <p className="text-base sm:text-lg font-bold text-red-600">
-                          -&#8377;{selectedEmployee?.deductions?.toLocaleString() || 0}
+                          -&#8377;{selectedEmployee.deductions?.toLocaleString() || 0}
                         </p>
                       </div>
                     </div>
@@ -1915,4 +1954,4 @@ export default function SecureSalaryManagement() {
       `}</style>
     </div>
   );
-}
+}  

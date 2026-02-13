@@ -1377,7 +1377,6 @@ const updateSalary = async (req, res) => {
 
       })
     }
-    console.log(updatedSalary);
 
     return res.status(200).json({
       message: "Salary updated succesfully",
@@ -1955,6 +1954,166 @@ const updateAdminStatus = async (req, res) => {
   }
 };
 
+const employeePromotion = async (req, res) => {
+  try {
+    const { department } = req.query;
+
+    const {
+      promotedEmployeeId,
+      promotedPostion,
+      newSalaryPromoted,
+      oldEmployeeId,
+      newSalary,
+      oldEmployeeNewPosition
+    } = req.body.formData;
+
+    if (!promotedEmployeeId || !promotedPostion) {
+      return res.status(400).json({ message: "Missing promotion details" });
+    }
+
+
+    const promotedSalaryData = {
+      baseSalary: Number(newSalaryPromoted.baseSalary),
+      allowances: Number(newSalaryPromoted.allowances),
+      deductions: Number(newSalaryPromoted.deductions),
+      taxApply: Number(newSalaryPromoted.taxApply),
+      netSalary: Number(newSalaryPromoted.netSalary)
+    };
+
+
+    if (promotedPostion === "Department Head") {
+
+      const departmentDetails = await Department.findOneAndUpdate(
+        { name: department },
+        { manager: promotedEmployeeId },
+        { new: true }
+      );
+
+      if (!departmentDetails) {
+        return res.status(404).json({ message: "Department not found" });
+      }
+
+      const promotedEmployee = await User.findById(promotedEmployeeId)
+
+
+      await User.findByIdAndUpdate(
+        promotedEmployeeId,
+        {
+          ...promotedSalaryData,
+          position: "Department Head",
+          role: "Department Head",
+          email: promotedEmployee.personalEmail,
+          AccessKey: "Head123",
+          $unset: { email: "" },
+          $unset:{personalEmail: ""},
+          department: promotedEmployee.department,
+          reportingManager: "not alloted"
+        },
+        { new: true }
+      );
+
+      const oldEmployee = await User.findById(oldEmployeeId);
+
+
+
+      if (oldEmployeeId) {
+        await User.findByIdAndUpdate(
+          oldEmployeeId,
+          {
+            role: "employee",
+            position: oldEmployeeNewPosition,
+            baseSalary: Number(newSalary.baseSalary),
+            allowances: Number(newSalary.allowances),
+            deductions: Number(newSalary.deductions),
+            taxApply: Number(newSalary.taxApply),
+            netSalary: Number(newSalary.netSalary),
+            department: departmentDetails._id,
+            $unset:{position: ""},
+            $unset: { email: "" },
+            AccessKey: "",
+            personalEmail: oldEmployee.email
+          },
+          { new: true }
+        );
+      }
+    }
+
+    else if (promotedPostion === "Admin") {
+
+      const departmentDetail = await Department.findOne({
+        name: department,
+        manager: promotedEmployeeId
+      });
+
+      if (departmentDetail) {
+        await Department.findOneAndUpdate(
+          { name: department },
+          { manager: null }
+        );
+      }
+
+      const userDetail = User.findById(promotedEmployeeId);
+      let email = "";
+      let personalEmail = "";
+
+      if (userDetail.personalEmail) {
+        email = userDetail.personalEmail
+        personalEmail = ""
+      }
+      else {
+        email = userDetail.email
+      }
+
+      await User.findByIdAndUpdate(
+        promotedEmployeeId,
+        {
+          ...promotedSalaryData,
+          role: "Admin",
+          reportingManager: "not alloted",
+          department: null,
+          email: email,
+          AccessKey: "Admin123",
+          position: "manager",
+          personalEmail: personalEmail
+        },
+        { new: true }
+      );
+    }
+
+    else {
+      return res.status(400).json({ message: "Invalid promotion role" });
+    }
+
+    return res.status(200).json({ message: "Promotion Successful" });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const updateEmployeesPermantentSalary = async (req, res) => {
+  try{
+    const {employeeId, baseSalary, allowances,taxApply,netSalary} = req.body;
+
+    await User.findByIdAndUpdate(employeeId,
+      {
+        baseSalary,
+        allowances,
+        taxApply,
+        netSalary
+      },
+      { new: true, runValidators: true }
+    )
+
+    return res.status(200).json({message: "Salary Update Successfull"});
+  }
+  catch(err){
+    return res.status(500).json({error: err.message})
+  }
+}
+
+
 
 module.exports = {
   getDashboardstats,
@@ -1984,4 +2143,6 @@ module.exports = {
   getAllEmployeesDuePayment,
   getAllAdmins,
   updateAdminStatus
+  employeePromotion,
+  updateEmployeesPermantentSalary
 }

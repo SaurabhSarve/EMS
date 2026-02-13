@@ -202,15 +202,12 @@ return response.data;
 const response = await api.patch(`/admin/support-tickets/${ticketId}/status`,{ status } );
 return response.data;
 
-        }catch(error){
-         throw error;
-        }
-    }
-    ,
-    getProfile : async() => {
-        try{
-const response = await api.get(`/employee/me`);
-return response.data;
+    updateTicketStatus: (ticketId, payload) => {
+        return api.patch(
+            `/admin/support-tickets/${ticketId}/status`,
+            payload // { status, comment }
+        );
+    },
 
         }catch(error){
          throw error;
@@ -232,6 +229,20 @@ return response.data;
 
         }catch(error){
          throw error;
+        }
+    },
+
+    forwardTicketToAdmin: (ticketId) => {
+        return api.put(`/admin/tickets/${ticketId}/forward-to-admin`);
+    },
+  
+    employeePromotion : async (department, formData) => {
+        try{
+            const apiResponse = await api.put(`/admin/employees/promotion?department=${department}`, {formData})
+            return apiResponse.data
+        }
+        catch(err){
+            throw err
         }
     }
 }
