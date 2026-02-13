@@ -1228,60 +1228,60 @@ export default function SecureSalaryManagement() {
                 <p className="text-gray-500 text-sm">No payment history found.</p>
               ) : (
                 <div className="space-y-3">
-                  
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-100">
-                          <tr>
-                            <th className="px-6 py-4 text-left">Employee</th>
-                            <th className="px-6 py-4 text-left">Employee ID</th>
-                            <th className="px-6 py-4 text-left">Postion</th>
-                            <th className="px-6 py-4 text-left">Month</th>
-                            <th className="px-6 py-4 text-left">Paid On</th>
-                            <th className="px-6 py-4 text-right">Amount</th>
-                          </tr>
-                        </thead>
 
-                        <tbody>
-                          {paymentHistory.length === 0 ? (
-                            <tr>
-                              <td colSpan="5" className="text-center py-10 text-gray-500">
-                                No payment history found
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-6 py-4 text-left">Employee</th>
+                          <th className="px-6 py-4 text-left">Employee ID</th>
+                          <th className="px-6 py-4 text-left">Postion</th>
+                          <th className="px-6 py-4 text-left">Month</th>
+                          <th className="px-6 py-4 text-left">Paid On</th>
+                          <th className="px-6 py-4 text-right">Amount</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {paymentHistory.length === 0 ? (
+                          <tr>
+                            <td colSpan="5" className="text-center py-10 text-gray-500">
+                              No payment history found
+                            </td>
+                          </tr>
+                        ) : (
+                          paymentHistory.map((pay) => (
+                            <tr key={pay._id} className="border-t hover:bg-gray-50">
+                              <td className="px-6 py-4 font-medium text-gray-800">
+                                {`${pay.employee.firstName} ${pay.employee.lastName}`}
+                              </td>
+
+                              <td className="px-6 py-4">
+                                {pay.employeeId}
+                              </td>
+
+                              <td className="px-6 py-4">
+                                {pay.employee.position
+                                }
+                              </td>
+
+                              <td className="px-6 py-4">
+                                {pay.month}
+                              </td>
+
+                              <td className="px-6 py-4">
+                                {new Date(pay.createdAt).toLocaleDateString()}
+                              </td>
+
+                              <td className="px-6 py-4 text-right font-bold text-green-600">
+                                ₹{Number(pay.netSalary).toLocaleString()}
                               </td>
                             </tr>
-                          ) : (
-                            paymentHistory.map((pay) => (
-                              <tr key={pay._id} className="border-t hover:bg-gray-50">
-                                <td className="px-6 py-4 font-medium text-gray-800">
-                                  {`${pay.employee.firstName} ${pay.employee.lastName}`}
-                                </td>
-
-                                <td className="px-6 py-4">
-                                  {pay.employeeId}
-                                </td>
-
-                                <td className="px-6 py-4">
-                                  {pay.employee.position
-                                  }
-                                </td>
-
-                                <td className="px-6 py-4">
-                                  {pay.month}
-                                </td>
-
-                                <td className="px-6 py-4">
-                                  {new Date(pay.createdAt).toLocaleDateString()}
-                                </td>
-
-                                <td className="px-6 py-4 text-right font-bold text-green-600">
-                                  ₹{Number(pay.netSalary).toLocaleString()}
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -1888,7 +1888,7 @@ export default function SecureSalaryManagement() {
 
       {/* CSS for responsive behavior */}
       <style>{`
-        @media (min-width: 1120px) {
+        @media (min-width: 1024px) {
           .lg\\:ml-64 {
             margin-left: 16rem;
           }
