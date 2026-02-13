@@ -54,7 +54,7 @@ const AdminDashboard = () => {
       const NotificationData = await employeeService.getTickets();
       console.log(NotificationData);
       console.log(result);
-      
+
       if (result && result.data) {
         setStats(result.data.stats);
         // Set departments data
@@ -83,10 +83,10 @@ const AdminDashboard = () => {
 
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    
+
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) return `${diffInHours}h ago`;
-    
+
     const diffInDays = Math.floor(diffInHours / 24);
     return `${diffInDays}d ago`;
   };
@@ -217,91 +217,91 @@ const AdminDashboard = () => {
             />
           </div>
 
- {/* RECENT ACTIVITY AND DEPARTMENTS GRID - UPDATED */}
-<div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-10">
-  {/* RECENT ACTIVITY - Takes 2 columns */}
-  <div className="xl:col-span-2">
-    <div className="bg-white/95 backdrop-blur-sm rounded-3xl px-6 py-6 shadow-lg border border-blue-100 h-full min-h-[600px] flex flex-col hover:shadow-xl transition-all hover:border-blue-200">
-      <div className="flex items-center justify-between mb-6 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-md">
-            <FaUserPlus className="text-white text-lg" />
-          </div>
-          <h3 className="text-lg font-bold text-slate-900">
-            Recent Activity
-          </h3>
-        </div>
-        {/* <button
+          {/* RECENT ACTIVITY AND DEPARTMENTS GRID - UPDATED */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-10">
+            {/* RECENT ACTIVITY - Takes 2 columns */}
+            <div className="xl:col-span-2">
+              <div className="bg-white/95 backdrop-blur-sm rounded-3xl px-6 py-6 shadow-lg border border-blue-100 h-full min-h-[600px] flex flex-col hover:shadow-xl transition-all hover:border-blue-200">
+                <div className="flex items-center justify-between mb-6 flex-shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-md">
+                      <FaUserPlus className="text-white text-lg" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Recent Activity
+                    </h3>
+                  </div>
+                  {/* <button
           onClick={() => navigate("/admin/employees")}
           className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition"
         >
           View All →
         </button> */}
-      </div>
+                </div>
 
-      <div className="space-y-4 flex-1 overflow-y-auto pr-2">
-        {loadingActivities ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-slate-400 text-sm">Loading activities...</p>
-          </div>
-        ) : activities.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-slate-400 text-sm">No recent activities</p>
-          </div>
-        ) : (
-          activities.slice(0, 5).map((activity) => (
-            <ActivityItem
-              key={activity._id}
-              icon={getActivityIcon(activity.icon)}
-              iconBg={getIconBgColor(activity.iconColor)}
-              title={activity.title}
-              desc={activity.description}
-              time={getTimeAgo(activity.createdAt)}
-            />
-          ))
-        )}
-      </div>
-    </div>
-  </div>
+                <div className="space-y-4 flex-1 overflow-y-auto pr-2">
+                  {loadingActivities ? (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-slate-400 text-sm">Loading activities...</p>
+                    </div>
+                  ) : activities.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-slate-400 text-sm">No recent activities</p>
+                    </div>
+                  ) : (
+                    activities.slice(0, 5).map((activity) => (
+                      <ActivityItem
+                        key={activity._id}
+                        icon={getActivityIcon(activity.icon)}
+                        iconBg={getIconBgColor(activity.iconColor)}
+                        title={activity.title}
+                        desc={activity.description}
+                        time={getTimeAgo(activity.createdAt)}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
 
-  {/* DEPARTMENTS - Takes 1 column */}
-  <div className="xl:col-span-1">
-    <div className="bg-white/95 backdrop-blur-sm rounded-3xl px-6 py-6 shadow-lg border border-blue-100 h-full min-h-[600px] flex flex-col hover:shadow-xl transition-all hover:border-blue-200">
-      <div className="flex items-center justify-between mb-6 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-md">
-            <BsBuilding className="text-white text-lg" />
-          </div>
-          <h3 className="text-lg font-bold text-slate-900">
-            Departments
-          </h3>
-        </div>
-        <button
-          onClick={() => navigate("/admin/employees/tasks")}
-          className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition"
-        >
-          View All →
-        </button>
-      </div>
+            {/* DEPARTMENTS - Takes 1 column */}
+            <div className="xl:col-span-1">
+              <div className="bg-white/95 backdrop-blur-sm rounded-3xl px-6 py-6 shadow-lg border border-blue-100 h-full min-h-[600px] flex flex-col hover:shadow-xl transition-all hover:border-blue-200">
+                <div className="flex items-center justify-between mb-6 flex-shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-md">
+                      <BsBuilding className="text-white text-lg" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Departments
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => navigate("/admin/employees/tasks")}
+                    className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition"
+                  >
+                    View All →
+                  </button>
+                </div>
 
-      <div className="space-y-3 flex-1 overflow-y-auto pr-2">
-        {departments.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-slate-400 text-sm">No departments found</p>
+                <div className="space-y-3 flex-1 overflow-y-auto pr-2">
+                  {departments.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-slate-400 text-sm">No departments found</p>
+                    </div>
+                  ) : (
+                    departments.map((dept) => (
+                      <DepartmentCard
+                        key={dept._id}
+                        departmentName={dept.name}
+                        managerName={dept.manager ? dept.manager.firstName : 'Not Allotted'}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-        ) : (
-          departments.map((dept) => (
-            <DepartmentCard
-              key={dept._id}
-              departmentName={dept.name}
-              managerName={dept.manager ? dept.manager.firstName : 'Not Allotted'}
-            />
-          ))
-        )}
-      </div>
-    </div>
-  </div>
-</div>
 
           {/* QUICK ACTIONS */}
           <div className="mt-10">
@@ -375,7 +375,7 @@ const AdminDashboard = () => {
           transition: margin-left 0.3s ease-in-out;
         }
 
-        @media (min-width: 1120px) {
+        @media (min-width: 1024px) {
           .dashboard-wrapper {
             margin-left: 0; 
           }
@@ -391,7 +391,7 @@ const AdminDashboard = () => {
           }
         }
 
-        @media (max-width: 1119px) {
+        @media (max-width: 1023px) {
           .header-wrapper {
             padding-top: 3.5rem; 
           }

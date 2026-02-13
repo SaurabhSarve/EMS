@@ -1892,6 +1892,70 @@ cron.schedule("1 0 1 * *", async () => {
 });
 
 
+const getAllAdmins = async (req, res) => {
+  try {
+    const admins = await User.find({ role: "Admin" }).select("-password");
+    res.status(200).json({
+      success: true,
+      data: admins,
+    });
+  } catch (err) {
+    console.error("Get all admins error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching admins",
+    });
+  }
+};
+
+const updateAdminStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, superSecretKey } = req.body;
+
+    if (superSecretKey !== process.env.SUPER_SECRET_ADMIN_KEY) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid Super Secret Key",
+      });
+    }
+
+    const admin = await User.findById(id);
+    if (!admin || admin.role !== "Admin") {
+      return res.status(404).json({
+        success: false,
+        message: "Admin not found",
+      });
+    }
+
+    admin.status = status;
+    admin.isActive = status === "active";
+    await admin.save();
+
+    await logActivity("admin_status_updated", req.user._id, {
+      targetUserId: id,
+      relatedModel: "User",
+      relatedId: id,
+      metadata: {
+        newStatus: status,
+        adminName: `${admin.firstName} ${admin.lastName}`,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Admin status updated to ${status} successfully`,
+    });
+  } catch (err) {
+    console.error("Update admin status error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error updating admin status",
+    });
+  }
+};
+
+
 module.exports = {
   getDashboardstats,
   getAllEmployees,
@@ -1917,5 +1981,7 @@ module.exports = {
   getAllEmployeesByDepartement,
   getCurrentMonthPaidEmployees,
   getPaidEmployeesByDateRange,
-  getAllEmployeesDuePayment
+  getAllEmployeesDuePayment,
+  getAllAdmins,
+  updateAdminStatus
 }

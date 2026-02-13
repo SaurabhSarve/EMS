@@ -63,12 +63,12 @@ export default function EmployeesList() {
     const matchesDept =
       departmentFilter === "all" ||
       (employee.department?.name?.toLowerCase() || "") ===
-        departmentFilter.toLowerCase();
+      departmentFilter.toLowerCase();
 
     const matchesStatus =
       statusFilter === "all" ||
       (employee.status?.toLowerCase() || "") ===
-        statusFilter.toLowerCase().replace(" ", "_");
+      statusFilter.toLowerCase().replace(" ", "_");
 
     return matchesSearch && matchesDept && matchesStatus;
   });
@@ -236,7 +236,7 @@ export default function EmployeesList() {
                           <td className="p-4 pl-6">
                             <div className="flex items-center gap-3">
                               {employee?.profilePhoto?.url &&
-                              employee.profilePhoto?.url !== "" ? (
+                                employee.profilePhoto?.url !== "" ? (
                                 <div className="w-10 h-10 rounded-full overflow-hidden">
                                   <img
                                     src={employee?.profilePhoto?.url}
@@ -277,13 +277,12 @@ export default function EmployeesList() {
                           </td>
                           <td className="p-4">
                             <span
-                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
-                                employee.status === "active"
-                                  ? "bg-green-100 text-green-800"
-                                  : employee.status === "inactive"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-yellow-100 text-yellow-800"
-                              }`}
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${employee.status === "active"
+                                ? "bg-green-100 text-green-800"
+                                : employee.status === "inactive"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                                }`}
                             >
                               {employee.status.charAt(0).toUpperCase() +
                                 employee.status.slice(1)}
@@ -293,12 +292,12 @@ export default function EmployeesList() {
                             <span className="text-gray-700">
                               {employee.joiningDate
                                 ? new Date(
-                                    employee.joiningDate,
-                                  ).toLocaleDateString("en-US", {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  })
+                                  employee.joiningDate,
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })
                                 : "N/A"}
                             </span>
                           </td>
@@ -325,7 +324,7 @@ export default function EmployeesList() {
                       {/* Employee Info */}
                       <div className="flex items-center gap-3 mb-4">
                         {employee?.profilePhoto?.url &&
-                        employee.profilePhoto?.url !== "" ? (
+                          employee.profilePhoto?.url !== "" ? (
                           <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 shadow-md">
                             <img
                               src={employee?.profilePhoto?.url}
@@ -379,12 +378,12 @@ export default function EmployeesList() {
                             <p className="text-gray-700 text-sm">
                               {employee.joiningDate
                                 ? new Date(
-                                    employee.joiningDate,
-                                  ).toLocaleDateString("en-US", {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  })
+                                  employee.joiningDate,
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })
                                 : "N/A"}
                             </p>
                           </div>
@@ -393,13 +392,12 @@ export default function EmployeesList() {
 
                       {/* Status Badge */}
                       <span
-                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold shadow-sm w-full justify-center ${
-                          employee.status === "active"
-                            ? "bg-green-100 text-green-800"
-                            : employee.status === "inactive"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
-                        }`}
+                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold shadow-sm w-full justify-center ${employee.status === "active"
+                          ? "bg-green-100 text-green-800"
+                          : employee.status === "inactive"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                          }`}
                       >
                         ● {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
                       </span>
