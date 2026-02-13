@@ -25,9 +25,12 @@ const {
     deleteDepartment,
     updateDepartment,
     updateProfile,
-    getAllEmployeesByDepartment,
+    getAllEmployeesByDepartement,
     getCurrentMonthPaidEmployees,
     getPaidEmployeesByDateRange,
+    getAllAdmins,
+    updateAdminStatus,
+    getAllEmployeesDuePayment
     getAllEmployeesDuePayment,
     employeePromotion,
     updateEmployeesPermantentSalary
@@ -64,7 +67,7 @@ router.route("/employees")
     .get(getAllEmployees)
     .post(upload.single('profilePhoto'), createEmployee);
 
-router.get("/department-head/employees", getAllEmployeesByDepartment);
+
 
 // after registraion (after adding employee)
 router.post("/employees/sent-email", sentEmail);
@@ -76,7 +79,7 @@ router.route("/employee/:id")
     .put(upload.single('profilePhoto'), updateEmployee)
     .delete(deleteEmployee);
 
-router.route("/employees/bydepartment").get(getAllEmployeesByDepartment)
+router.route("/employees/bydepartment").get(getAllEmployeesByDepartement)
 
 
 // tasks , based on Head and Admin
@@ -140,5 +143,9 @@ router.route("/employees/salary/invoice/:salaryId").get(downloadInvoice);
 router.route("/employees/salary/allDue").get(getAllEmployeesDuePayment);
 router.route("/employees/promotion").put(employeePromotion);
 router.route("/employees/permententSalaryUpdate").patch(updateEmployeesPermantentSalary)
+
+// Admin management routes
+router.get("/admins", getAllAdmins);
+router.patch("/admins/:id/status", updateAdminStatus);
 
 module.exports = router;
