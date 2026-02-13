@@ -39,7 +39,6 @@ import DepartmentHeadProjects from "./pages/departmentHead/Projects";
 import AdminPaymentHistory from "./pages/admin/AdminPaymentHistory";
 import DepartmentEmployee from "./pages/admin/DepartmentEmployee";
 import PaymentHistory from './pages/admin/PaymentHistory';
-import DepartmentHeadPayroll from "./pages/departmentHead/Payroll.jsx"
 import EmployeePayroll from './pages/employee/Payroll.jsx';
 import Settings from "./pages/admin/Settings";
 const ProtectedRoute = ({ children, allowedRoles }) => {
