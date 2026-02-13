@@ -31,10 +31,10 @@ const LeaveRecord = () => {
       setLeaves(result.data);
     } catch (err) {
       console.log("leave err ", err);
-      setToast({ 
-        show: true, 
-        message: "Failed to fetch leave data", 
-        type: "error" 
+      setToast({
+        show: true,
+        message: "Failed to fetch leave data",
+        type: "error"
       });
     }
   }
@@ -45,26 +45,26 @@ const LeaveRecord = () => {
       // Backend expects capitalized "Approved"
       const response = await leaveService.leaveAction(Lid, "Approved");
       console.log(response);
-      
+
       // Check if response is successful
       if (response.success || response.data?.success) {
         // Update state optimistically
-        setLeaves(leaves.map(leave => 
+        setLeaves(leaves.map(leave =>
           leave?._id === Lid ? { ...leave, status: 'approved' } : leave
         ));
-        
-        setToast({ 
-          show: true, 
-          message: "Leave approved successfully!", 
-          type: "success" 
+
+        setToast({
+          show: true,
+          message: "Leave approved successfully!",
+          type: "success"
         });
       }
     } catch (err) {
       console.log("leave approving err", err);
-      setToast({ 
-        show: true, 
-        message: err.response?.data?.message || "Failed to approve leave", 
-        type: "error" 
+      setToast({
+        show: true,
+        message: err.response?.data?.message || "Failed to approve leave",
+        type: "error"
       });
     }
   };
@@ -75,26 +75,26 @@ const LeaveRecord = () => {
       // Backend expects capitalized "Rejected"
       const response = await leaveService.leaveAction(Lid, "Rejected");
       console.log(response);
-      
+
       // Check if response is successful
       if (response.success || response.data?.success) {
         // Update state optimistically
-        setLeaves(leaves.map(leave => 
+        setLeaves(leaves.map(leave =>
           leave?._id === Lid ? { ...leave, status: 'rejected' } : leave
         ));
-        
-        setToast({ 
-          show: true, 
-          message: "Leave rejected successfully!", 
-          type: "success" 
+
+        setToast({
+          show: true,
+          message: "Leave rejected successfully!",
+          type: "success"
         });
       }
     } catch (err) {
       console.log("leave rejecting err", err);
-      setToast({ 
-        show: true, 
-        message: err.response?.data?.message || "Failed to reject leave", 
-        type: "error" 
+      setToast({
+        show: true,
+        message: err.response?.data?.message || "Failed to reject leave",
+        type: "error"
       });
     }
   };
@@ -136,15 +136,14 @@ const LeaveRecord = () => {
     <div className="flex min-h-screen bg-white">
       {/* Toast Notification */}
       {toast.show && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-lg animate-slideLeft ${
-          toast.type === "error" 
-            ? "bg-red-500 text-white" 
+        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-lg animate-slideLeft ${toast.type === "error"
+            ? "bg-red-500 text-white"
             : "bg-green-500 text-white"
-        } max-w-xs sm:max-w-md w-full sm:w-auto`}>
+          } max-w-xs sm:max-w-md w-full sm:w-auto`}>
           <div className="flex-1 text-sm sm:text-base font-medium">
             {toast.message}
           </div>
-          <button 
+          <button
             onClick={() => setToast({ show: false, message: "", type: "" })}
             className="text-white hover:bg-white/20 rounded-full p-1 transition-colors"
           >
@@ -154,7 +153,7 @@ const LeaveRecord = () => {
       )}
 
       <AdminSidebar />
-    
+
       <div className="flex-1 mt-3 w-full min-w-0 lg:ml-64">
         <div className="p-4 pt-16 md:p-6 md:pt-6 lg:p-8 lg:pt-8 bg-gradient-to-br from-gray-50 to-gray-100">
           <div className="max-w-full">
@@ -166,7 +165,7 @@ const LeaveRecord = () => {
                 {/* Decorative corner elements */}
                 <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-400/20 rounded-full -mr-20 -mt-20 blur-3xl"></div>
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-300/20 rounded-full -ml-16 -mb-16 blur-3xl"></div>
-                
+
                 <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
                   <div className="flex items-start gap-5">
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/30 to-white/10 backdrop-blur-md flex items-center justify-center shadow-2xl border border-white/50 group-hover:shadow-cyan-500/30 transition-all duration-300">
@@ -433,8 +432,8 @@ const LeaveRecord = () => {
           </div>
         </div>
       </div>
-<style>{`
-        @media (min-width: 1120px) {
+      <style>{`
+        @media (min-width: 1024px) {
           .main-content {
             margin-left: 256px;
             width: calc(100% - 256px);

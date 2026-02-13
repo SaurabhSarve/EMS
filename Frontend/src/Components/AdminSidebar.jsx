@@ -19,7 +19,7 @@ const AdminSidebar = () => {
 
     useEffect(() => {
         const checkScreenSize = () => {
-            const mobile = window.innerWidth < 1120;
+            const mobile = window.innerWidth < 1024; // Standard Tailwind 'lg' breakpoint
             setIsMobile(mobile);
             if (!mobile) {
                 setIsOpen(true);
@@ -45,8 +45,8 @@ const AdminSidebar = () => {
         { icon: <MdPeople />, label: "Leaves", path: "/admin/employees/leaves" },
         { icon: <MdPeople />, label: "Payroll", path: "/admin/employees/salary" },
         { icon: <MdPeople />, label: "Profile", path: "/admin/me" },
-        { icon: <MdPeople />, label: "Tickets", path: "/admin/tickets" }
-
+        { icon: <MdPeople />, label: "Tickets", path: "/admin/tickets" },
+        { icon: <MdEventAvailable />, label: "Settings", path: "/admin/settings" }
     ];
 
     const handleLogout = () => {
@@ -72,7 +72,7 @@ const AdminSidebar = () => {
             {/* Sidebar */}
             <aside
                 className={`
-                    fixed w-64 min-h-screen bg-gradient-to-b from-slate-50 to-white border-r border-gray-200 text-gray-800 flex flex-col
+                    fixed w-64 h-screen bg-gradient-to-b from-slate-50 to-white border-r border-gray-200 text-gray-800 flex flex-col
                     transform transition-transform duration-300 ease-in-out z-40
                     ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                     ${!isMobile ? 'lg:translate-x-0' : ''}
@@ -89,18 +89,6 @@ const AdminSidebar = () => {
                         className="h-16 mx-auto object-contain"
                     />
                 </div>
-
-                {/* Mobile Header - Shows only on mobile when sidebar is open */}
-                {/* {isMobile && (
-                    <div className="px-6 py-6 border-b border-gray-200 bg-white/80 backdrop-blur-sm lg:hidden">
-                        <div className="flex items-center justify-between px-5">
-                            <div>
-                                <h1 className="text-lg font-bold text-gray-900 tracking-tight">EMS Portal</h1>
-                                <p className="text-xs text-gray-500 font-medium ">Enterprise Admin</p>
-                            </div>
-                        </div>
-                    </div>
-                )} */}
 
                 {/* MENU */}
                 <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -119,7 +107,7 @@ const AdminSidebar = () => {
                 </nav>
 
                 {/* USER CARD & LOGOUT */}
-                <div className="p-4 border-t border-gray-200 space-y-3 bg-gradient-to-b from-gray-50 to-slate-50">
+                <div className="p-4 border-t border-gray-200 space-y-3 bg-gradient-to-b from-gray-50 to-slate-50 flex-shrink-0">
                     <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
                             <span className="text-white font-bold text-sm">{user?.firstName.charAt(0) || "Admin"}</span>
@@ -155,8 +143,8 @@ const AdminSidebar = () => {
 
             {/* CSS for responsive behavior */}
             <style>{`
-                /* On screens 1120px and above, sidebar is always visible */
-                @media (min-width: 1120px) {
+                /* On screens 1024px and above, sidebar is always visible */
+                @media (min-width: 1024px) {
                     aside {
                         transform: translateX(0) !important;
                     }
@@ -166,8 +154,8 @@ const AdminSidebar = () => {
                     }
                 }
                 
-                /* On screens below 1120px */
-                @media (max-width: 1119px) {
+                /* On screens below 1024px */
+                @media (max-width: 1023px) {
                     aside {
                         transform: translateX(-100%);
                     }

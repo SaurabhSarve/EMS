@@ -36,6 +36,7 @@ import DepartmentEmployee from "./pages/admin/DepartmentEmployee";
 import PaymentHistory from './pages/admin/PaymentHistory';
 import DepartmentHeadPayroll from "./pages/departmentHead/Payroll.jsx"
 import EmployeePayroll from './pages/employee/Payroll.jsx';
+import Settings from "./pages/admin/Settings";
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
 
@@ -200,6 +201,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
                 <Tickets />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/settings"
+            element={
+              <ProtectedRoute allowedRoles={["Admin"]}>
+                <Settings />
               </ProtectedRoute>
             }
           />

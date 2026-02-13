@@ -1927,7 +1927,7 @@ export default function SecureSalaryManagement() {
 
       {/* CSS for responsive behavior */}
       <style>{`
-        @media (min-width: 1120px) {
+        @media (min-width: 1024px) {
           .lg\\:ml-64 {
             margin-left: 16rem;
           }

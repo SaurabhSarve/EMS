@@ -17,6 +17,9 @@ const Support = () => {
   const [myTickets, setMyTickets] = useState([]);
   const [showTicketsModal, setShowTicketsModal] = useState(false);
 
+  const [showRemarks, setShowRemarks] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: "", type: "" }), 4000);
@@ -344,7 +347,7 @@ const Support = () => {
                         >
                           Status
                         </th>
-                        <th
+                        {/* <th
                           style={{
                             padding: "12px 16px",
                             textAlign: "left",
@@ -354,7 +357,7 @@ const Support = () => {
                           }}
                         >
                           Read by Admin
-                        </th>
+                        </th> */}
                         <th
                           style={{
                             padding: "12px 16px",
@@ -376,6 +379,18 @@ const Support = () => {
                           }}
                         >
                           Assigned To
+                        </th>
+
+                        <th
+                          style={{
+                            padding: "12px 16px",
+                            textAlign: "left",
+                            fontWeight: "600",
+                            color: "#374151",
+                            borderBottom: "2px solid #e5e7eb",
+                          }}
+                        >
+                          Remarks
                         </th>
                       </tr>
                     </thead>
@@ -480,7 +495,7 @@ const Support = () => {
                               {ticket.status}
                             </span>
                           </td>
-                          <td
+                          {/* <td
                             style={{
                               padding: "12px 16px",
                               borderBottom: "1px solid #e5e7eb",
@@ -537,7 +552,7 @@ const Support = () => {
                                 Unread
                               </span>
                             )}
-                          </td>
+                          </td> */}
                           <td
                             style={{
                               padding: "12px 16px",
@@ -576,10 +591,126 @@ const Support = () => {
                               </span>
                             )}
                           </td>
+
+                          <td
+                            style={{
+                              padding: "12px 16px",
+                              borderBottom: "1px solid #e5e7eb",
+                            }}
+                          >
+                            {ticket.comments && ticket.comments.length > 0 ? (
+                              <button
+                                onClick={() => {
+                                  setSelectedTicket(ticket);
+                                  setShowRemarks(true);
+                                }}
+                                style={{
+                                  fontSize: "12px",
+                                  padding: "6px 10px",
+                                  backgroundColor: "#2563eb",
+                                  color: "#fff",
+                                  borderRadius: "6px",
+                                  border: "none",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                View ({ticket.comments.length})
+                              </button>
+                            ) : (
+                              <span
+                                style={{ fontSize: "12px", color: "#9ca3af" }}
+                              >
+                                No remarks
+                              </span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+
+                  {showRemarks && selectedTicket && (
+                    <div
+                      style={{
+                        position: "fixed",
+                        inset: 0,
+                        backgroundColor: "rgba(0,0,0,0.4)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 50,
+                      }}
+                    >
+                      <div
+                        style={{
+                          background: "#fff",
+                          width: "500px",
+                          maxHeight: "80vh",
+                          overflowY: "auto",
+                          borderRadius: "10px",
+                          padding: "20px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <h3 style={{ fontSize: "16px", fontWeight: "600" }}>
+                            Ticket Remarks
+                          </h3>
+                          <button
+                            onClick={() => setShowRemarks(false)}
+                            style={{ fontSize: "14px", cursor: "pointer" }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        <div style={{ marginTop: "16px" }}>
+                          {selectedTicket.comments.map((c, idx) => (
+                            <div
+                              key={idx}
+                              style={{
+                                background: "#f9fafb",
+                                padding: "12px",
+                                borderRadius: "8px",
+                                marginBottom: "10px",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: "12px",
+                                  color: "#2563eb",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                {c.role}
+                              </div>
+
+                              <div
+                                style={{ fontSize: "14px", marginTop: "4px" }}
+                              >
+                                {c.message}
+                              </div>
+
+                              <div
+                                style={{
+                                  fontSize: "11px",
+                                  color: "#6b7280",
+                                  marginTop: "6px",
+                                }}
+                              >
+                                Status: <b>{c.statusAtThatTime}</b> •{" "}
+                                {new Date(c.createdAt).toLocaleString()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

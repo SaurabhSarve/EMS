@@ -25,9 +25,12 @@ const {
     deleteDepartment,
     updateDepartment,
     updateProfile,
-    getAllEmployeesByDepartment,
+    getAllEmployeesByDepartement,
     getCurrentMonthPaidEmployees,
     getPaidEmployeesByDateRange,
+    getAllAdmins,
+    updateAdminStatus,
+    getAllEmployeesDuePayment
     getAllEmployeesDuePayment,
     employeePromotion,
     updateEmployeesPermantentSalary,
@@ -38,8 +41,8 @@ const {
 
 const { downloadInvoice } = require("../controllers/downloadInvoice");
 
-const { protect } = require('../middleware/auth');
-const { getAdminTickets, updateTicket, updateTicketStatus } = require('../controllers/supportTicketController.js');
+const { protect, authorize } = require('../middleware/auth');
+const { getAdminTickets, updateTicket, updateTicketStatus, forwardToAdmin } = require('../controllers/supportTicketController.js');
 const { ActivatePaymentMode, UpdateBankDetails } = require("../controllers/paymentController.js");
 const { getRecentActivities } = require('../controllers/activityController.js');
 // middleware
@@ -52,9 +55,16 @@ const uploadFile = multer({ dest: "uploads/" });
 // Dashboard routes
 router.get("/dashboard/stats", getDashboardstats);
 router.get("/recent-activities", getRecentActivities);
+
+
 router.get("/tickets", getAdminTickets);
 router.patch("/support-tickets/:id/mark-read", updateTicket);
 router.patch("/support-tickets/:id/status", updateTicketStatus);
+
+// fowarded to admin 
+router.put(
+    "/tickets/:id/forward-to-admin", forwardToAdmin );
+
 
 
 // Employee management routes
@@ -62,7 +72,7 @@ router.route("/employees")
     .get(getAllEmployees)
     .post(upload.single('profilePhoto'), createEmployee);
 
-router.get("/department-head/employees", getAllEmployeesByDepartment);
+
 
 // after registraion (after adding employee)
 router.post("/employees/sent-email", sentEmail);
@@ -74,7 +84,7 @@ router.route("/employee/:id")
     .put(upload.single('profilePhoto'), updateEmployee)
     .delete(deleteEmployee);
 
-router.route("/employees/bydepartment").get(getAllEmployeesByDepartment)
+router.route("/employees/bydepartment").get(getAllEmployeesByDepartement)
 
 
 // tasks , based on Head and Admin
@@ -141,5 +151,9 @@ router.route("/employees/permententSalaryUpdate").patch(updateEmployeesPermanten
 // router.route("/employees/id/payroll").get(employeePayRollById);
 router.route("/employees/id/filter").post(employeeFilterPayRoll);
 router.route("/bulkHiring").post(uploadFile.single("file"), bulkHiring)
+
+// Admin management routes
+router.get("/admins", getAllAdmins);
+router.patch("/admins/:id/status", updateAdminStatus);
 
 module.exports = router;
