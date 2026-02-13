@@ -177,6 +177,30 @@ export const employeeService = {
         }
     }
     ,
+
+    
+    addTaskComment: async (taskId, comment) => {
+        try {
+            const response = await api.post(`/employee/tasks/${taskId}/comments`, { comment });
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    uploadTaskFile: async (taskId, formData) => {
+        try {
+            const response = await api.post(`/employee/tasks/${taskId}/upload`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     deleteTask: async (taskId) => {
         try {
             const response = await api.delete(`/admin/tasks/${taskId}`);
@@ -187,6 +211,16 @@ export const employeeService = {
         }
     }
     ,
+
+        updateTaskByAdmin : async(taskId, updateData) => {
+        try{
+const response = await api.patch(`/admin/tasks/${taskId}`, updateData);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+    
     updateTicket: async (ticketId) => {
         try {
             const response = await api.patch(`/admin/support-tickets/${ticketId}/mark-read`, { ticketId });

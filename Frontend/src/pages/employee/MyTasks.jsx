@@ -18,7 +18,8 @@ import {
   Zap,
   BarChart3,
   TrendingDown,
-  PlayCircle
+  PlayCircle,
+  Users
 } from 'lucide-react';
 
 import EmployeesSidebar from '../../Components/EmployeesSidebar';
@@ -30,6 +31,7 @@ export default function MyTasks() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterPriority, setFilterPriority] = useState("All");
+  const [activeTab, setActiveTab] = useState("daily");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -79,9 +81,33 @@ export default function MyTasks() {
     }
   };
 
+  const handleAddComment = async (taskId, comment) => {
+    if (!comment || !comment.trim()) return false;
+
+    try {
+      const response = await employeeService.addTaskComment(taskId, comment.trim());
+      if (response?.success && response?.data?.task) {
+        setTasks((prev) =>
+          prev.map((task) => (task._id === taskId ? response.data.task : task))
+        );
+      }
+      return true;
+    } catch (error) {
+      console.error("Error adding task comment:", error);
+      return false;
+    }
+  };
+
   const formatDate = (dateString) => {
     const options = { month: 'short', day: 'numeric', year: 'numeric' };
     return new Date(dateString).toLocaleDateString('en-US', options);
+  };
+
+  const normalizeStatus = (value) => (value || '').toLowerCase().replace(/[-_]/g, ' ').trim();
+
+  const isDailyTask = (task) => {
+    const assignmentType = (task?.assignmentType || "single").toLowerCase();
+    return assignmentType !== "team";
   };
 
   const getPriorityColor = (priority) => {
@@ -98,7 +124,7 @@ export default function MyTasks() {
   };
 
   const getStatusColor = (status) => {
-    switch ((status || '').toLowerCase()) {
+    switch (normalizeStatus(status)) {
       case 'completed':
         return 'bg-green-100 text-green-700';
       case 'in progress':
@@ -111,7 +137,7 @@ export default function MyTasks() {
   };
 
   const getStatusIcon = (status) => {
-    switch ((status || '').toLowerCase()) {
+    switch (normalizeStatus(status)) {
       case 'completed':
         return <CheckCircle2 size={16} className="text-green-600" />;
       case 'in progress':
@@ -136,16 +162,23 @@ export default function MyTasks() {
   // };
 
   // Filter tasks
-  const filteredTasks = tasks.filter(task => {
-    const statusNorm = (task.status || '').toLowerCase();
+  const dailyCount = tasks.filter(isDailyTask).length;
+  const teamCount = tasks.length - dailyCount;
+
+  const tasksByTab = tasks.filter(task =>
+    activeTab === "daily" ? isDailyTask(task) : !isDailyTask(task)
+  );
+
+  const filteredTasks = tasksByTab.filter(task => {
+    const statusNorm = normalizeStatus(task.status);
     const priorityNorm = (task.priority || '').toLowerCase();
-    const filterStatusNorm = filterStatus.toLowerCase();
+    const filterStatusNorm = normalizeStatus(filterStatus);
     const filterPriorityNorm = filterPriority.toLowerCase();
 
     const matchesSearch =
       searchQuery === "" ||
-      task.taskName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (task.taskName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (task.description || "").toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus =
       filterStatus === "All" ||
@@ -200,6 +233,50 @@ export default function MyTasks() {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Split View Tabs */}
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab("daily")}
+            className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition border ${
+              activeTab === "daily"
+                ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                : "bg-white text-slate-700 border-blue-100 hover:bg-blue-50"
+            }`}
+          >
+            <Calendar size={16} />
+            Daily Tasks
+            <span className={`ml-1 rounded-full px-2 py-0.5 text-xs font-bold ${
+              activeTab === "daily"
+                ? "bg-white/20 text-white"
+                : "bg-blue-100 text-blue-700"
+            }`}
+            >
+              {dailyCount}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("team")}
+            className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition border ${
+              activeTab === "team"
+                ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                : "bg-white text-slate-700 border-blue-100 hover:bg-blue-50"
+            }`}
+          >
+            <Users size={16} />
+            Team Tasks
+            <span className={`ml-1 rounded-full px-2 py-0.5 text-xs font-bold ${
+              activeTab === "team"
+                ? "bg-white/20 text-white"
+                : "bg-blue-100 text-blue-700"
+            }`}
+            >
+              {teamCount}
+            </span>
+          </button>
         </div>
 
         {/* Filters */}
@@ -293,6 +370,7 @@ export default function MyTasks() {
                 key={task._id}
                 task={task}
                 onComplete={handleCompleteTask}
+                onAddComment={handleAddComment}
                 formatDate={formatDate}
                 getPriorityColor={getPriorityColor}
                 getStatusColor={getStatusColor}
@@ -358,24 +436,47 @@ export default function MyTasks() {
 const TaskCard = ({
   task,
   onComplete,
+  onAddComment,
   formatDate,
   getPriorityColor,
   getStatusColor,
   getStatusIcon
 }) => {
+  const [comment, setComment] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const status = (task.status || "").toLowerCase();
   const priority = (task.priority || "").toLowerCase();
+  const updates = Array.isArray(task.progressComments) ? task.progressComments : [];
+  const latestUpdates = updates.slice(-2).reverse();
+
+  const handleSubmitComment = async () => {
+    if (!comment.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    const success = await onAddComment(task._id, comment);
+    if (success) {
+      setComment("");
+    }
+    setIsSubmitting(false);
+  };
+
+  const formatTime = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
 
   return (
     <div
-      className="bg-white border border-slate-200 rounded-xl p-6
-      shadow-sm hover:shadow-md hover:-translate-y-0.5
+      className="bg-white border border-slate-200 rounded-2xl p-6
+      shadow-sm hover:shadow-lg hover:-translate-y-0.5
       transition-all duration-300"
     >
       {/* HEADER */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <div className="p-3 rounded-lg bg-blue-600 shadow-sm">
+          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-sm">
             <FolderKanban size={18} className="text-white" />
           </div>
 
@@ -397,6 +498,18 @@ const TaskCard = ({
         >
           {getStatusIcon(status)}
           {status}
+        </span>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span
+          className={`px-3 py-1 rounded-full border text-xs font-semibold
+          ${getPriorityColor(priority)}`}
+        >
+          {priority} priority
+        </span>
+        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+          {task.assignmentType === "team" ? "Team task" : "Single task"}
         </span>
       </div>
 
@@ -425,16 +538,65 @@ const TaskCard = ({
         </div>
       </div>
 
+      {/* PROGRESS UPDATE */}
+      <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
+          <Activity size={16} className="text-blue-600" />
+          Progress update
+        </div>
+        <textarea
+          rows="2"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Share a quick update or blocker..."
+          className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <div className="mt-2 flex items-center justify-between">
+          <p className="text-xs text-slate-500">{comment.length}/300</p>
+          <button
+            type="button"
+            onClick={handleSubmitComment}
+            disabled={!comment.trim() || isSubmitting}
+            className="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? "Updating..." : "Update progress"}
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          {latestUpdates.length === 0 ? (
+            <p className="text-xs text-slate-500">No progress updates yet.</p>
+          ) : (
+            latestUpdates.map((update, index) => (
+              <div
+                key={`${update._id || index}-${update.createdAt}`}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
+              >
+                <p className="font-medium text-slate-800">{update.comment}</p>
+                {update.attachmentUrl && (
+                  <a
+                    href={update.attachmentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-2 px-2 py-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors text-[11px] font-medium"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                    {update.attachmentName || 'View attachment'}
+                  </a>
+                )}
+                <p className="text-[11px] text-slate-500 mt-1">
+                  {formatDate(update.createdAt)} • {formatTime(update.createdAt)}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
       {/* FOOTER */}
       <div className="mt-5 flex items-center justify-between">
-        {/* PRIORITY */}
-        <span
-          className={`px-4 py-1.5 rounded-full border text-xs font-semibold
-          ${getPriorityColor(priority)}`}
-        >
-          {priority} priority
-        </span>
-
         {/* ACTION */}
         {status !== "completed" ? (
           <button
