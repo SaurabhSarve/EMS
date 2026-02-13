@@ -16,6 +16,7 @@ const {
     getEmployeesSalary,
     addTask,
     deleteTask,
+    updateTaskByAdmin,
     updateSalary,
     runPayroll,
     leaveAction,
@@ -44,6 +45,22 @@ const { protect, authorize } = require('../middleware/auth');
 const { getAdminTickets, updateTicket, updateTicketStatus, forwardToAdmin } = require('../controllers/supportTicketController.js');
 const { ActivatePaymentMode, UpdateBankDetails } = require("../controllers/paymentController.js");
 const { getRecentActivities } = require('../controllers/activityController.js');
+const { 
+  getProjectsByDepartmentHead, 
+  createProject, 
+  getProjectById, 
+  updateProject, 
+  archiveProject, 
+  unarchiveProject,
+  deleteProject,
+  assignDepartmentToHead 
+} = require("../controllers/projectController.js");
+const {
+  getProjectUpdates,
+  getProjectLatestUpdates,
+  toggleUpdateLike,
+  replyToUpdate
+} = require("../controllers/projectUpdateController.js");
 // middleware
 router.use(protect);
 
@@ -95,6 +112,7 @@ router.post("/employee/:id/addtask", addTask);
 
 // task deletion (Admin/Department Head)
 router.delete("/tasks/:taskId", deleteTask);
+router.patch("/tasks/:taskId", updateTaskByAdmin);
 
 
 
@@ -136,6 +154,32 @@ router.route("/departments")
 router.route("/departments/:id")
     .put(updateDepartment)
     .delete(deleteDepartment);
+
+    
+// Project management routes (Department Head Projects)
+router.route("/projects")
+    .get(getProjectsByDepartmentHead)
+    .post(createProject);
+
+router.route("/projects/:id")
+    .get(getProjectById)
+    .put(updateProject)
+    .delete(deleteProject);
+
+router.patch("/projects/:id/archive", archiveProject);
+
+router.patch("/projects/:id/unarchive", unarchiveProject);
+
+// Project Updates routes
+router.get("/projects/:projectId/updates", getProjectUpdates);
+
+router.get("/projects/:projectId/updates/latest", getProjectLatestUpdates);
+
+router.post("/projects/updates/:updateId/like", toggleUpdateLike);
+
+router.post("/projects/updates/:updateId/reply", replyToUpdate);
+
+router.post("/assign-department", assignDepartmentToHead);
 
 
 router.route("/me")
