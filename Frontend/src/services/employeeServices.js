@@ -227,4 +227,14 @@ export const employeeService = {
     forwardTicketToAdmin: (ticketId) => {
         return api.put(`/admin/tickets/${ticketId}/forward-to-admin`);
     },
+  
+    employeePromotion : async (department, formData) => {
+        try{
+            const apiResponse = await api.put(`/admin/employees/promotion?department=${department}`, {formData})
+            return apiResponse.data
+        }
+        catch(err){
+            throw err
+        }
+    }
 };
