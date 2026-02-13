@@ -28,13 +28,15 @@ const getEmployeedashboard = async (req, res) => {
     }
     const salaryDetails = await Salary.find({ employee: employeeId });
     const taskDetails = await Task.find({ employee: employeeId });
+    const ticketDetails = await SupportTicket.find({ employee: employeeId }).sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
       data: {
         employee,
         salaryDetails,
-        taskDetails
+        taskDetails,
+        ticketDetails
       }
     });
 
