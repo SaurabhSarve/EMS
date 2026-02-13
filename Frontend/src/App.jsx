@@ -22,6 +22,8 @@ import AddEmployee from "./pages/admin/AddEmployee";
 import LeaveRecord from "./pages/admin/LeaveRecord";
 import EmployeeEdit from "./pages/admin/EmployeeEdit";
 import MyTasks from "./pages/employee/MyTasks";
+import ProjectCenter from "./pages/employee/ProjectCenter";
+import TaskCenter from "./pages/admin/TaskCenter";
 import Support from "./pages/employee/SupportSystem";
 import EmployeeLeave from "./pages/employee/ApplyLeave/EmployeeLeave";
 import MyProfile from "./pages/employee/MyProfile";
@@ -31,6 +33,9 @@ import CreatePasswordForm from "./pages/auth/CreatePasswordForm";
 import NotFound from "./pages/common/NotFoundPage";
 import AdminProfile from "./pages/admin/profile";
 import Tickets from "./pages/admin/Ticekts";
+import DepartmentHeadPayroll from "./pages/departmentHead/Payroll";
+import HeadApplyLeave from "./pages/departmentHead/ApplyLeave";
+import DepartmentHeadProjects from "./pages/departmentHead/Projects";
 import AdminPaymentHistory from "./pages/admin/AdminPaymentHistory";
 import DepartmentEmployee from "./pages/admin/DepartmentEmployee";
 import PaymentHistory from './pages/admin/PaymentHistory';
@@ -168,6 +173,15 @@ function App() {
               </ProtectedRoute>
             }
           />
+       
+          <Route
+            path="/employee/projects"
+            element={
+              <ProtectedRoute allowedRoles={["employee"]}>
+                <ProjectCenter />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/admin/employees/tasks"
@@ -178,6 +192,17 @@ function App() {
             }
           />
 
+          
+          <Route 
+            path="/admin/task-center" 
+            element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <TaskCenter />
+              </ProtectedRoute>
+            } 
+          /> 
+
+
           <Route
             path="/admin/employees/salary"
             element={
@@ -186,7 +211,44 @@ function App() {
               </ProtectedRoute>
             }
           />
+    
+          <Route 
+            path="/head/payroll" 
+            element={
+              <ProtectedRoute allowedRoles={['Department Head']}>
+                <DepartmentHeadPayroll />
+              </ProtectedRoute>
+            } 
+          /> 
 
+          <Route 
+            path="/head/leaves" 
+            element={
+              <ProtectedRoute allowedRoles={['Department Head']}>
+                <HeadApplyLeave />
+              </ProtectedRoute>
+            } 
+          />       
+
+
+          <Route 
+            path="/head/projects" 
+            element={
+              <ProtectedRoute allowedRoles={['Department Head']}>
+                <DepartmentHeadProjects />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/admin/projects" 
+            element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <DepartmentHeadProjects />
+              </ProtectedRoute>
+            } 
+          />
+          
           <Route
             path="/admin/me"
             element={
