@@ -190,13 +190,11 @@ export const employeeService = {
         }
     },
 
-    updateTicketStatus: async (ticketId, status) => {
-        try {
-            const response = await api.patch(`/admin/support-tickets/${ticketId}/status`, { status });
-            return response.data;
-        } catch (error) {
-            throw error;
-        }
+    updateTicketStatus: (ticketId, payload) => {
+        return api.patch(
+            `/admin/support-tickets/${ticketId}/status`,
+            payload // { status, comment }
+        );
     },
 
     getProfile: async () => {
@@ -226,6 +224,10 @@ export const employeeService = {
         }
     },
 
+    forwardTicketToAdmin: (ticketId) => {
+        return api.put(`/admin/tickets/${ticketId}/forward-to-admin`);
+    },
+  
     employeePromotion : async (department, formData) => {
         try{
             const apiResponse = await api.put(`/admin/employees/promotion?department=${department}`, {formData})
