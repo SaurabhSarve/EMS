@@ -30,7 +30,6 @@ const {
     getPaidEmployeesByDateRange,
     getAllAdmins,
     updateAdminStatus,
-    getAllEmployeesDuePayment
     getAllEmployeesDuePayment,
     employeePromotion,
     updateEmployeesPermantentSalary,
