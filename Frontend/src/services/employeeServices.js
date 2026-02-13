@@ -117,6 +117,14 @@ export const employeeService = {
         }
     },
 
+    getProfile: async () => {
+        try {
+            const response = await api.get(`/employee/me`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
 
 
     deleteEmployee: async (id, password, hardDelete, status) => {
