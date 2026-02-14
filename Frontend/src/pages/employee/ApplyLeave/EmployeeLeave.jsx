@@ -42,8 +42,46 @@ const EmployeeLeave = () => {
         }
     };
 
+    // Check for date overlap with existing leaves
+    const checkForConflicts = () => {
+        if (!fromDate || !toDate || !leaveDetails || leaveDetails.length === 0) {
+            return null;
+        }
 
+        const newStart = new Date(fromDate);
+        const newEnd = new Date(toDate);
+        newStart.setHours(0, 0, 0, 0);
+        newEnd.setHours(23, 59, 59, 999);
 
+        // Check for pending leaves
+        const pendingLeaves = leaveDetails.filter(leave => leave.status === 'pending');
+        if (pendingLeaves.length > 0) {
+            return {
+                type: 'pending',
+                message: 'You already have a pending leave request'
+            };
+        }
+
+        // Check for date conflicts
+        for (const leave of leaveDetails) {
+            if (leave.status === 'pending' || leave.status === 'approved') {
+                const existingStart = new Date(leave.startDate);
+                const existingEnd = new Date(leave.endDate);
+                existingStart.setHours(0, 0, 0, 0);
+                existingEnd.setHours(23, 59, 59, 999);
+
+                // Check overlap
+                if (newStart <= existingEnd && newEnd >= existingStart) {
+                    return {
+                        type: 'conflict',
+                        message: `Dates clash with ${leave.status} leave (${existingStart.toLocaleDateString()} to ${existingEnd.toLocaleDateString()})`
+                    };
+                }
+            }
+        }
+
+        return null;
+    };
 
     // Calculate duration between two dates
     const calculateDuration = () => {
@@ -58,6 +96,43 @@ const EmployeeLeave = () => {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both days
 
         return diffDays;
+    };
+
+
+    // Alternative component to show when already on leave
+    const OnLeaveAlert = () => {
+        // Find the active approved leave
+        const activeLeave = leaveDetails?.find(leave => {
+            if (leave.status !== 'approved') return false;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const start = new Date(leave.startDate);
+            const end = new Date(leave.endDate);
+            start.setHours(0, 0, 0, 0);
+            end.setHours(23, 59, 59, 999);
+            return today >= start && today <= end;
+        });
+
+        if (!activeLeave) return null;
+
+        return (
+            <div className="mx-[15px] md:mx-[30px] mb-6 p-4 bg-orange-50 border border-orange-300 rounded-xl">
+                <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-orange-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-white font-bold text-sm">!</span>
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-bold text-orange-900 text-base">You are currently on leave</h3>
+                        <p className="text-orange-800 text-sm mt-1">
+                            Your {activeLeave.leaveType} leave is active from {new Date(activeLeave.startDate).toLocaleDateString()} to {new Date(activeLeave.endDate).toLocaleDateString()}
+                        </p>
+                        <p className="text-orange-700 text-xs mt-2 font-medium">
+                            You cannot apply for new leave while on active leave. Please wait until your current leave ends.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     // Handle form submission
@@ -90,10 +165,12 @@ const EmployeeLeave = () => {
             return;
         }
 
-        // if (reason.trim().length < 10) {
-        //     showToast("Please provide a detailed reason (at least 10 characters)", "error");
-        //     return;
-        // }
+        // Check for conflicts
+        const conflict = checkForConflicts();
+        if (conflict) {
+            showToast(conflict.message, "error");
+            return;
+        }
 
         setLoading(true);
 
@@ -121,12 +198,14 @@ const EmployeeLeave = () => {
             }
         } catch (err) {
             console.error("Error submitting leave request:", err);
-            showToast(
-                err.response?.data?.message ||
-                err.message ||
-                "Failed to submit leave request. Please try again.",
-                "error"
-            );
+            const errorMessage = err.response?.data?.message || err.message || "Failed to submit leave request. Please try again.";
+            
+            // Show different style of alert for "on leave" errors
+            if (errorMessage.includes('currently on') || err.response?.data?.isOnLeave) {
+                showToast(errorMessage, "error");
+            } else {
+                showToast(errorMessage, "error");
+            }
         } finally {
             setLoading(false);
         }
@@ -176,6 +255,9 @@ const EmployeeLeave = () => {
 
                         {/* <LeaveCard /> */}
                         <LeaveSummaryGrid leaveBalanceDetails={leaveBalance} />
+                        
+                        {/* Show alert if currently on leave */}
+                        <OnLeaveAlert />
                     </div>
                     <div className="right-main-2 md:mx-[17px] md:flex">
 

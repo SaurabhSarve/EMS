@@ -310,7 +310,7 @@ export default function MyProfile() {
                                                 Reporting Manager
                                             </label>
                                             <div className="p-4 bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
-                                                <p className="text-gray-900 font-semibold">{profileData.reportingManager || 'Not assigned'}</p>
+                                                <p className="text-gray-900 font-semibold">{`${profileData.department.manager?.firstName || ""} ${profileData.department.manager?.lastName || ""}` || 'Not assigned'}</p>
                                             </div>
                                         </div>
                                         <div>

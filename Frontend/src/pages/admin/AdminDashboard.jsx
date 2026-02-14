@@ -1,3 +1,13 @@
+import { useEffect, useState, useRef, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
+import AdminSidebar from "../../Components/AdminSidebar";
+import { employeeService } from "../../services/employeeServices";
+import NotificationSystem from "./NotificationSystem";
+import { capitalize } from "../../utils/helper";
+
+// Icons
 import { FaUsers, FaUserPlus, FaUserMinus, FaEdit } from "react-icons/fa";
 import {
   MdOutlineVerified,
@@ -16,30 +26,39 @@ import {
 import { BsBuilding, BsChatDots } from "react-icons/bs";
 import { FiPlus } from "react-icons/fi";
 import { IoMdPersonAdd } from "react-icons/io";
-import { AiOutlineFileText } from "react-icons/ai";
+import { AiOutlineFileText, AiOutlineAlert } from "react-icons/ai";
 import { BiDollarCircle } from "react-icons/bi";
-import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { useAuth } from "../../context/AuthContext";
-import AdminSidebar from "../../Components/AdminSidebar";
-import { employeeService } from "../../services/employeeServices";
-import NotificationSystem from "./NotificationSystem";
-import { capitalize } from "../../utils/helper";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // --- STATE: General Stats ---
   const [stats, setStats] = useState();
   const [activities, setActivities] = useState([]);
   const [loadingActivities, setLoadingActivities] = useState(true);
   const [departments, setDepartments] = useState([]);
 
-  // --- REAL-TIME NOTIFICATION STATE ---
+  // --- STATE: Chat Notifications (From HEAD) ---
   const [unreadCount, setUnreadCount] = useState(0);
   const socketRef = useRef(null);
 
-  // 1. Initial Fetch
+  // --- STATE: Task Management (From Main) ---
+  const [headTasks, setHeadTasks] = useState([]);
+  const [loadingHeadTasks, setLoadingHeadTasks] = useState(true);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskUpdate, setTaskUpdate] = useState({
+    status: "in-progress",
+    comment: "",
+  });
+  const [headTaskNotifications, setHeadTaskNotifications] = useState([]);
+
+  const isDepartmentHead = user?.role === "Department Head";
+
+  // ==========================================
+  // 1. CHAT & WEBSOCKET LOGIC (From HEAD)
+  // ==========================================
   const fetchUnreadCount = async () => {
     if (!user?._id && !user?.id) return;
     try {
@@ -53,14 +72,12 @@ const AdminDashboard = () => {
     }
   };
 
-  // 2. WebSocket Connection for Real-time Updates
   useEffect(() => {
-    fetchUnreadCount(); // Get initial count
+    fetchUnreadCount();
 
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    // Connect to WebSocket
     const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/?token=${token}`);
     socketRef.current = ws;
 
@@ -68,16 +85,15 @@ const AdminDashboard = () => {
       try {
         const data = JSON.parse(event.data);
 
-        // CASE A: New Message Received
+        // New Message Received
         if ((data.sender_id && !data.type) || data.type === "chat_message") {
-          // Only increment if I am the receiver
           const myId = user._id || user.id;
           if (data.sender_id !== myId) {
             setUnreadCount((prev) => prev + 1);
           }
         }
 
-        // CASE B: Chat Activity (Delete/Clear) -> Re-fetch to be accurate
+        // Chat Activity (Delete/Clear) -> Re-fetch
         if (data.type === "activity") {
           fetchUnreadCount();
         }
@@ -86,20 +102,36 @@ const AdminDashboard = () => {
       }
     };
 
-    // Cleanup on unmount
     return () => {
       if (ws) ws.close();
     };
   }, [user]);
 
+  // ==========================================
+  // 2. DASHBOARD DATA FETCHING
+  // ==========================================
   useEffect(() => {
     fetchEmployees();
+    if (isDepartmentHead) {
+      fetchHeadTasks();
+    }
+  }, [isDepartmentHead]);
+
+  // Local Storage Sync for Tasks (From Main)
+  useEffect(() => {
+    const syncNotifications = () => {
+      setHeadTaskNotifications(readStoredNotifications());
+    };
+    syncNotifications();
+    window.addEventListener("storage", syncNotifications);
+    return () => window.removeEventListener("storage", syncNotifications);
   }, []);
 
   const fetchEmployees = async () => {
     try {
       const result = await employeeService.getAdminDashboardStats();
       const activityResult = await employeeService.getRecentActivities();
+
       if (result && result.data) {
         setStats(result.data.stats);
         if (result.data.stats.departmentsManager)
@@ -109,11 +141,105 @@ const AdminDashboard = () => {
         setActivities(activityResult.activities);
       setLoadingActivities(false);
     } catch (error) {
+      console.error("Dashboard Fetch Error:", error);
       setLoadingActivities(false);
     }
   };
 
-  // Helpers
+  const fetchHeadTasks = async () => {
+    try {
+      setLoadingHeadTasks(true);
+      const response = await employeeService.getTasks();
+      setHeadTasks(response?.data?.taskDetails || []);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      setHeadTasks([]);
+    } finally {
+      setLoadingHeadTasks(false);
+    }
+  };
+
+  // ==========================================
+  // 3. TASK MANAGEMENT HELPERS (From Main)
+  // ==========================================
+  const sortedHeadTasks = useMemo(() => {
+    return [...headTasks]
+      .map((task) => ({
+        id: task._id || task.id,
+        title: task.taskName || task.title,
+        description: task.description,
+        dueDate: task.dueDate ? task.dueDate.slice(0, 10) : "—",
+        assignedDate:
+          task.createdAt || task.assignedDate || task.startDate || "",
+        priority: task.priority || "low",
+        status: task.status || "pending",
+      }))
+      .sort((a, b) => (new Date(a.dueDate) > new Date(b.dueDate) ? 1 : -1));
+  }, [headTasks]);
+
+  const updateTaskStatus = (taskId, nextStatus) => {
+    setHeadTasks((prev) =>
+      prev.map((task) => {
+        const matchId = task._id || task.id;
+        return matchId === taskId ? { ...task, status: nextStatus } : task;
+      }),
+    );
+  };
+
+  const openTaskDetails = (task) => {
+    setSelectedTask(task);
+    setTaskUpdate({
+      status: task.status === "completed" ? "completed" : "in-progress",
+      comment: "",
+    });
+    setIsTaskModalOpen(true);
+  };
+
+  const closeTaskDetails = () => {
+    setSelectedTask(null);
+    setTaskUpdate({ status: "in-progress", comment: "" });
+    setIsTaskModalOpen(false);
+  };
+
+  const submitTaskUpdate = () => {
+    if (!selectedTask) return;
+    const comment = taskUpdate.comment.trim();
+    const updateEntry = {
+      id: `update-${Date.now()}`,
+      taskId: selectedTask.id,
+      taskTitle: selectedTask.title,
+      status: taskUpdate.status,
+      comment,
+      headName: user?.firstName || "Department Head",
+      timestamp: new Date().toISOString(),
+    };
+
+    updateTaskStatus(selectedTask.id, taskUpdate.status);
+
+    // Update Local Storage
+    const updates = readStoredUpdates();
+    writeStoredUpdates([updateEntry, ...updates]);
+    const notifications = readStoredNotifications();
+    const nextNotifications = [updateEntry, ...notifications].slice(0, 20);
+    writeStoredNotifications(nextNotifications);
+    setHeadTaskNotifications(nextNotifications);
+
+    closeTaskDetails();
+  };
+
+  // Local Storage Helpers
+  const readStoredUpdates = () =>
+    JSON.parse(localStorage.getItem("headTaskUpdates") || "[]");
+  const readStoredNotifications = () =>
+    JSON.parse(localStorage.getItem("headTaskNotifications") || "[]");
+  const writeStoredUpdates = (updates) =>
+    localStorage.setItem("headTaskUpdates", JSON.stringify(updates));
+  const writeStoredNotifications = (nots) =>
+    localStorage.setItem("headTaskNotifications", JSON.stringify(nots));
+
+  // ==========================================
+  // 4. UI HELPERS (Merged)
+  // ==========================================
   const getTimeAgo = (date) => {
     const diff = Math.floor((new Date() - new Date(date)) / (1000 * 60));
     if (diff < 1) return "Just now";
@@ -123,17 +249,64 @@ const AdminDashboard = () => {
     return `${Math.floor(hours / 24)}d ago`;
   };
 
-  const getActivityIcon = (name) => {
-    const map = {
+  const getActivityIcon = (iconName) => {
+    const iconMap = {
       user: <HiUser />,
       "user-plus": <HiUserAdd />,
+      "user-minus": <FaUserMinus />,
+      "dollar-sign": <HiCurrencyDollar />,
       edit: <FaEdit />,
+      "alert-triangle": <HiExclamation />,
       "file-text": <HiDocumentText />,
+      "check-circle": <MdCheckCircle />,
+      "x-circle": <MdCancel />,
+      "message-square": <AiOutlineFileText />,
     };
-    return map[name] || <HiUser />;
+    return iconMap[iconName] || <HiUser />;
   };
 
-  const getIconBgColor = (color) => `bg-${color}-100 text-${color}-600`;
+  const getIconBgColor = (color) => {
+    const colorMap = {
+      slate: "bg-slate-100 text-slate-600",
+      blue: "bg-blue-100 text-blue-600",
+      green: "bg-green-100 text-green-600",
+      red: "bg-red-100 text-red-600",
+      yellow: "bg-yellow-100 text-yellow-600",
+      orange: "bg-orange-100 text-orange-600",
+    };
+    return colorMap[color] || `bg-${color}-100 text-${color}-600`;
+  };
+
+  const getPriorityClass = (priority) => {
+    if (priority === "high") return "bg-red-100 text-red-700";
+    if (priority === "medium") return "bg-amber-100 text-amber-700";
+    return "bg-emerald-100 text-emerald-700";
+  };
+
+  const getStatusClass = (status) => {
+    if (status === "completed") return "bg-emerald-100 text-emerald-700";
+    if (status === "in-progress") return "bg-blue-100 text-blue-700";
+    return "bg-slate-100 text-slate-600";
+  };
+
+  const formatLabel = (value) =>
+    value
+      ? value
+          .split("-")
+          .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+          .join(" ")
+      : "";
+  const formatDate = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    return isNaN(date.getTime())
+      ? value
+      : date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+  };
 
   return (
     <>
@@ -142,6 +315,7 @@ const AdminDashboard = () => {
         <div className="header-wrapper w-full bg-transparent px-4 sm:px-6 lg:px-10 py-8 border-b border-gray-200">
           <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 rounded-2xl shadow-lg border border-white/20 px-5 sm:px-6 py-5">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+              {/* WELCOME SECTION */}
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shadow-md border border-white/30">
                   <FaUsers className="text-white text-xl" />
@@ -160,10 +334,14 @@ const AdminDashboard = () => {
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30">
                       Present: {stats?.totalEmployees ?? 0}
                     </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30">
+                      Pending: {stats?.pendingLeaves ?? 0}
+                    </span>
                   </div>
                 </div>
               </div>
 
+              {/* ACTION BUTTONS (Chat & Add) */}
               <div className="flex items-center gap-3 flex-shrink-0">
                 {/* --- REAL-TIME CHAT BADGE --- */}
                 <div className="relative">
@@ -180,9 +358,9 @@ const AdminDashboard = () => {
                     </span>
                   )}
                 </div>
-                {/* ----------------------------- */}
 
                 <NotificationSystem />
+
                 <button
                   onClick={() => navigate("/admin/employees/add")}
                   className="hidden sm:flex items-center gap-2 bg-white text-blue-700 px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl whitespace-nowrap"
@@ -202,6 +380,7 @@ const AdminDashboard = () => {
 
         {/* Content Wrapper */}
         <div className="content-wrapper px-4 sm:px-6 lg:px-10 pt-8">
+          {/* STATS GRID */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatsCard
               icon={<FaUsers className="text-blue-600" />}
@@ -241,7 +420,9 @@ const AdminDashboard = () => {
             />
           </div>
 
+          {/* MAIN CONTENT GRID (Activities & Tasks/Departments) */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-10">
+            {/* RECENT ACTIVITY */}
             <div className="xl:col-span-2">
               <div className="bg-white/95 backdrop-blur-sm rounded-3xl px-6 py-6 shadow-lg border border-blue-100 h-full min-h-[600px] flex flex-col hover:shadow-xl transition-all hover:border-blue-200">
                 <div className="flex items-center justify-between mb-6 flex-shrink-0">
@@ -284,47 +465,125 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
+
+            {/* CONDITIONAL COLUMN: Tasks (for Head) OR Departments (for Admin) */}
             <div className="xl:col-span-1">
-              <div className="bg-white/95 backdrop-blur-sm rounded-3xl px-6 py-6 shadow-lg border border-blue-100 h-full min-h-[600px] flex flex-col hover:shadow-xl transition-all hover:border-blue-200">
-                <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-md">
-                      <BsBuilding className="text-white text-lg" />
+              {isDepartmentHead ? (
+                // --- DEPARTMENT HEAD VIEW (Tasks) ---
+                <div className="bg-white/95 backdrop-blur-sm rounded-3xl px-6 py-6 shadow-lg border border-blue-100 h-full min-h-[600px] flex flex-col hover:shadow-xl transition-all hover:border-blue-200">
+                  <div className="flex items-center justify-between mb-6 flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-md">
+                        <MdOutlineApproval className="text-white text-lg" />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900">
+                        My Tasks
+                      </h3>
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900">
-                      Departments
-                    </h3>
+                    <button
+                      onClick={() => navigate("/admin/employees/tasks")}
+                      className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition"
+                    >
+                      View All →
+                    </button>
                   </div>
-                  <button
-                    onClick={() => navigate("/admin/employees/tasks")}
-                    className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition"
-                  >
-                    View All →
-                  </button>
+
+                  <div className="space-y-4 flex-1 overflow-y-auto pr-2">
+                    {loadingHeadTasks ? (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-slate-400 text-sm">
+                          Loading tasks...
+                        </p>
+                      </div>
+                    ) : sortedHeadTasks.length === 0 ? (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-slate-400 text-sm">
+                          No assigned tasks
+                        </p>
+                      </div>
+                    ) : (
+                      sortedHeadTasks.slice(0, 5).map((task) => (
+                        <div
+                          key={task.id}
+                          className="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-blue-200 transition-all"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-bold text-slate-900">
+                                {task.title}
+                              </p>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {task.description || "No description provided."}
+                              </p>
+                            </div>
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getPriorityClass(task.priority)}`}
+                            >
+                              {formatLabel(task.priority)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mt-4 gap-3">
+                            <div className="text-xs text-slate-500 font-semibold">
+                              Due {task.dueDate}
+                            </div>
+                            <button
+                              className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
+                              onClick={() => openTaskDetails(task)}
+                            >
+                              Update Status
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-3 flex-1 overflow-y-auto pr-2">
-                  {departments.length === 0 ? (
-                    <div className="flex items-center justify-center h-full">
-                      <p className="text-slate-400 text-sm">
-                        No departments found
-                      </p>
+              ) : (
+                // --- ADMIN VIEW (Departments) ---
+                <div className="bg-white/95 backdrop-blur-sm rounded-3xl px-6 py-6 shadow-lg border border-blue-100 h-full min-h-[600px] flex flex-col hover:shadow-xl transition-all hover:border-blue-200">
+                  <div className="flex items-center justify-between mb-6 flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-md">
+                        <BsBuilding className="text-white text-lg" />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900">
+                        Departments
+                      </h3>
                     </div>
-                  ) : (
-                    departments.map((dept) => (
-                      <DepartmentCard
-                        key={dept._id}
-                        departmentName={dept.name}
-                        managerName={
-                          dept.manager ? dept.manager.firstName : "Not Allotted"
-                        }
-                      />
-                    ))
-                  )}
+                    <button
+                      onClick={() => navigate("/admin/employees/tasks")}
+                      className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition"
+                    >
+                      View All →
+                    </button>
+                  </div>
+                  <div className="space-y-3 flex-1 overflow-y-auto pr-2">
+                    {departments.length === 0 ? (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-slate-400 text-sm">
+                          No departments found
+                        </p>
+                      </div>
+                    ) : (
+                      departments.map((dept) => (
+                        <DepartmentCard
+                          key={dept._id}
+                          departmentName={dept.name}
+                          managerName={
+                            dept.manager
+                              ? dept.manager.firstName
+                              : "Not Allotted"
+                          }
+                        />
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
+          {/* QUICK ACTIONS */}
           <div className="mt-10">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <QuickActionCard
@@ -351,6 +610,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
+          {/* SALARY DISTRIBUTION */}
           <div className="grid grid-cols-1 xl:grid-cols-1 gap-6 mt-10 pb-8">
             <div className="xl:col-span-2">
               <div className="bg-white/95 backdrop-blur-sm rounded-3xl px-6 sm:px-8 py-7 shadow-lg border border-blue-100 hover:shadow-xl transition-all hover:border-blue-200">
@@ -375,10 +635,122 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* TASK MODAL (From Main) */}
+      {isTaskModalOpen && selectedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Task Details
+                </p>
+                <h3 className="text-xl font-bold text-slate-900">
+                  {selectedTask.title}
+                </h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  {selectedTask.description || "No description provided."}
+                </p>
+              </div>
+              <button
+                className="text-sm font-semibold text-slate-500 hover:text-slate-700"
+                onClick={closeTaskDetails}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs uppercase text-slate-500">Assigned</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {formatDate(selectedTask.assignedDate)}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs uppercase text-slate-500">Due</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {selectedTask.dueDate}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs uppercase text-slate-500">Status</p>
+                <span
+                  className={`mt-1 inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusClass(selectedTask.status)}`}
+                >
+                  {formatLabel(selectedTask.status)}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+              <h4 className="text-sm font-semibold text-slate-900">
+                Task Progress Update
+              </h4>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">
+                    Progress status
+                  </label>
+                  <select
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    value={taskUpdate.status}
+                    onChange={(event) =>
+                      setTaskUpdate((prev) => ({
+                        ...prev,
+                        status: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">
+                    Comment
+                  </label>
+                  <textarea
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    rows="3"
+                    value={taskUpdate.comment}
+                    onChange={(event) =>
+                      setTaskUpdate((prev) => ({
+                        ...prev,
+                        comment: event.target.value,
+                      }))
+                    }
+                    placeholder="Add remarks or progress notes"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-end gap-3">
+                <button
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                  onClick={closeTaskDetails}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  onClick={submitTaskUpdate}
+                >
+                  Submit Update
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`.dashboard-wrapper { margin-left: 0; transition: margin-left 0.3s ease-in-out; overflow-x: hidden; max-width: 100vw; } .header-wrapper { margin-left: 0; transition: margin-left 0.3s ease-in-out; } .content-wrapper { margin-left: 0; transition: margin-left 0.3s ease-in-out; } @media (min-width: 1024px) { .dashboard-wrapper { margin-left: 0; } .header-wrapper { margin-left: 256px; width: calc(100% - 256px); } .content-wrapper { margin-left: 256px; width: calc(100% - 256px); } } @media (max-width: 1023px) { .header-wrapper { padding-top: 3.5rem; } }`}</style>
     </>
   );
 };
+
+// =======================
+// SUB COMPONENTS
+// =======================
 
 const StatsCard = ({
   icon,
@@ -408,6 +780,7 @@ const StatsCard = ({
     <p className="text-slate-900 text-3xl font-black mb-2">{value}</p>
   </div>
 );
+
 const ActivityItem = ({ icon, iconBg, title, desc, time }) => (
   <div className="flex items-start justify-between gap-4 p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all group border border-blue-100 hover:border-blue-200">
     <div className="flex items-start gap-4 flex-1">
@@ -428,6 +801,7 @@ const ActivityItem = ({ icon, iconBg, title, desc, time }) => (
     </span>
   </div>
 );
+
 const DepartmentCard = ({ departmentName, managerName }) => (
   <div className="flex items-center justify-between p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all group cursor-pointer">
     <div className="flex items-center gap-3 flex-1">
@@ -454,6 +828,7 @@ const DepartmentCard = ({ departmentName, managerName }) => (
     </div>
   </div>
 );
+
 const QuickActionCard = ({ icon, label, iconBg, iconColor, link }) => {
   const navigate = useNavigate();
   return (
@@ -472,6 +847,7 @@ const QuickActionCard = ({ icon, label, iconBg, iconColor, link }) => {
     </div>
   );
 };
+
 const SalaryBar = ({ label, fill, active }) => (
   <div className="flex flex-col items-center justify-end h-full">
     <div className="w-full h-full bg-blue-100 rounded-t-2xl flex items-end overflow-hidden group hover:shadow-md transition-shadow border border-blue-200">

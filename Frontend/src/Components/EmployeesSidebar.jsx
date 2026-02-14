@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
     MdDashboard,
-    MdPeople,
-    MdEventAvailable,
+    MdAccountCircle,
+    MdWork,
+    MdTaskAlt,
     MdLogout,
     MdMenu,
-    MdClose
+    MdClose,
+    MdCalendarToday,
+    MdContactSupport
 } from "react-icons/md";
 import { useAuth } from '../context/AuthContext';
 import { capitalize } from "../utils/helper";
@@ -36,10 +39,11 @@ const EmployeesSidebar = () => {
 
     const menuItems = [
         { icon: <MdDashboard />, label: "Dashboard", path: "/employee/dashboard" },
-        { icon: <MdPeople />, label: "Profile", path: "/employee/profile" },
-        { icon: <MdEventAvailable />, label: "My tasks", path: "/employee/mytasks" },
-        { icon: <MdPeople />, label: "Leaves", path: "/employee/apply-leave" },
-        { icon: <MdPeople />, label: "Support System", path: "/employee/support-system" }
+        { icon: <MdAccountCircle />, label: "Profile", path: "/employee/profile" },
+        { icon: <MdWork />, label: "Projects", path: "/employee/projects" },
+        { icon: <MdTaskAlt />, label: "My tasks", path: "/employee/mytasks" },
+        { icon: <MdCalendarToday />, label: "Leaves", path: "/employee/apply-leave" },
+        { icon: <MdContactSupport />, label: "Support System", path: "/employee/support-system" }
     ];
 
     const handleLogout = () => {
@@ -104,26 +108,26 @@ const EmployeesSidebar = () => {
                 </nav>
 
                 {/* USER CARD & LOGOUT */}
-                <div className="p-4 border-t border-gray-200 bg-[#F1F5FF] space-y-4">
-                    <div className="flex items-center gap-3 bg-white p-4 rounded-2xl shadow-sm">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
-                            <span className="text-white font-bold text-sm">{capitalize(user?.firstName.charAt(0) + user?.lastName.charAt(0))}</span>
+                <div className="p-3 border-t border-gray-200 bg-[#F1F5FF] space-y-2.5">
+                    <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl shadow-sm">
+                        <div className="w-9 h-9 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
+                            <span className="text-white font-bold text-xs">{capitalize(user?.firstName?.charAt(0) + user?.lastName?.charAt(0))}</span>
                         </div>
-                        <div className="overflow-hidden">
-                            <p className="text-base font-semibold text-gray-900 truncate">{capitalize(user?.firstName + " " + user?.lastName || "E")}</p>
-                            <p className="text-sm text-blue-600 font-medium">Employee</p>
+                        <div className="overflow-hidden flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{capitalize(user?.firstName + " " + user?.lastName || "Employee")}</p>
+                            <p className="text-xs text-blue-600 font-medium">Employee</p>
                         </div>
                     </div>
 
                     {/* Logout Button */}
                     <button
                         onClick={handleLogout}
-                        className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl 
+                        className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg 
     bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 
     text-white hover:from-blue-700 hover:via-blue-600 hover:to-blue-500 
-    active:scale-[0.97] transition-all duration-200 font-semibold text-base shadow-md hover:shadow-lg"
+    active:scale-95 transition-all duration-200 font-semibold text-sm shadow-md hover:shadow-lg"
                     >
-                        <MdLogout size={18} />
+                        <MdLogout size={16} />
                         <span>Logout</span>
                     </button>
 
@@ -140,7 +144,7 @@ const EmployeesSidebar = () => {
 
             {/* CSS for responsive behavior */}
             <style>{`
-                @media (min-width: 1024px) {
+                @media (min-width: 1120px) {
                     aside {
                         transform: translateX(0) !important;
                     }

@@ -5,6 +5,8 @@ const { status } = require("http-status");
 const Salary = require("../models/Salary");
 const Task = require("../models/tasks");
 const SupportTicket = require("../models/supportTicket");
+const Project = require("../models/Project");
+const ProjectUpdate = require("../models/ProjectUpdate");
 const { sendEmployeeRegistrationEmail, sendSalaryReceiptEmail } = require("../services/emailService.js");
 const mongoose = require("mongoose");
 // const logActivity = require("../models/Activity.js");
@@ -14,6 +16,7 @@ const generateInvoiceNo = require("../utils/generateInvoiceNo.js");
 const generateInvoicePDF = require("../utils/generateInvoicePDF.js");
 const uploadInvoicePDF = require("../utils/uploadInvoiceToCloudinary.js");
 const cron = require("node-cron");
+const XLSX = require("xlsx");
 
 const getDashboardstats = async (req, res, next) => {
   try {
@@ -815,6 +818,14 @@ const deleteDepartment = async (req, res) => {
       });
     }
 
+    const projects = await Project.find({ department: id }).select("_id");
+    const projectIds = projects.map((project) => project._id);
+
+    if (projectIds.length > 0) {
+      await ProjectUpdate.deleteMany({ project: { $in: projectIds } });
+      await Project.deleteMany({ _id: { $in: projectIds } });
+    }
+
     // Delete department
     await Department.findByIdAndDelete(id);
 
@@ -1013,6 +1024,7 @@ const getAllEmployees = async (req, res) => {
 const getAllEmployeesByDepartement = async (req, res) => {
   try {
     const { search, department, status } = req.query;
+     const requestingUser = req.user;
 
     const employeeMatch = { role: "employee" };
 
@@ -1251,6 +1263,28 @@ const leaveAction = async (req, res) => {
       });
     }
 
+    // Permission check: Only Admin or the Department Head of the employee's department can approve/reject
+    const isAdmin = userRole === 'Admin';
+    let isDepartmentHeadOfEmployee = false;
+
+    if (userRole === 'Department Head') {
+      // Check if this head manages the employee's department
+      const employeeDept = await Department.findOne({
+        _id: updatedLeave.employee.department,
+        manager: userId,
+        isActive: true
+      });
+      isDepartmentHeadOfEmployee = !!employeeDept;
+    }
+
+    // If neither Admin nor the Head managing this employee's department, deny permission
+    if (!isAdmin && !isDepartmentHeadOfEmployee) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to approve/reject this leave request'
+      });
+    }
+
     if (action === 'Approved' || action === 'approved') {
       const employee = await User.findById(updatedLeave.employee._id).select('leaveBalance firstName lastName');
 
@@ -1276,7 +1310,7 @@ const leaveAction = async (req, res) => {
       await updatedLeave.save();
 
       // LOG ACTIVITY - Leave Approved
-      await logActivity('leave_approved', employee._id, {
+     await logActivity('leave_approved', userId, {
         targetUserId: updatedLeave.employee._id,
         relatedModel: 'Leave',
         relatedId: updatedLeave._id,
@@ -1284,7 +1318,8 @@ const leaveAction = async (req, res) => {
           leaveType: updatedLeave.leaveType,
           numberOfDays: updatedLeave.duration || updatedLeave.totalDays,
           employeeName: `${updatedLeave.employee.firstName} ${updatedLeave.employee.lastName}`,
-          approvedBy: req.user._id
+          approvedBy: userId,
+          approverRole: userRole
         }
       });
 
@@ -1302,7 +1337,8 @@ const leaveAction = async (req, res) => {
           leaveType: updatedLeave.leaveType,
           numberOfDays: updatedLeave.duration || updatedLeave.totalDays,
           employeeName: `${updatedLeave.employee.firstName} ${updatedLeave.employee.lastName}`,
-          rejectedBy: req.user._id,
+          rejectedBy: userId,
+          rejectorRole: userRole,
           reason: updatedLeave.rejectionReason || 'No reason provided'
         }
       });
@@ -1377,7 +1413,6 @@ const updateSalary = async (req, res) => {
 
       })
     }
-    console.log(updatedSalary);
 
     return res.status(200).json({
       message: "Salary updated succesfully",
@@ -1537,7 +1572,8 @@ const addTask = async (req, res) => {
   try {
     const { id } = req.params;
     // console.log(req.body);
-    const { taskName, description, dueDate, priority } = req.body;
+        const { taskName, description, dueDate, priority, startDate, assignmentType } = req.body;
+
 
 
     const newTask = new Task({
@@ -1547,7 +1583,8 @@ const addTask = async (req, res) => {
       description,
       dueDate,
       priority,
-      startDate: Date.now()
+      startDate: startDate || Date.now(),
+      assignmentType: assignmentType || "single"
     });
 
     const task = await newTask.save();
@@ -1561,7 +1598,8 @@ const addTask = async (req, res) => {
         taskName,
         priority,
         dueDate,
-        assignedTo: id
+        assignedTo: id,
+        assignmentType: assignmentType || "single"
       }
     });
 
@@ -1634,6 +1672,86 @@ const deleteTask = async (req, res) => {
   }
 }
 
+
+
+const updateTaskByAdmin = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { taskName, description, dueDate, priority, status, startDate } = req.body;
+
+    if (!['Admin', 'Department Head'].includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update tasks'
+      });
+    }
+
+    // Fetch the current task to get existing values
+    const currentTask = await Task.findById(taskId);
+    if (!currentTask) {
+      return res.status(404).json({
+        success: false,
+        message: 'Task not found'
+      });
+    }
+
+    if (req.user.role === 'Department Head') {
+      const employee = await User.findById(currentTask.employee).select('department');
+      let departmentId = req.user.department;
+
+      if (!departmentId) {
+        const dept = await Department.findOne({ manager: req.user._id }).select('_id');
+        departmentId = dept?._id;
+      }
+
+      if (!employee || !employee.department || !departmentId || employee.department.toString() !== departmentId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only update tasks from your department'
+        });
+      }
+    }
+
+    // Determine the startDate to validate against
+    const finalStartDate = startDate ? new Date(startDate) : new Date(currentTask.startDate);
+    const finalDueDate = dueDate ? new Date(dueDate) : new Date(currentTask.dueDate);
+
+    // Validate that dueDate is after or equal to startDate
+    if (finalDueDate < finalStartDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Due date must be after or equal to start date'
+      });
+    }
+
+    const updatePayload = {};
+    if (taskName) updatePayload.taskName = taskName;
+    if (description) updatePayload.description = description;
+    if (dueDate) updatePayload.dueDate = dueDate;
+    if (priority) updatePayload.priority = priority;
+    if (status) updatePayload.status = status;
+    if (startDate) updatePayload.startDate = startDate;
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      updatePayload,
+      { new: true, runValidators: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Task updated successfully',
+      data: updatedTask
+    });
+  } catch (error) {
+    console.error('Error updating task:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+}
 
 const getDepartmentTasks = async (req, res) => {
   try {
@@ -1783,6 +1901,8 @@ const payIndividual = async (req, res) => {
 
     const invoiceUrl = await uploadInvoicePDF(pdfPath, invoiceNo);
 
+    console.log("Invoice URL", invoiceUrl)
+
     salary.Status = "paid";
     salary.salaryPayDate = new Date();
     salary.invoice = {
@@ -1823,7 +1943,7 @@ const getCurrentMonthYear = () => {
   ];
 
   return {
-    month: monthNames[now.getMonth() + 1],
+    month: monthNames[now.getMonth()],
     year: now.getFullYear()
   };
 };
@@ -1955,6 +2075,338 @@ const updateAdminStatus = async (req, res) => {
   }
 };
 
+const employeePromotion = async (req, res) => {
+  try {
+    const { department } = req.query;
+
+    const {
+      promotedEmployeeId,
+      promotedPostion,
+      newSalaryPromoted,
+      oldEmployeeId,
+      newSalary,
+      oldEmployeeNewPosition
+    } = req.body.formData;
+
+    if (!promotedEmployeeId || !promotedPostion) {
+      return res.status(400).json({ message: "Missing promotion details" });
+    }
+
+
+    const promotedSalaryData = {
+      baseSalary: Number(newSalaryPromoted.baseSalary),
+      allowances: Number(newSalaryPromoted.allowances),
+      deductions: Number(newSalaryPromoted.deductions),
+      taxApply: Number(newSalaryPromoted.taxApply),
+      netSalary: Number(newSalaryPromoted.netSalary)
+    };
+
+
+    if (promotedPostion === "Department Head") {
+
+      const departmentDetails = await Department.findOneAndUpdate(
+        { name: department },
+        { manager: promotedEmployeeId },
+        { new: true }
+      );
+
+      if (!departmentDetails) {
+        return res.status(404).json({ message: "Department not found" });
+      }
+
+      const promotedEmployee = await User.findById(promotedEmployeeId)
+
+
+      await User.findByIdAndUpdate(
+        promotedEmployeeId,
+        {
+          ...promotedSalaryData,
+          position: "Department Head",
+          role: "Department Head",
+          email: promotedEmployee.personalEmail,
+          AccessKey: "Head123",
+          $unset: { email: "" },
+          $unset: { personalEmail: "" },
+          department: promotedEmployee.department,
+          reportingManager: "not alloted"
+        },
+        { new: true }
+
+      );
+
+
+
+      if (oldEmployeeId) {
+        const oldEmployee = await User.findById(oldEmployeeId);
+
+        await User.findByIdAndUpdate(
+          oldEmployeeId,
+          {
+            role: "employee",
+            position: oldEmployeeNewPosition,
+            baseSalary: Number(newSalary.baseSalary),
+            allowances: Number(newSalary.allowances),
+            deductions: Number(newSalary.deductions),
+            taxApply: Number(newSalary.taxApply),
+            netSalary: Number(newSalary.netSalary),
+            department: departmentDetails._id,
+            $unset: { position: "" },
+            $unset: { email: "" },
+            AccessKey: "",
+            personalEmail: oldEmployee.email
+          },
+          { new: true }
+        );
+      }
+    }
+
+    else if (promotedPostion === "Admin") {
+
+      const departmentDetail = await Department.findOne({
+        name: department,
+        manager: promotedEmployeeId
+      });
+
+      if (departmentDetail) {
+        await Department.findOneAndUpdate(
+          { name: department },
+          { manager: null }
+        );
+      }
+
+      const userDetail = User.findById(promotedEmployeeId);
+      let email = "";
+      let personalEmail = "";
+
+      if (userDetail.personalEmail) {
+        email = userDetail.personalEmail
+        personalEmail = ""
+      }
+      else {
+        email = userDetail.email
+      }
+
+      await User.findByIdAndUpdate(
+        promotedEmployeeId,
+        {
+          ...promotedSalaryData,
+          role: "Admin",
+          reportingManager: "not alloted",
+          department: null,
+          email: email,
+          AccessKey: "Admin123",
+          position: "manager",
+          personalEmail: personalEmail
+        },
+        { new: true }
+      );
+    }
+
+    else {
+      return res.status(400).json({ message: "Invalid promotion role" });
+    }
+
+    return res.status(200).json({ message: "Promotion Successful" });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const updateEmployeesPermantentSalary = async (req, res) => {
+  try {
+    const { employeeId, baseSalary, allowances, taxApply, netSalary } = req.body;
+
+    await User.findByIdAndUpdate(employeeId,
+      {
+        baseSalary,
+        allowances,
+        taxApply,
+        netSalary
+      },
+      { new: true, runValidators: true }
+    )
+
+    return res.status(200).json({ message: "Salary Update Successfull" });
+  }
+  catch (err) {
+    return res.status(500).json({ error: err.message })
+  }
+}
+
+
+const employeeFilterPayRoll = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, month, year, status } = req.body;
+
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    let query = {
+      employee: req.user._id
+    };
+
+    if (month && month !== "all") {
+      query.month = month;
+    }
+
+    if (year && year !== "all") {
+      query.year = year;
+    }
+
+    if (status && status !== "all") {
+      query.Status = status.toLowerCase();
+    }
+
+    const employeePayRoll = await Salary.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNumber);
+
+    const totalRecords = await Salary.countDocuments(query);
+
+    return res.status(200).json({
+      success: true,
+      currentPage: pageNumber,
+      totalPages: Math.ceil(totalRecords / limitNumber),
+      totalRecords,
+      employeeData: employeePayRoll
+    });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const bulkHiring = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const workbook = XLSX.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json(worksheet);
+
+    const currentMonth = new Date().toLocaleString("en-US", { month: "long" });
+    const currentYear = new Date().getFullYear();
+
+    let successCount = 0;
+
+    const generateEmployeeId = async () => {
+      const counter = await Counter.findOneAndUpdate(
+        { name: "employeeId" },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true, session }
+      );
+
+      return `EMP-${counter.seq}`;
+    };
+
+    for (let row of data) {
+
+      if (!row.firstName || !row.role || !row.contactNumber) {
+        continue;
+      }
+
+
+      if (row.email) {
+        const existingEmail = await User.findOne({ email: row.email }).session(session);
+        if (existingEmail) continue;
+      }
+
+      if (row.personalEmail) {
+        const existingPersonal = await User.findOne({ personalEmail: row.personalEmail }).session(session);
+        if (existingPersonal) continue;
+      }
+
+
+      const employeeId = await generateEmployeeId();
+
+      const baseSalary = Number(row.baseSalary) || 0;
+      const allowances = Number(row.allowances) || 0;
+      const deductions = Number(row.deductions) || 0;
+      const taxApply = Number(row.taxApply) || 0;
+
+      const taxAmount = (baseSalary * taxApply) / 100;
+      const netSalary = baseSalary + allowances - deductions - taxAmount;
+
+      const createdUser = await User.create([{
+        role: row.role,
+        firstName: row.firstName,
+        lastName: row.lastName || undefined,
+        contactNumber: row.contactNumber,
+        personalEmail: row.personalEmail || undefined,
+        email: row.email || undefined,
+        password: row.password || undefined,
+        employeeId,
+        department: row.department && row.department.trim() !== ""
+          ? row.department
+          : undefined,
+        baseSalary,
+        allowances,
+        deductions,
+        taxApply,
+        netSalary
+      }], { session });
+
+      const userDoc = createdUser[0];
+
+      const existingSalary = await Salary.findOne({
+        employee: userDoc._id,
+        month: currentMonth,
+        year: currentYear
+      }).session(session);
+
+      if (existingSalary) {
+        continue;
+      }
+
+      await Salary.create([{
+        employee: userDoc._id,
+        employeeId,
+        month: currentMonth,
+        year: currentYear,
+        baseSalary,
+        allowances,
+        deductions,
+        taxApply,
+        netSalary,
+        status: "due"
+      }], { session });
+
+      successCount++;
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({
+      message: "Bulk hiring completed successfully",
+      insertedEmployees: successCount
+    });
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
+    console.error(error);
+
+    res.status(500).json({
+      message: "Bulk hiring failed",
+      error: error.message
+    });
+  }
+};
+
+
+
 
 module.exports = {
   getDashboardstats,
@@ -1972,6 +2424,7 @@ module.exports = {
   updateSalary,
   addTask,
   deleteTask,
+  updateTaskByAdmin,
   updateProfile,
   runPayroll,
   leaveAction,
@@ -1983,5 +2436,10 @@ module.exports = {
   getPaidEmployeesByDateRange,
   getAllEmployeesDuePayment,
   getAllAdmins,
-  updateAdminStatus
+  updateAdminStatus,
+  employeePromotion,
+  updateEmployeesPermantentSalary,
+  // employeePayRollById,
+  employeeFilterPayRoll,
+  bulkHiring
 }
