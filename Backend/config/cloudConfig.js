@@ -23,7 +23,17 @@ const storage = new CloudinaryStorage({
 });
 
 
+const taskAttachmentStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+        folder: 'task_attachments',
+        allowed_formats: ["pdf", "doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "txt"],
+        resource_type: 'auto'
+    }
+});
+
 module.exports = {
     cloudinary,
-    storage
+    storage,
+    taskAttachmentStorage
 }

@@ -3,15 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 import {
-  LayoutDashboard,
   FileText,
-  Calendar,
-  ClipboardList,
-  Settings,
-  Download,
-  LogIn,
-  LogOut,
-  Plus,
   Ticket,
   MessageCircle,
 } from "lucide-react";
@@ -28,7 +20,7 @@ export default function EmployeeDashboard() {
   const [taskdetails, setTaskDetails] = useState([]);
   const [ticketDetails, setTicketDetails] = useState([]);
 
-  // --- REAL-TIME NOTIFICATION STATE ---
+  // --- REAL-TIME NOTIFICATION STATE (From HEAD) ---
   const [unreadCount, setUnreadCount] = useState(0);
   const socketRef = useRef(null);
 
@@ -42,6 +34,7 @@ export default function EmployeeDashboard() {
     return new Date().toLocaleDateString("en-US", options);
   };
 
+  // --- WEBSOCKET & CHAT LOGIC (From HEAD) ---
   // 1. Initial Fetch
   const fetchUnreadCount = async () => {
     if (!user?._id && !user?.id) return;
@@ -56,7 +49,7 @@ export default function EmployeeDashboard() {
     }
   };
 
-  // 2. WebSocket Logic
+  // 2. WebSocket Connection
   useEffect(() => {
     fetchUnreadCount();
 
@@ -91,6 +84,7 @@ export default function EmployeeDashboard() {
     };
   }, [user]);
 
+  // --- SIDEBAR LOGIC (Merged) ---
   const openSidebar = () => {
     setSidebarOpen(true);
     setTimeout(() => {
@@ -123,6 +117,7 @@ export default function EmployeeDashboard() {
     }, 20);
   };
 
+  // --- DATA FETCHING ---
   useEffect(() => {
     fetchEmployee();
   }, []);
@@ -212,7 +207,7 @@ export default function EmployeeDashboard() {
                 </p>
               </div>
 
-              {/* --- CHAT BUTTON ADDED HERE --- */}
+              {/* --- CHAT BUTTON --- */}
               <div className="relative">
                 <button
                   onClick={() => navigate("/chat")}
@@ -464,13 +459,15 @@ const MyTasks = ({ taskdetails }) => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                 />
               </svg>
             </div>
             My Tasks
           </h3>
-          <p className="text-slate-500 text-sm mt-1">Assigned for this week</p>
+          <p className="text-slate-500 text-sm mt-1">
+            Assigned for this week
+          </p>
         </div>
       </div>
 
@@ -637,7 +634,8 @@ const TaskDone = ({ title }) => (
 
 const SalaryHistory = ({ salarydetails }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const formatINR = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
+  const formatINR = (value) =>
+    `₹${Number(value || 0).toLocaleString("en-IN")}`;
   const calcDeduction = (baseSalary, taxApply, deduction) =>
     ((parseFloat(baseSalary) || 0) * (parseFloat(taxApply) || 0)) / 100 +
     (parseFloat(deduction) || 0);

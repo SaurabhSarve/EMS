@@ -229,7 +229,7 @@ export default function EmployeesList() {
                     <tbody className="divide-y divide-gray-100">
                       {filteredEmployees.map((employee) => (
                         <tr
-                          key={employee.id}
+                          key={employee._id || employee.id}
                           className="hover:bg-blue-50/60 cursor-pointer transition-colors"
                           onClick={() => handleEmployeeClick(employee._id)}
                         >
@@ -312,7 +312,7 @@ export default function EmployeesList() {
               <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredEmployees.map((employee) => (
                   <div
-                    key={employee.id}
+                    key={employee._id || employee.id}
                     onClick={() => handleEmployeeClick(employee._id)}
                     className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer"
                   >

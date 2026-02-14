@@ -5,6 +5,7 @@ const Leave = require("../models/Leave.js");
 const SupportTicket = require('../models/supportTicket.js');
 
 const logActivity = require("../utils/activityLogger.js");
+const { validateLeaveRequest, checkIfCurrentlyOnLeave } = require("../utils/leaveValidation.js");
 
 const { status } = require("http-status");
 const Attendance = require("../models/Attendance");
@@ -47,6 +48,11 @@ const getEmployeedashboard = async (req, res) => {
     }
     const salaryDetails = await Salary.find({ employee: employeeId });
     const taskDetails = await Task.find({ employee: employeeId });
+    
+    // Check if employee is currently on leave
+    const currentLeaveStatus = await checkIfCurrentlyOnLeave(employeeId);
+    
+
     const ticketDetails = await SupportTicket.find({ employee: employeeId }).sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -55,6 +61,7 @@ const getEmployeedashboard = async (req, res) => {
         employee,
         salaryDetails,
         taskDetails,
+        currentLeaveStatus,
         ticketDetails
       }
     });
@@ -159,32 +166,134 @@ const updateTask = async (req, res) => {
   }
 }
 
-const getProfile = async (req, res) => {
+const addTaskComment = async (req, res) => {
   try {
-    const id = req.user.id;
-    const profile = await User.findById(id).populate("department", "name description");
-    if (!profile) {
+    const { taskId } = req.params;
+    const { comment } = req.body;
+
+    if (!comment || !comment.trim()) {
       return res.status(400).json({
-        message: "no employee with this id",
-        success: false
-      })
+        success: false,
+        message: "Comment is required"
+      });
+    }
+
+    const task = await Task.findOne({ _id: taskId, employee: req.user.id });
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found"
+      });
+    }
+
+    task.progressComments.push({
+      comment: comment.trim(),
+      createdBy: req.user.id
+    });
+
+    await task.save();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        task
+      }
+    });
+  } catch (err) {
+    console.log("add task comment error", err);
+    res.status(500).json({
+      success: false,
+      message: "Error adding task comment"
+    });
+  }
+};
+
+const uploadTaskFile = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded"
+      });
+    }
+
+    // Verify task access (for employees and department heads)
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found"
+      });
+    }
+
+    // Check if user is the task owner or department head
+    const isTaskOwner = task.employee.toString() === req.user.id;
+    const isDepartmentHead = req.user.role === 'Department Head' && 
+                             task.department && 
+                             task.department.toString() === req.user.department.toString();
+
+    if (!isTaskOwner && !isDepartmentHead) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to upload files for this task"
+      });
     }
 
     return res.status(200).json({
-
       success: true,
-      data: profile
-    })
-
-  } catch (error) {
-    console.error('Error fetching employee profile:', error);
+      data: {
+        url: req.file.path,
+        filename: req.file.originalname,
+        fileId: req.file.filename
+      }
+    });
+  } catch (err) {
+    console.log("upload task file error", err);
     res.status(500).json({
       success: false,
-      message: 'Server Error',
-      error: error.message
+      message: "Error uploading file"
     });
   }
-}
+};
+const getProfile = async (req, res) => {
+  try {
+    const id = req.user.id;
+
+    const profile = await User.findById(id)
+      .populate({
+        path: "department",
+        select: "name description",
+        populate: {
+          path: "manager",
+          select: "firstName lastName"
+        }
+      })
+      .select("-password"); // remove password
+
+    if (!profile) {
+      return res.status(400).json({
+        success: false,
+        message: "No employee with this id"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: profile
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error"
+    });
+  }
+};
+
+
 
 
 const getAppliedLeave = async (req, res) => {
@@ -218,28 +327,61 @@ const getAppliedLeave = async (req, res) => {
 const applyLeave = async (req, res) => {
   try {
     const { leaveData } = req.body;
+        const userId = req.user.id;
+    const userRole = req.user.role;
+
+    // Validate required fields
+    if (!leaveData.leaveType || !leaveData.fromDate || !leaveData.toDate || !leaveData.reason) {
+      return res.status(400).json({
+        success: false,
+        message: 'All required fields must be provided'
+      });
+    }
+
+    // Validate date range
+    const startDate = new Date(leaveData.fromDate);
+    const endDate = new Date(leaveData.toDate);
+
+    if (endDate < startDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'End date cannot be before start date'
+      });
+    }
+
+    // Perform leave validation - check for conflicts and pending requests
+    const validationResult = await validateLeaveRequest(userId, startDate, endDate);
+    
+    if (!validationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: validationResult.message
+      });
+    }
 
 
     const appliedLeave = new Leave({
 
       leaveType: leaveData.leaveType,
-      startDate: leaveData.fromDate,
-      endDate: leaveData.toDate,
+      startDate: startDate,
+      endDate: endDate,
       reason: leaveData.reason,
-      employee: req.user.id
-    })
+      employee: userId,
+      isHeadRequest: userRole === 'Department Head'
+    });
 
 
     const result = await appliedLeave.save();
 
-    await logActivity('leave_request', req.user.id, {
+     await logActivity('leave_request', userId, {
       relatedModel: 'Leave',
       relatedId: result._id,
       metadata: {
         leaveType: result.leaveType,
-        startDate: result.fromDate,
-        endDate: result.toDate,
-        numberOfDays: calculateDays(result.fromDate, result.toDate)
+                startDate: result.startDate,
+        endDate: result.endDate,
+        numberOfDays: calculateDays(result.startDate, result.endDate),
+        isHeadRequest: result.isHeadRequest
       }
     });
 
@@ -559,11 +701,13 @@ module.exports = {
   getEmployeedashboard,
   getTasks,
   updateTask,
+  addTaskComment,
+  uploadTaskFile,
   applyLeave,
   getAppliedLeave,
   getProfile,
   getMyTickets,
   changePassword,
-  updateSecurityKey,
-  getAllEmployees
+  updateSecurityKey
+
 }
