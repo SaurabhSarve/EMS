@@ -1,0 +1,56 @@
+# --- General ---
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+dist/
+build/
+coverage/
+.vscode/
+.idea/
+
+# --- Environment Variables (CRITICAL) ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+Backend/.env
+django-chat/.env
+
+# --- Frontend (Vite/React) ---
+Frontend/node_modules/
+Frontend/dist/
+Frontend/.eslintcache
+Frontend/npm-debug.log*
+Frontend/yarn-debug.log*
+Frontend/yarn-error.log*
+Frontend/pnpm-debug.log*
+
+# --- Backend (Node.js/Express) ---
+Backend/node_modules/
+Backend/npm-debug.log*
+Backend/yarn-debug.log*
+Backend/yarn-error.log*
+
+# --- Django Chat (Python/Django) ---
+django-chat/venv/
+django-chat/env/
+django-chat/__pycache__/
+django-chat/*.pyc
+django-chat/*.pyo
+django-chat/*.pyd
+django-chat/db.sqlite3
+django-chat/db.sqlite3-journal
+django-chat/media/
+django-chat/staticfiles/
+
+# --- Python Virtual Environment ---
+venv/
+env/
+ENV/
+
+# --- Uploads & Temporary Files ---
+*.tmp
+*.bak
+*.swp
