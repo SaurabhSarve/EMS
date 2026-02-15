@@ -16,6 +16,7 @@ const {
     getEmployeesSalary,
     addTask,
     deleteTask,
+    updateTaskByAdmin,
     updateSalary,
     runPayroll,
     leaveAction,
@@ -25,12 +26,17 @@ const {
     deleteDepartment,
     updateDepartment,
     updateProfile,
-    getAllEmployeesByDepartment,
+    getAllEmployeesByDepartement,
     getCurrentMonthPaidEmployees,
     getPaidEmployeesByDateRange,
+    getAllAdmins,
+    updateAdminStatus,
     getAllEmployeesDuePayment,
     employeePromotion,
-    updateEmployeesPermantentSalary
+    updateEmployeesPermantentSalary,
+    employeePayRollById,
+    employeeFilterPayRoll,
+    bulkHiring
 } = require("../controllers/adminController.js");
 
 const { downloadInvoice } = require("../controllers/downloadInvoice");
@@ -40,8 +46,26 @@ const { protect, authorize } = require('../middleware/auth');
 const { getAdminTickets, deleteEmployeeTicket, deleteDepartmentHeadTicket, updateTicket, updateTicketStatus, forwardToAdmin, getDepartmentHeadQueries, getMyQueriesForDepartmentHead, getDepartmentEmployeesTickets } = require('../controllers/supportTicketController.js');
 const { ActivatePaymentMode, UpdateBankDetails } = require("../controllers/paymentController.js");
 const { getRecentActivities } = require('../controllers/activityController.js');
+const { 
+  getProjectsByDepartmentHead, 
+  createProject, 
+  getProjectById, 
+  updateProject, 
+  archiveProject, 
+  unarchiveProject,
+  deleteProject,
+  assignDepartmentToHead 
+} = require("../controllers/projectController.js");
+const {
+  getProjectUpdates,
+  getProjectLatestUpdates,
+  toggleUpdateLike,
+  replyToUpdate
+} = require("../controllers/projectUpdateController.js");
 // middleware
 router.use(protect);
+
+const uploadFile = multer({ dest: "uploads/" });
 
 // Admin AUTHORIZED AREA ROUTES
 
@@ -82,7 +106,7 @@ router.route("/employees")
     .get(getAllEmployees)
     .post(upload.single('profilePhoto'), createEmployee);
 
-router.get("/department-head/employees", getAllEmployeesByDepartment);
+
 
 // after registraion (after adding employee)
 router.post("/employees/sent-email", sentEmail);
@@ -94,7 +118,7 @@ router.route("/employee/:id")
     .put(upload.single('profilePhoto'), updateEmployee)
     .delete(deleteEmployee);
 
-router.route("/employees/bydepartment").get(getAllEmployeesByDepartment)
+router.route("/employees/bydepartment").get(getAllEmployeesByDepartement)
 
 
 // tasks , based on Head and Admin
@@ -106,6 +130,7 @@ router.post("/employee/:id/addtask", addTask);
 
 // task deletion (Admin/Department Head)
 router.delete("/tasks/:taskId", deleteTask);
+router.patch("/tasks/:taskId", updateTaskByAdmin);
 
 
 
@@ -148,6 +173,32 @@ router.route("/departments/:id")
     .put(updateDepartment)
     .delete(deleteDepartment);
 
+    
+// Project management routes (Department Head Projects)
+router.route("/projects")
+    .get(getProjectsByDepartmentHead)
+    .post(createProject);
+
+router.route("/projects/:id")
+    .get(getProjectById)
+    .put(updateProject)
+    .delete(deleteProject);
+
+router.patch("/projects/:id/archive", archiveProject);
+
+router.patch("/projects/:id/unarchive", unarchiveProject);
+
+// Project Updates routes
+router.get("/projects/:projectId/updates", getProjectUpdates);
+
+router.get("/projects/:projectId/updates/latest", getProjectLatestUpdates);
+
+router.post("/projects/updates/:updateId/like", toggleUpdateLike);
+
+router.post("/projects/updates/:updateId/reply", replyToUpdate);
+
+router.post("/assign-department", assignDepartmentToHead);
+
 
 router.route("/me")
     .put(upload.single('profilePhoto'), updateProfile);
@@ -157,6 +208,13 @@ router.route("/employees/salary/customHistory").get(getPaidEmployeesByDateRange)
 router.route("/employees/salary/invoice/:salaryId").get(downloadInvoice);
 router.route("/employees/salary/allDue").get(getAllEmployeesDuePayment);
 router.route("/employees/promotion").put(employeePromotion);
-router.route("/employees/permententSalaryUpdate").patch(updateEmployeesPermantentSalary)
+router.route("/employees/permententSalaryUpdate").patch(updateEmployeesPermantentSalary);
+// router.route("/employees/id/payroll").get(employeePayRollById);
+router.route("/employees/id/filter").post(employeeFilterPayRoll);
+router.route("/bulkHiring").post(uploadFile.single("file"), bulkHiring)
+
+// Admin management routes
+router.get("/admins", getAllAdmins);
+router.patch("/admins/:id/status", updateAdminStatus);
 
 module.exports = router;

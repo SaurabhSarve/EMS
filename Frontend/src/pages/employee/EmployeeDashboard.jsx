@@ -9,6 +9,7 @@ import {
   LogIn,
   LogOut,
   Plus,
+  Ticket,
 } from "lucide-react";
 import EmployeesSidebar from "../../Components/EmployeesSidebar";
 import { employeeService } from "../../services/employeeServices";
@@ -19,6 +20,7 @@ export default function EmployeeDashboard() {
   const [me, setMe] = useState();
   const [salarydetails, setSalaryDetails] = useState([]);
   const [taskdetails, setTaskDetails] = useState([]);
+  const [ticketDetails, setTicketDetails] = useState([]);
   const getCurrentDate = () => {
     const options = {
       weekday: 'long',
@@ -73,6 +75,7 @@ export default function EmployeeDashboard() {
         setMe(result.data.employee);
         setSalaryDetails(result.data.salaryDetails);
         setTaskDetails(result.data.taskDetails);
+        setTicketDetails(result.data.ticketDetails);
       }
     } catch (error) {
       console.error("employee dashboard error", error);
@@ -112,26 +115,26 @@ export default function EmployeeDashboard() {
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 min-[1112px]:ml-[280px]">
         {/* PROFILE HEADER CARD */}
-        <div className="relative overflow-hidden rounded-3xl shadow-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 transform transition-all hover:shadow-blue-500/20 group">
+        <div className="relative overflow-hidden rounded-2xl shadow-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 transform transition-all hover:shadow-blue-500/20 group">
           {/* Animated shimmer effect */}
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
           </div>
           {/* Decorative Background Elements */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl transform translate-x-32 -translate-y-32 animate-pulse"></div>
-          <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-900/20 rounded-full blur-2xl transform -translate-x-20 translate-y-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl transform translate-x-32 -translate-y-32 animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-900/20 rounded-full blur-2xl transform -translate-x-20 translate-y-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
 
-          <div className="relative z-10 px-6 py-6 sm:px-8 sm:py-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="relative z-10 px-6 py-4 sm:px-7 sm:py-5">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
               {/* Profile Info */}
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-3">
-                  <div className="w-1 h-8 bg-white/60 rounded-full"></div>
-                  <h1 className="text-2.5xl sm:text-4xl font-extrabold text-white drop-shadow-lg">
+                  <div className="w-1 h-6 bg-white/60 rounded-full"></div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white drop-shadow-lg leading-tight">
                     Welcome back, {capitalize(me?.firstName) || "Employee"} {capitalize(me?.lastName) || ""}
                   </h1>
                 </div>
-                <p className="text-white/90 text-sm sm:text-base font-semibold ml-4">{getCurrentDate()}</p>
+                <p className="text-white/90 text-xs sm:text-sm font-semibold ml-4 opacity-90">{getCurrentDate()}</p>
               </div>
             </div>
           </div>
@@ -170,27 +173,45 @@ export default function EmployeeDashboard() {
             </div>
           </div>
 
-          {/* Current Salary Card */}
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden group hover:shadow-lg transition-all hover:-translate-y-1 hover:border-blue-200 cursor-pointer relative">
+          {/* My Tickets Card */}
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden group hover:shadow-lg transition-all hover:-translate-y-1 hover:border-blue-200 relative">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-indigo-500/0 group-hover:from-blue-500/5 group-hover:to-indigo-500/5 transition-all duration-500"></div>
-            <div className="p-6 relative">
-              <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-2xl flex items-center justify-center group-hover:scale-105 group-hover:rotate-6 transition-all duration-300 group-hover:shadow-lg">
-                <svg className="w-6 h-6 text-white group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+            <div className="p-4 relative">
+              <div className="absolute top-3 right-3 w-10 h-10 bg-gradient-to-br from-indigo-600 via-purple-500 to-pink-400 rounded-xl flex items-center justify-center group-hover:scale-105 group-hover:rotate-6 transition-all duration-300 group-hover:shadow-lg">
+                <Ticket className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
               </div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Current Salary</p>
-              <div className="flex items-baseline gap-2 mb-3">
-                <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
-                  ₹{Number(salarydetails[0]?.baseSalary || 0).toLocaleString("en-IN")}
+              <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">My Tickets</p>
+              <div className="flex items-baseline gap-2 mb-2">
+                <h3 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
+                  {ticketDetails?.length || 0}
                 </h3>
-                <span className="text-slate-400 text-sm group-hover:text-slate-600 transition-colors">/ month</span>
+                <span className="text-slate-400 text-xs group-hover:text-slate-600 transition-colors">Total Tickets</span>
               </div>
-              <div className="flex items-center gap-2 mt-4 text-blue-600 bg-blue-50 px-3 py-2 rounded-lg group-hover:bg-blue-100 transition-colors">
-                <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-                <p className="text-xs font-semibold">Next review in 14 days</p>
+
+              <div className="space-y-1 mt-1">
+                {ticketDetails?.length > 0 ? (
+                  ticketDetails.slice(0, 3).map((ticket, index) => (
+                    <div key={ticket._id || index} className="flex items-center justify-between gap-3 p-1.5 rounded-lg bg-slate-50 border border-slate-100 group-hover:border-indigo-100 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-bold text-slate-700 truncate">{ticket.subject}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold whitespace-nowrap shadow-sm uppercase ${ticket.status === 'Open' ? 'bg-blue-100 text-blue-700' :
+                        ticket.status === 'In Progress' ? 'bg-amber-100 text-amber-700' :
+                          ticket.status === 'Resolved' ? 'bg-green-100 text-green-700' :
+                            'bg-slate-200 text-slate-700'
+                        }`}>
+                        {ticket.status}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <p className="text-xs text-slate-500 font-medium italic">No tickets raised yet</p>
+                  </div>
+                )}
+                {ticketDetails?.length > 3 && (
+                  <p className="text-[9px] text-slate-400 text-center font-semibold mt-1">+ {ticketDetails.length - 3} more tickets</p>
+                )}
               </div>
             </div>
           </div>
@@ -424,7 +445,6 @@ const SalaryHistory = ({ salarydetails }) => {
 
   return (
     <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-xl border border-slate-100 flex flex-col hover:shadow-lg transition-shadow min-h-[520px]">
-      {/* This is the section in the employee dashboard that shows the salary history of the employee */}
       {/* HEADER */}
       {/*<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
         <div className="flex items-center gap-3">
@@ -439,13 +459,13 @@ const SalaryHistory = ({ salarydetails }) => {
           </div>
         </div>
 
-         <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2.5 rounded-xl text-sm font-semibold flex gap-2 items-center w-full sm:w-auto justify-center shadow-lg hover:shadow-lg transition-all hover:scale-102">
+        {/* <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2.5 rounded-xl text-sm font-semibold flex gap-2 items-center w-full sm:w-auto justify-center shadow-lg hover:shadow-lg transition-all hover:scale-102">
           <Download size={18} /> Download Payslip
-        </button> 
+        </button>
       </div>*/}
 
       {/* ================= TABLE VIEW (Tablet + Desktop) ================= */}
-      {/* <div className="hidden sm:block overflow-x-auto lg:overflow-visible flex-1 min-h-0">
+      {/*<div className="hidden sm:block overflow-x-auto lg:overflow-visible flex-1 min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
@@ -486,44 +506,43 @@ const SalaryHistory = ({ salarydetails }) => {
                     calcDeduction={calcDeduction}
                   />
                 ))}
-    </tbody>
-            </table >
-          </div >
+              </tbody>
+            </table>
+          </div>
         )}
-      </div >*/}
+      </div>/*}
 
       {/* ================= MOBILE CARD VIEW ================= */}
-      < div className="sm:hidden space-y-4 flex-1 min-h-0 overflow-auto max-h-[360px]" >
-        {
-          isLoading ? (
-            <div className="flex items-center justify-center py-8" >
-              <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+      <div className="sm:hidden space-y-4 flex-1 min-h-0 overflow-auto max-h-[360px]">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          </div>
+        ) : salarydetails && salarydetails.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mb-4">
+              <FileText className="h-10 w-10 text-slate-400" />
             </div>
-          ) : salarydetails && salarydetails.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mb-4">
-                <FileText className="h-10 w-10 text-slate-400" />
-              </div>
-              <p className="text-slate-500 text-sm font-medium">No salary records found</p>
-              <p className="text-slate-400 text-xs mt-1">Check back later for updates</p>
-            </div>
-          ) : (
-            salarydetails?.map((salary) => (
-              <MobileSalaryCard
-                key={salary._id || salary.id}
-                month={salary.month}
-                year={new Date().getFullYear()}
-                baseSalary={salary.baseSalary}
-                taxApply={salary?.taxApply}
-                deduction={salary.deductions}
-                netSalary={salary.netSalary}
-                status={salary.Status}
-                formatINR={formatINR}
-                calcDeduction={calcDeduction}
-              />
-            ))
-          )}
-      </div >
+            <p className="text-slate-500 text-sm font-medium">No salary records found</p>
+            <p className="text-slate-400 text-xs mt-1">Check back later for updates</p>
+          </div>
+        ) : (
+          salarydetails?.map((salary) => (
+            <MobileSalaryCard
+              key={salary._id || salary.id}
+              month={salary.month}
+              year={new Date().getFullYear()}
+              baseSalary={salary.baseSalary}
+              taxApply={salary?.taxApply}
+              deduction={salary.deductions}
+              netSalary={salary.netSalary}
+              status={salary.Status}
+              formatINR={formatINR}
+              calcDeduction={calcDeduction}
+            />
+          ))
+        )}
+      </div>
 
       {/* FOOTER
       <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-xl sticky bottom-0">
@@ -531,7 +550,7 @@ const SalaryHistory = ({ salarydetails }) => {
           View All Payslips ({salarydetails?.length || 0})
         </button>
       </div> */}
-    </div >
+    </div>
   );
 };
 

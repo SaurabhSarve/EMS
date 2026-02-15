@@ -4,12 +4,9 @@ import { useNavigate } from "react-router-dom";
 import AdminSidebar from "../../Components/AdminSidebar.jsx";
 import { employeeService } from "../../services/employeeServices.js";
 import { capitalize } from "../../utils/helper.js";
-import { useAuth } from "../../context/AuthContext.jsx";
 
 export default function EmployeesList() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const isDepartmentHead = user?.role === "Department Head";
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -18,18 +15,14 @@ export default function EmployeesList() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
-    if (!isDepartmentHead) {
-      fetchDepartments();
-    }
+    fetchDepartments();
     fetchEmployees();
-  }, [isDepartmentHead]);
+  }, []);
 
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const result = isDepartmentHead
-        ? await employeeService.getDepartmentHeadEmployees()
-        : await employeeService.getAllEmployees();
+      const result = await employeeService.getAllEmployees();
       if (result && result.data) {
         setEmployees(result.data);
       }
@@ -116,7 +109,7 @@ export default function EmployeesList() {
                   </div>
                   <div>
                     <h1 className="text-2xl sm:text-3xl font-bold">
-                      {isDepartmentHead ? "My Department Employees" : "Employee Directory"}
+                      Employee Directory
                     </h1>
                     <p className="text-blue-100 mt-1 text-sm sm:text-base">
                       {loading
@@ -152,20 +145,18 @@ export default function EmployeesList() {
 
               {/* Filters */}
               <div className="flex flex-col sm:flex-row gap-3">
-                {!isDepartmentHead && (
-                  <select
-                    value={departmentFilter}
-                    onChange={(e) => setDepartmentFilter(e.target.value)}
-                    className="px-4 py-3 border border-gray-200 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-1 bg-white shadow-sm"
-                  >
-                    <option value="all">All Departments</option>
-                    {departments.map((dept) => (
-                      <option key={dept._id} value={dept.name}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
+                <select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  className="px-4 py-3 border border-gray-200 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-1 bg-white shadow-sm"
+                >
+                  <option value="all">All Departments</option>
+                  {departments.map((dept) => (
+                    <option key={dept._id} value={dept.name}>
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
 
                 <select
                   value={statusFilter}
@@ -238,7 +229,7 @@ export default function EmployeesList() {
                     <tbody className="divide-y divide-gray-100">
                       {filteredEmployees.map((employee) => (
                         <tr
-                          key={employee.id}
+                          key={employee._id || employee.id}
                           className="hover:bg-blue-50/60 cursor-pointer transition-colors"
                           onClick={() => handleEmployeeClick(employee._id)}
                         >
@@ -321,7 +312,7 @@ export default function EmployeesList() {
               <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredEmployees.map((employee) => (
                   <div
-                    key={employee.id}
+                    key={employee._id || employee.id}
                     onClick={() => handleEmployeeClick(employee._id)}
                     className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer"
                   >

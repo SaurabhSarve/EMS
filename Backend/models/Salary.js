@@ -45,7 +45,20 @@ const salarySchema = new mongoose.Schema({
   netSalary: {
     type: Number,
   },
-
+  invoice: {
+    invoiceNo: {
+      type: String,
+    },
+    invoiceDate: {
+      type: Date,
+    },
+    amount: {
+      type: Number,
+    },
+    invoiceUrl: {
+      type: String,
+    }
+  },
   Status: {
     type: String,
     enum: ["processing", "paid", "due"],
@@ -55,10 +68,15 @@ const salarySchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
-// ✅ Unique salary per employee per month per year
 salarySchema.index(
   { employee: 1, month: 1, year: 1 },
   { unique: true }
 );
+
+salarySchema.index(
+  { employee: 1, month: 1, year: 1, Status: 1 }
+)
+
+salarySchema.index({ employee: 1 });
 
 module.exports = mongoose.model("Salary", salarySchema);
