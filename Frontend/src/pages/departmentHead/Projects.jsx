@@ -28,7 +28,6 @@ import {
   Modal,
   Pagination,
   PriorityBadge,
-  ProgressBar,
   StatusBadge,
   ViewToggle,
 } from "../../Components/ProjectUI";
@@ -41,7 +40,6 @@ const defaultFormState = {
   leader: "",
   dueDate: "",
   priority: "Medium",
-  progress: 0,
 };
 
 const formatDate = (value) =>
@@ -51,15 +49,12 @@ const formatDate = (value) =>
     year: "numeric",
   });
 
-const resolveStatus = (progress, dueDate, archived) => {
+const resolveStatus = (currentStatus, dueDate, archived) => {
   if (archived) return "Archived";
-  const progressValue = Number(progress || 0);
   const today = new Date();
   const due = new Date(dueDate);
-  if (progressValue >= 100) return "Completed";
-  if (due.setHours(0, 0, 0, 0) < today.setHours(0, 0, 0, 0)) return "Overdue";
-  if (progressValue > 0) return "Ongoing";
-  return "Pending";
+  if (due.setHours(0, 0, 0, 0) < today.setHours(0, 0, 0, 0) && currentStatus !== "Completed") return "Overdue";
+  return currentStatus || "Pending";
 };
 
 const getEmployeeLabel = (employee) => {
@@ -343,7 +338,7 @@ export default function DepartmentHeadProjects() {
       setProjects((prev) =>
         prev.map((project) => ({
           ...project,
-          status: resolveStatus(project.progress, project.dueDate, project.archived),
+          status: resolveStatus(project.status, project.dueDate, project.archived),
         }))
       );
     }, 60000); // Check every minute
@@ -378,7 +373,6 @@ export default function DepartmentHeadProjects() {
       leader: project.leader,
       dueDate: project.dueDate,
       priority: project.priority,
-      progress: project.progress,
     });
     setSelectedEmployees(project?.assignees || []);
     setLeaderId(project?.leaderId || "");
@@ -490,10 +484,6 @@ export default function DepartmentHeadProjects() {
     if (!formState.dueDate) nextErrors.dueDate = "Due date is required.";
     const teamSize = selectedEmployees.length;
     if (!teamSize || teamSize < 1) nextErrors.teamSize = "Team size must be at least 1.";
-    const progress = Number(formState.progress);
-    if (Number.isNaN(progress) || progress < 0 || progress > 100) {
-      nextErrors.progress = "Progress must be between 0 and 100.";
-    }
     if (selectedEmployees.length === 0) nextErrors.assignees = "Select at least one team member.";
     if (!leaderId) nextErrors.leaderId = "Select a team leader.";
     if (leaderId && !selectedEmployees.some((item) => item._id === leaderId)) {
@@ -535,7 +525,6 @@ export default function DepartmentHeadProjects() {
       leaderName: leaderName,
       assignees: selectedEmployees.map(emp => emp._id),
       dueDate: formState.dueDate,
-      progress: Number(formState.progress),
       priority: formState.priority,
     };
 
@@ -914,7 +903,6 @@ export default function DepartmentHeadProjects() {
                     <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider text-slate-100">Team Lead</th>
                     <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider text-slate-100">Team Size</th>
                     <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider text-slate-100">Due Date</th>
-                    <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider text-slate-100">Progress</th>
                     <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider text-slate-100">Status</th>
                     <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider text-slate-100">Priority</th>
                     <th className="px-4 py-4 text-xs font-bold uppercase tracking-wider text-slate-100">Actions</th>
@@ -947,16 +935,6 @@ export default function DepartmentHeadProjects() {
                         <div className="inline-flex items-center gap-2 rounded-lg bg-blue-100/60 px-3 py-1.5 text-sm font-semibold text-blue-900">
                           <Calendar className="w-3.5 h-3.5" />
                           {formatDate(project.dueDate)}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-28">
-                            <ProgressBar value={project.progress} />
-                          </div>
-                          <span className="inline-flex items-center rounded-full bg-gradient-to-r from-blue-100 to-sky-100 px-2.5 py-1 text-xs font-bold text-blue-700 min-w-12">
-                            {project.progress}%
-                          </span>
                         </div>
                       </td>
                       <td className="px-4 py-4">
@@ -1135,18 +1113,6 @@ export default function DepartmentHeadProjects() {
                       </div>
                     </div>
 
-                    {/* Progress Section */}
-                    <div className="relative z-10 px-6 py-4 border-t border-slate-100 bg-gradient-to-r from-slate-50 to-slate-50/50">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <p className="text-xs font-bold text-slate-700 uppercase tracking-widest">Progress</p>
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 px-3 py-1 text-xs font-bold text-blue-700 shadow-sm">
-                          <BarChart3 className="w-3.5 h-3.5" />
-                          {project.progress}%
-                        </span>
-                      </div>
-                      <ProgressBar value={project.progress} />
-                    </div>
-
                     {/* Action Buttons Footer */}
                     <div className="relative z-10 px-6 py-3 bg-white border-t border-slate-100 flex gap-2">
                       <button
@@ -1269,13 +1235,6 @@ export default function DepartmentHeadProjects() {
               <PriorityBadge value={selectedProject.priority} />
               <StatusBadge value={selectedProject.status} />
             </div>
-            <div>
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-                <span>Progress</span>
-                <span>{selectedProject.progress}%</span>
-              </div>
-              <ProgressBar value={selectedProject.progress} />
-            </div>
 
             {/* Team Updates Section */}
             <div className="mt-4 border-t border-slate-200 pt-4">
@@ -1295,27 +1254,12 @@ export default function DepartmentHeadProjects() {
                             <span className="font-semibold text-slate-900">
                               {update.user?.firstName} {update.user?.lastName}
                             </span>
-                            {update.type === 'progress' && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-                                <CheckCircle2 size={12} />
-                                Progress
-                              </span>
-                            )}
                             {update.type === 'comment' && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-medium">
                                 Comment
                               </span>
                             )}
                           </div>
-                          {update.type === 'progress' && (
-                            <div className="flex items-center gap-2 mt-2">
-                              <span className="text-slate-600">Progress:</span>
-                              <div className="flex-1 max-w-xs">
-                                <ProgressBar value={update.progress} />
-                              </div>
-                              <span className="font-semibold text-blue-600">{update.progress}%</span>
-                            </div>
-                          )}
                           {update.content && (
                             <p className="text-slate-600 mt-2 leading-relaxed">{update.content}</p>
                           )}
@@ -1702,29 +1646,6 @@ export default function DepartmentHeadProjects() {
                     ))}
                   </select>
                 </div>
-
-                {/* Progress - Only in Edit Mode */}
-                {modalMode !== "create" && (
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">
-                      Progress <span className="text-slate-400">(%)</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm transition hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                        value={formState.progress}
-                        onChange={(event) => handleFormChange("progress", event.target.value)}
-                        min="0"
-                        max="100"
-                      />
-                      <span className="text-sm font-bold text-slate-700 bg-gradient-to-r from-teal-50 to-blue-50 px-3 py-2 rounded-lg border border-slate-200">
-                        {formState.progress}%
-                      </span>
-                    </div>
-                    {formErrors.progress && <p className="mt-2 text-xs text-rose-500 font-medium">{formErrors.progress}</p>}
-                  </div>
-                )}
               </div>
             </div>
           </form>

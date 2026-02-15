@@ -20,6 +20,7 @@ const {
     updateSalary,
     runPayroll,
     leaveAction,
+    deleteLeave,
     sentEmail,
     getDepartmentTasks,
     payIndividual,
@@ -150,7 +151,11 @@ router.post('/salary/pay-individual/:salaryId', payIndividual);
 // router.post("/employees/salary/" , updateSalary);
 
 
-// leaves detail 
+// delete leave - MUST come before /employees/leaves to avoid route conflicts
+router.route("/employees/leaves/:leaveId")
+    .delete(deleteLeave);
+
+// leaves detail and actions
 router.route("/employees/leaves")
     .get(getleavesDetail)
     .post(leaveAction);

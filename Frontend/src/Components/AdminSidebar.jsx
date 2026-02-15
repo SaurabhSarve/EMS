@@ -13,7 +13,8 @@ import {
     MdAttachMoney,
     MdAccountCircle,
     MdContactSupport,
-    MdBusiness
+    MdBusiness,
+    MdSettings
 } from "react-icons/md";
 import { useAuth } from '../context/AuthContext';
 
@@ -41,6 +42,7 @@ const AdminSidebar = () => {
     }, []);
 
     const isDepartmentHead = user?.role === "Department Head";
+    const dashboardPath = isDepartmentHead ? "/head/dashboard" : "/admin/dashboard";
     const roleSpecificItem = isDepartmentHead
         ? { icon: <MdTaskAlt />, label: "Tasks", path: "/admin/employees/tasks" }
         : { icon: <MdBusiness />, label: "Departments", path: "/admin/employees/tasks" };
@@ -54,7 +56,7 @@ const AdminSidebar = () => {
     const payrollPath = isDepartmentHead ? "/head/payroll" : "/admin/employees/salary";
 
     const menuItems = [
-        { icon: <MdDashboard />, label: "Dashboard", path: "/admin/dashboard" },
+        { icon: <MdDashboard />, label: "Dashboard", path: dashboardPath },
         { icon: <MdGroup />, label: "Employees", path: "/admin/employees" },
         ...(projectMenuItem ? [projectMenuItem] : []),
         roleSpecificItem,
@@ -62,7 +64,10 @@ const AdminSidebar = () => {
         leaveMenuItem,
         { icon: <MdAttachMoney />, label: "Payroll", path: payrollPath },
         { icon: <MdAccountCircle />, label: "Profile", path: "/admin/me" },
-        { icon: <MdContactSupport />, label: "Tickets", path: "/admin/tickets" }
+        { icon: <MdContactSupport />, label: "Tickets", path: "/admin/tickets" },
+        ...(user?.role === "Admin"
+    ? [{ icon: <MdSettings />, label: "Settings", path: "/admin/settings" }]
+    : [])
 
     ];
 
@@ -79,17 +84,17 @@ const AdminSidebar = () => {
             {/* Mobile Hamburger Button - Small Size */}
             {isMobile && (
                 <button
-                    onClick={toggleSidebar}
-                    className="fixed top-3 left-4 z-50 w-9 h-9 bg-white text-gray-900 rounded-lg hover:bg-gray-100 active:scale-95 transition-all duration-200 shadow-md border border-gray-200 flex items-center justify-center"
-                >
-                    {isOpen ? <MdClose size={18} /> : <MdMenu size={18} />}
-                </button>
+                        onClick={toggleSidebar}
+                        className="fixed top-4 left-4 z-50 w-10 h-10 bg-white/90 text-gray-900 rounded-lg hover:bg-white active:scale-95 transition-all duration-200 shadow-md border border-gray-200 flex items-center justify-center"
+                    >
+                        {isOpen ? <MdClose size={18} /> : <MdMenu size={18} />}
+                    </button>
             )}
 
             {/* Sidebar */}
             <aside
                 className={`
-                    fixed w-64 min-h-screen bg-gradient-to-b from-slate-50 to-white border-r border-gray-200 text-gray-800 flex flex-col
+                    fixed top-0 left-0 bottom-0 w-64 h-screen bg-gradient-to-b from-slate-50 to-white border-r border-gray-200 text-gray-800 flex flex-col min-h-0
                     transform transition-transform duration-300 ease-in-out z-40
                     ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                     ${!isMobile ? 'lg:translate-x-0' : ''}
@@ -120,7 +125,7 @@ const AdminSidebar = () => {
                 )} */}
 
                 {/* MENU */}
-                <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto min-h-0">
                     {menuItems.map((item, index) => (
                         <MenuItem
                             key={index}
@@ -136,29 +141,25 @@ const AdminSidebar = () => {
                 </nav>
 
                 {/* USER CARD & LOGOUT */}
-                <div className="p-4 border-t border-gray-200 bg-gradient-to-b from-gray-50 to-slate-50">
+                <div className="p-4 border-t border-gray-100 bg-white sticky bottom-0">
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-3 bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-0">
-                            <div className="w-11 h-11 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
-                                <span className="text-white font-bold text-base">{user?.firstName?.charAt(0) || "A"}</span>
+                        <div className="flex items-center gap-3 rounded-lg p-2 flex-1 min-w-0">
+                            <div className="w-11 h-11 bg-blue-50 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-blue-700 font-bold text-base">{user?.firstName?.charAt(0) || "A"}</span>
                             </div>
                             <div className="overflow-hidden flex-1 min-w-0">
                                 <p className="text-sm font-semibold text-gray-900 truncate">{user?.firstName || "Admin"}</p>
-                                <p className="text-xs text-gray-500 font-medium truncate">{user?.role === "Department Head" ? "Head" : "Admin"}</p>
+                                <p className="text-xs text-gray-500 font-medium truncate">{user?.role === "Department Head" ? "Department Head" : "Admin"}</p>
                             </div>
                         </div>
 
-                        {/* Logout Button */}
                         <button
                             onClick={handleLogout}
                             aria-label="Logout"
                             title="Logout"
-                            className="flex items-center justify-center w-11 h-11 rounded-xl 
-    bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 
-    text-white hover:from-indigo-700 hover:via-blue-700 hover:to-sky-600 
-    active:scale-95 transition-all duration-200 shadow-md hover:shadow-lg flex-shrink-0"
+                            className="flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:scale-95 transition-all duration-150 shadow-sm flex-shrink-0"
                         >
-                            <MdLogout size={20} />
+                            <MdLogout size={18} />
                         </button>
                     </div>
                 </div>
@@ -220,25 +221,22 @@ const AdminSidebar = () => {
 const MenuItem = ({ icon, label, active, onClick }) => (
     <button
         onClick={onClick}
-        className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group relative overflow-hidden
-            ${active
-                ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 font-semibold shadow-sm"
-                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-            }`}
+        className={`relative flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer overflow-hidden
+            ${active ? "bg-white text-blue-700 font-semibold shadow-sm" : "text-gray-700 hover:bg-slate-50 hover:text-gray-900"}`}
     >
         {/* Active indicator bar */}
         {active && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-600 to-blue-700 rounded-r-full shadow-md"></div>
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-10 bg-gradient-to-b from-blue-600 to-blue-700 rounded-r-full shadow-md"></div>
         )}
 
-        <div className={`text-base transition-colors ${active ? "text-blue-600" : "text-gray-500 group-hover:text-gray-700"}`}>
+        <div className={`flex items-center justify-center w-9 h-9 rounded-md transition-colors ${active ? 'bg-blue-50 text-blue-600' : 'text-gray-500 group-hover:text-gray-700'}`}>
             {icon}
         </div>
-        <span className="text-sm font-medium">{label}</span>
 
-        {/* Hover effect */}
+        <span className="text-sm font-medium truncate">{label}</span>
+
         {!active && (
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
         )}
     </button>
 );

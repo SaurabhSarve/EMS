@@ -32,8 +32,18 @@ const taskAttachmentStorage = new CloudinaryStorage({
     }
 });
 
+const leaveDocumentStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+        folder: 'leave_documents',
+        allowed_formats: ["pdf", "doc", "docx", "png", "jpg", "jpeg"],
+        resource_type: 'auto'
+    }
+});
+
 module.exports = {
     cloudinary,
     storage,
-    taskAttachmentStorage
+    taskAttachmentStorage,
+    leaveDocumentStorage
 }
