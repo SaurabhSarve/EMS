@@ -524,6 +524,7 @@ const getMyTickets = async (req, res) => {
     const tickets = await SupportTicket.find({ employee: employeeId })
       .populate('employee', 'name email')
       .populate('assignedTo', 'name email role')
+      .populate('comments')
       .sort({ createdAt: -1 });
 
 

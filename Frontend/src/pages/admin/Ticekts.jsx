@@ -1027,17 +1027,19 @@ export default function Tickets() {
                                 <p className="text-sm text-slate-600  line-clamp-2">
                                   {ticket.description}
                                 </p>
-                                {/* <button
-                                  onClick={() => {
-                                    setActiveReply(ticket.comments || []);
-                                    setShowReplyModal(true);
-                                  }}
-                                  className="px-2 py-1.5 text-xs font-semibold
-                                 text-blue-600 border border-blue-500
-                                 rounded-lg hover:bg-blue-500 hover:text-white"
-                                >
-                                  Remarks
-                                </button> */}
+                                {ticket.comments && ticket.comments.length > 0 ? (
+                                  <button
+                                    onClick={() => {
+                                      setActiveReply(ticket.comments || []);
+                                      setShowReplyModal(true);
+                                    }}
+                                    className="px-2 py-1.5 text-xs font-semibold text-blue-600 border border-blue-500 rounded-lg hover:bg-blue-500 hover:text-white"
+                                  >
+                                    View Remarks ({ticket.comments.length})
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-slate-400">No remarks</span>
+                                )}
                               </div>
 
                               <div className="flex flex-wrap items-center gap-2 mt-4">
@@ -1067,15 +1069,36 @@ export default function Tickets() {
 
                   {/* comment section of by admin and view by head  */}
 
-                  {/* {showReplyModal && (
+                  {showReplyModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
                       <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-6">
                         <h3 className="text-lg font-bold text-slate-900 mb-3">
-                          Admin Reply
+                          Ticket Remarks
                         </h3>
 
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-700 whitespace-pre-wrap">
-                          {activeReply}
+                        <div className="max-h-80 overflow-y-auto space-y-3">
+                          {activeReply && activeReply.length > 0 ? (
+                            activeReply.map((reply, idx) => (
+                              <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-semibold text-blue-600">
+                                    {reply.role}
+                                  </span>
+                                  <span className="text-xs text-slate-400">
+                                    {reply.createdAt ? new Date(reply.createdAt).toLocaleString() : ''}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-slate-700 whitespace-pre-wrap">
+                                  {reply.message}
+                                </div>
+                                <div className="mt-2 text-xs text-slate-500">
+                                  Status: <span className="font-semibold">{reply.statusAtThatTime}</span>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-slate-500 text-center py-4">No remarks available</p>
+                          )}
                         </div>
 
                         <button
@@ -1086,7 +1109,7 @@ export default function Tickets() {
                         </button>
                       </div>
                     </div>
-                  )} */}
+                  )}
 
                   {/* Form View */}
                   {myQueriesSubView === "form" && (
