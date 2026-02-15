@@ -12,7 +12,6 @@ import {
     MdContactSupport
 } from "react-icons/md";
 import { useAuth } from '../context/AuthContext';
-import { capitalize } from "../utils/helper";
 
 const EmployeesSidebar = () => {
     const navigate = useNavigate();
@@ -41,9 +40,9 @@ const EmployeesSidebar = () => {
         { icon: <MdDashboard />, label: "Dashboard", path: "/employee/dashboard" },
         { icon: <MdAccountCircle />, label: "Profile", path: "/employee/profile" },
         { icon: <MdWork />, label: "Projects", path: "/employee/projects" },
-        { icon: <MdTaskAlt />, label: "My tasks", path: "/employee/mytasks" },
+        { icon: <MdTaskAlt />, label: "My Tasks", path: "/employee/mytasks" },
         { icon: <MdCalendarToday />, label: "Leaves", path: "/employee/apply-leave" },
-        { icon: <MdContactSupport />, label: "Support System", path: "/employee/support-system" }
+        { icon: <MdContactSupport />, label: "Support", path: "/employee/support-system" }
     ];
 
     const handleLogout = () => {
@@ -56,11 +55,11 @@ const EmployeesSidebar = () => {
 
     return (
         <>
-            {/* Mobile Hamburger Button */}
+            {/* Mobile Hamburger Button - Small Size */}
             {isMobile && (
                 <button
                     onClick={toggleSidebar}
-                    className="fixed top-3 left-4 z-50 p-2 bg-white border border-blue-200 shadow-md text-black rounded-xl hover:bg-blue-50 transition-colors"
+                    className="fixed top-4 left-4 z-50 w-10 h-10 bg-white/90 text-gray-900 rounded-lg hover:bg-white active:scale-95 transition-all duration-200 shadow-md border border-gray-200 flex items-center justify-center"
                 >
                     {isOpen ? <MdClose size={18} /> : <MdMenu size={18} />}
                 </button>
@@ -69,16 +68,15 @@ const EmployeesSidebar = () => {
             {/* Sidebar */}
             <aside
                 className={`
-        fixed w-64 min-h-screen
-        bg-[#F9FAFB]
-        border-r border-gray-200
-        text-gray-800 flex flex-col
-        transform transition-transform duration-300 ease-in-out z-40
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        ${!isMobile ? 'lg:translate-x-0' : ''}
-    `}
+                    fixed top-0 left-0 bottom-0 w-64 h-screen bg-gradient-to-b from-slate-50 to-white border-r border-gray-200 text-gray-800 flex flex-col min-h-0
+                    transform transition-transform duration-300 ease-in-out z-40
+                    ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+                    ${!isMobile ? 'lg:translate-x-0' : ''}
+                `}
+                style={{
+                    boxShadow: '2px 0 10px rgba(0, 0, 0, 0.05)'
+                }}
             >
-
                 {/* LOGO */}
                 <div className="px-6 py-6 border-b border-gray-200 bg-white">
                     <img
@@ -88,11 +86,8 @@ const EmployeesSidebar = () => {
                     />
                 </div>
 
-
-
-
                 {/* MENU */}
-                <nav className="flex-1 px-4 py-6 space-y-2">
+                <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto min-h-0">
                     {menuItems.map((item, index) => (
                         <MenuItem
                             key={index}
@@ -108,51 +103,52 @@ const EmployeesSidebar = () => {
                 </nav>
 
                 {/* USER CARD & LOGOUT */}
-                <div className="p-3 border-t border-gray-200 bg-[#F1F5FF] space-y-2.5">
-                    <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl shadow-sm">
-                        <div className="w-9 h-9 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
-                            <span className="text-white font-bold text-xs">{capitalize(user?.firstName?.charAt(0) + user?.lastName?.charAt(0))}</span>
+                <div className="p-4 border-t border-gray-100 bg-white sticky bottom-0">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 rounded-lg p-2 flex-1 min-w-0">
+                            <div className="w-11 h-11 bg-blue-50 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-blue-700 font-bold text-base">{user?.firstName?.charAt(0) || "E"}</span>
+                            </div>
+                            <div className="overflow-hidden flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 truncate">{user?.firstName || "Employee"}</p>
+                                <p className="text-xs text-gray-500 font-medium truncate">Employee</p>
+                            </div>
                         </div>
-                        <div className="overflow-hidden flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 truncate">{capitalize(user?.firstName + " " + user?.lastName || "Employee")}</p>
-                            <p className="text-xs text-blue-600 font-medium">Employee</p>
-                        </div>
+
+                        <button
+                            onClick={handleLogout}
+                            aria-label="Logout"
+                            title="Logout"
+                            className="flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:scale-95 transition-all duration-150 shadow-sm flex-shrink-0"
+                        >
+                            <MdLogout size={18} />
+                        </button>
                     </div>
-
-                    {/* Logout Button */}
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg 
-    bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 
-    text-white hover:from-blue-700 hover:via-blue-600 hover:to-blue-500 
-    active:scale-95 transition-all duration-200 font-semibold text-sm shadow-md hover:shadow-lg"
-                    >
-                        <MdLogout size={16} />
-                        <span>Logout</span>
-                    </button>
-
                 </div>
             </aside>
 
-            {/* Overlay for mobile */}
+            {/* Overlay for mobile when sidebar is open */}
             {isMobile && isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30"
+                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 transition-opacity"
                     onClick={() => setIsOpen(false)}
                 />
             )}
 
             {/* CSS for responsive behavior */}
             <style>{`
+                /* On screens 1120px and above, sidebar is always visible */
                 @media (min-width: 1120px) {
                     aside {
                         transform: translateX(0) !important;
                     }
+                    /* Hide hamburger button on desktop */
                     button.fixed.top-4.left-4 {
                         display: none !important;
                     }
                 }
                 
+                /* On screens below 1120px */
                 @media (max-width: 1119px) {
                     aside {
                         transform: translateX(-100%);
@@ -160,6 +156,24 @@ const EmployeesSidebar = () => {
                     aside.translate-x-0 {
                         transform: translateX(0) !important;
                     }
+                }
+
+                /* Scrollbar styling for sidebar */
+                nav::-webkit-scrollbar {
+                    width: 6px;
+                }
+                
+                nav::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                
+                nav::-webkit-scrollbar-thumb {
+                    background: #cbd5e0;
+                    border-radius: 3px;
+                }
+                
+                nav::-webkit-scrollbar-thumb:hover {
+                    background: #a0aec0;
                 }
             `}</style>
         </>
@@ -169,17 +183,24 @@ const EmployeesSidebar = () => {
 const MenuItem = ({ icon, label, active, onClick }) => (
     <button
         onClick={onClick}
-        className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer
-            ${active ? "bg-white text-blue-600 border-l-4 border-blue-600 font-semibold shadow-sm" : "text-gray-700 hover:bg-white/50 hover:text-blue-600"}`}
+        className={`relative flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer overflow-hidden
+            ${active ? "bg-white text-blue-700 font-semibold shadow-sm" : "text-gray-700 hover:bg-slate-50 hover:text-gray-900"}`}
     >
-        <div className={`${active ? "text-blue-600" : "text-gray-600"}`}>
+        {/* Active indicator bar */}
+        {active && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-10 bg-gradient-to-b from-blue-600 to-blue-700 rounded-r-full shadow-md"></div>
+        )}
+
+        <div className={`flex items-center justify-center w-9 h-9 rounded-md transition-colors ${active ? 'bg-blue-50 text-blue-600' : 'text-gray-500 group-hover:text-gray-700'}`}>
             {icon}
         </div>
-        <span className="text-base">{label}</span>
+
+        <span className="text-sm font-medium truncate">{label}</span>
+
+        {!active && (
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+        )}
     </button>
 );
-
-
-
 
 export default EmployeesSidebar;

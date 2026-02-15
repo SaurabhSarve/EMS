@@ -1215,13 +1215,13 @@ const getleavesDetail = async (req, res) => {
       employeeLeaves = await Leave.find({
         employee: { $in: employeeIds }
       })
-        .populate("employee", "firstName lastName employeeId")
+        .populate("employee", "firstName lastName employeeId role")
         .sort({ createdAt: -1 });
 
     } else {
       // For Admin or other roles, show all leaves
       employeeLeaves = await Leave.find({})
-        .populate("employee", "firstName lastName employeeId")
+        .populate("employee", "firstName lastName employeeId role")
         .sort({ createdAt: -1 });
     }
 
@@ -1250,11 +1250,16 @@ const getleavesDetail = async (req, res) => {
 const leaveAction = async (req, res) => {
   try {
     const { Leaveid, action } = req.body;
-    console.log(Leaveid);
-    console.log(req.body);
+    const { id: userId, role: userRole } = req.user;
+    
+    if (!Leaveid || !action) {
+      return res.status(400).json({
+        success: false,
+        message: 'Leave ID and action are required'
+      });
+    }
 
-    const updatedLeave = await Leave.findById(Leaveid).populate('employee', 'leaveBalance firstName lastName');
-    console.log(updatedLeave);
+    const updatedLeave = await Leave.findById(Leaveid).populate('employee', 'leaveBalance firstName lastName department');
 
     if (!updatedLeave) {
       return res.status(404).json({
@@ -1263,22 +1268,22 @@ const leaveAction = async (req, res) => {
       });
     }
 
-    // Permission check: Only Admin or the Department Head of the employee's department can approve/reject
+    // Permission check: Only Admin or the Department Head can approve/reject
     const isAdmin = userRole === 'Admin';
-    let isDepartmentHeadOfEmployee = false;
+    const isDepartmentHead = userRole === 'Department Head';
+    const isOwnLeave = updatedLeave.employee._id.toString() === userId;
+    const isHeadRequest = updatedLeave.isHeadRequest === true;
 
-    if (userRole === 'Department Head') {
-      // Check if this head manages the employee's department
-      const employeeDept = await Department.findOne({
-        _id: updatedLeave.employee.department,
-        manager: userId,
-        isActive: true
-      });
-      isDepartmentHeadOfEmployee = !!employeeDept;
-    }
-
-    // If neither Admin nor the Head managing this employee's department, deny permission
-    if (!isAdmin && !isDepartmentHeadOfEmployee) {
+    // Admin can approve any leave (except their own)
+    if (isAdmin && !isOwnLeave) {
+      // Admin can proceed (not their own leave)
+    } 
+    // Department Head can approve employee leaves (but not their own leaves or other head leaves)
+    else if (isDepartmentHead && !isOwnLeave && !isHeadRequest) {
+      // Department Head can proceed (not their own leave and not another head's leave)
+    } 
+    else {
+      // Permission denied
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to approve/reject this leave request'
@@ -1286,75 +1291,192 @@ const leaveAction = async (req, res) => {
     }
 
     if (action === 'Approved' || action === 'approved') {
-      const employee = await User.findById(updatedLeave.employee._id).select('leaveBalance firstName lastName');
+      const employee = await User.findById(updatedLeave.employee._id);
 
-      if (employee) {
-        const leaveType = updatedLeave.leaveType; // 'personal', 'annual', or 'sick'
-        const daysToDeduct = updatedLeave.duration || updatedLeave.totalDays;
+      if (!employee) {
+        return res.status(404).json({
+          success: false,
+          message: 'Employee not found'
+        });
+      }
 
+      const leaveType = updatedLeave.leaveType; // 'personal', 'annual', or 'sick'
+      const daysToDeduct = updatedLeave.totalDays || 1;
+
+      // Check if leave balance exists and has enough days
+      if (employee.leaveBalance && employee.leaveBalance[leaveType] !== undefined) {
         if (employee.leaveBalance[leaveType] >= daysToDeduct) {
           employee.leaveBalance[leaveType] -= daysToDeduct;
           await employee.save();
           console.log(`Deducted ${daysToDeduct} days from ${leaveType} leave`);
         } else {
-          // ADD RETURN HERE to stop execution
-          return res.status(401).json({
+          return res.status(400).json({
             success: false,
-            message: `Insufficient ${leaveType} leave balance`
+            message: `Insufficient ${leaveType} leave balance. Available: ${employee.leaveBalance[leaveType]}, Required: ${daysToDeduct}`
           });
         }
+      } else {
+        console.warn(`Leave balance not found for employee ${updatedLeave.employee._id}`);
       }
 
       // UPDATE LEAVE STATUS TO APPROVED
       updatedLeave.status = 'approved';
+      updatedLeave.updatedAt = new Date();
       await updatedLeave.save();
 
       // LOG ACTIVITY - Leave Approved
-     await logActivity('leave_approved', userId, {
-        targetUserId: updatedLeave.employee._id,
-        relatedModel: 'Leave',
-        relatedId: updatedLeave._id,
-        metadata: {
-          leaveType: updatedLeave.leaveType,
-          numberOfDays: updatedLeave.duration || updatedLeave.totalDays,
-          employeeName: `${updatedLeave.employee.firstName} ${updatedLeave.employee.lastName}`,
-          approvedBy: userId,
-          approverRole: userRole
-        }
-      });
+      try {
+        await logActivity('leave_approved', userId, {
+          targetUserId: updatedLeave.employee._id,
+          relatedModel: 'Leave',
+          relatedId: updatedLeave._id,
+          metadata: {
+            leaveType: updatedLeave.leaveType,
+            numberOfDays: daysToDeduct,
+            employeeName: `${updatedLeave.employee.firstName} ${updatedLeave.employee.lastName}`,
+            approvedBy: userId,
+            approverRole: userRole
+          }
+        });
+      } catch (logError) {
+        console.error('Error logging activity:', logError);
+        // Don't fail the request if logging fails
+      }
 
     } else if (action === 'Rejected' || action === 'rejected') {
       // UPDATE LEAVE STATUS TO REJECTED
       updatedLeave.status = 'rejected';
+      updatedLeave.updatedAt = new Date();
       await updatedLeave.save();
 
       // LOG ACTIVITY - Leave Rejected
-      await logActivity('leave_rejected', updatedLeave.employee._id, {
-        targetUserId: updatedLeave.employee._id,
-        relatedModel: 'Leave',
-        relatedId: updatedLeave._id,
-        metadata: {
-          leaveType: updatedLeave.leaveType,
-          numberOfDays: updatedLeave.duration || updatedLeave.totalDays,
-          employeeName: `${updatedLeave.employee.firstName} ${updatedLeave.employee.lastName}`,
-          rejectedBy: userId,
-          rejectorRole: userRole,
-          reason: updatedLeave.rejectionReason || 'No reason provided'
-        }
+      try {
+        await logActivity('leave_rejected', updatedLeave.employee._id, {
+          targetUserId: updatedLeave.employee._id,
+          relatedModel: 'Leave',
+          relatedId: updatedLeave._id,
+          metadata: {
+            leaveType: updatedLeave.leaveType,
+            numberOfDays: updatedLeave.totalDays || 1,
+            employeeName: `${updatedLeave.employee.firstName} ${updatedLeave.employee.lastName}`,
+            rejectedBy: userId,
+            rejectorRole: userRole,
+            reason: updatedLeave.rejectionReason || 'No reason provided'
+          }
+        });
+      } catch (logError) {
+        console.error('Error logging activity:', logError);
+        // Don't fail the request if logging fails
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid action. Use "Approved" or "Rejected"'
       });
     }
 
-    console.log(updatedLeave);
-
     // SINGLE RESPONSE at the end
     return res.status(200).json({
-      message: `Successfully ${action} leave`,
+      message: `Leave ${action.toLowerCase() === 'approved' ? 'approved' : 'rejected'} successfully`,
       success: true,
+      data: updatedLeave
     });
 
   } catch (error) {
     console.error('Error action on leave', error);
-    // ADD RETURN here too
+    return res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+
+const deleteLeave = async (req, res) => {
+  try {
+    const { leaveId } = req.params;
+    const { id: userId, role: userRole } = req.user;
+
+    console.log('Delete Leave Request:', { leaveId, userId, userRole });
+
+    if (!leaveId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Leave ID is required'
+      });
+    }
+
+    const leave = await Leave.findById(leaveId).populate('employee', '_id firstName lastName');
+    console.log('Found Leave:', leave);
+
+    if (!leave) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leave request not found'
+      });
+    }
+
+    // Permission check
+    const isAdmin = userRole === 'Admin';
+    const isDepartmentHead = userRole === 'Department Head';
+    const isOwnLeave = leave.employee?._id?.toString() === userId?.toString();
+    const isHeadRequest = leave.isHeadRequest === true;
+
+    console.log('Permission Check:', { isAdmin, isDepartmentHead, isOwnLeave, isHeadRequest });
+
+    // Admin can delete any leave (employee or head)
+    if (isAdmin) {
+      console.log('Admin permission granted');
+      // Admin can proceed
+    }
+    // Department Head can only delete employee leaves (not their own, not other heads' leaves)
+    else if (isDepartmentHead && !isOwnLeave && !isHeadRequest) {
+      console.log('Department Head permission granted');
+      // Department Head can proceed
+    }
+    else {
+      // Permission denied
+      console.log('Permission denied for user');
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to delete this leave request'
+      });
+    }
+
+    // Delete the leave
+    const deletedLeave = await Leave.findByIdAndDelete(leaveId);
+    console.log('Leave deleted:', deletedLeave);
+
+    // Log activity (wrapped in try-catch so it doesn't fail the deletion)
+    if (logActivity) {
+      try {
+        await logActivity('leave_deleted', userId, {
+          targetUserId: leave.employee?._id,
+          relatedModel: 'Leave',
+          relatedId: leaveId,
+          metadata: {
+            leaveType: leave.leaveType,
+            numberOfDays: leave.totalDays || 1,
+            employeeName: `${leave.employee?.firstName || 'Unknown'} ${leave.employee?.lastName || 'User'}`,
+            deletedBy: userId,
+            deleterRole: userRole,
+            status: leave.status
+          }
+        });
+      } catch (logError) {
+        console.error('Error logging activity:', logError);
+        // Don't fail the request if logging fails
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Leave request deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting leave:', error);
     return res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -2428,6 +2550,7 @@ module.exports = {
   updateProfile,
   runPayroll,
   leaveAction,
+  deleteLeave,
   sentEmail,
   getDepartmentTasks,
   payIndividual,

@@ -10,7 +10,7 @@ const leaveSchema = new mongoose.Schema({
     },
     leaveType: {
         type: String,
-        enum: ['annual', 'sick', 'personal'],
+        enum: ['annual', 'sick', 'personal', 'planned_leave', 'unplanned_leave', 'sick_leave', 'planned_leave_48h', 'unplanned_leave_2h', 'sick_leave_4h'],
         required: true
     },
     startDate: {
@@ -25,6 +25,10 @@ const leaveSchema = new mongoose.Schema({
         type: String,
         required: true,
         trim: true
+    },
+    documentPath: {
+        type: String,
+        default: null
     },
     status: {
         type: String,

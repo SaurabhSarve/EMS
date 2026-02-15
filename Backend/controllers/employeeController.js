@@ -307,8 +307,16 @@ const getAppliedLeave = async (req, res) => {
 
 const applyLeave = async (req, res) => {
   try {
-    const { leaveData } = req.body;
-        const userId = req.user.id;
+    let leaveData;
+    
+    // Parse leaveData from FormData
+    if (req.body.leaveData) {
+      leaveData = typeof req.body.leaveData === 'string' ? JSON.parse(req.body.leaveData) : req.body.leaveData;
+    } else {
+      leaveData = req.body;
+    }
+
+    const userId = req.user.id;
     const userRole = req.user.role;
 
     // Validate required fields
@@ -348,7 +356,8 @@ const applyLeave = async (req, res) => {
       endDate: endDate,
       reason: leaveData.reason,
       employee: userId,
-      isHeadRequest: userRole === 'Department Head'
+      isHeadRequest: userRole === 'Department Head',
+      documentPath: req.file ? req.file.path : null
     });
 
 
@@ -362,7 +371,8 @@ const applyLeave = async (req, res) => {
                 startDate: result.startDate,
         endDate: result.endDate,
         numberOfDays: calculateDays(result.startDate, result.endDate),
-        isHeadRequest: result.isHeadRequest
+        isHeadRequest: result.isHeadRequest,
+        hasDocument: !!result.documentPath
       }
     });
 
@@ -372,22 +382,15 @@ const applyLeave = async (req, res) => {
       success: true,
       message: "leave applied succesfully"
     });
-
-
-
-
-
   } catch (err) {
-    console.log("apply leave  error", err);
-
+    console.log("apply leave error", err);
     res.status(500).json({
       success: false,
       message: 'Error applying leave'
     });
-
-
   }
-}
+};
+
 const calculateDays = (startDate, endDate) => {
   const start = new Date(startDate);
   const end = new Date(endDate);

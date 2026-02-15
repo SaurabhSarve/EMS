@@ -28,7 +28,6 @@ import {
   Modal,
   Pagination,
   PriorityBadge,
-  ProgressBar,
   StatusBadge,
   ViewToggle,
 } from "../../Components/ProjectUI";
@@ -41,7 +40,6 @@ const defaultFormState = {
   leader: "",
   dueDate: "",
   priority: "Medium",
-  progress: 0,
 };
 
 const formatDate = (value) =>
@@ -51,15 +49,12 @@ const formatDate = (value) =>
     year: "numeric",
   });
 
-const resolveStatus = (progress, dueDate, archived) => {
+const resolveStatus = (currentStatus, dueDate, archived) => {
   if (archived) return "Archived";
-  const progressValue = Number(progress || 0);
   const today = new Date();
   const due = new Date(dueDate);
-  if (progressValue >= 100) return "Completed";
-  if (due.setHours(0, 0, 0, 0) < today.setHours(0, 0, 0, 0)) return "Overdue";
-  if (progressValue > 0) return "Ongoing";
-  return "Pending";
+  if (due.setHours(0, 0, 0, 0) < today.setHours(0, 0, 0, 0) && currentStatus !== "Completed") return "Overdue";
+  return currentStatus || "Pending";
 };
 
 const getEmployeeLabel = (employee) => {
@@ -165,7 +160,7 @@ export default function AdminProjects() {
           typeof p === "object"
             ? {
                 ...p,
-                status: resolveStatus(p.progress, p.dueDate, p.archived),
+                status: resolveStatus(p.status, p.dueDate, p.archived),
               }
             : p
         );
@@ -350,7 +345,6 @@ export default function AdminProjects() {
                       <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase">Department</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase">Leader</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase">Status</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase">Progress</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase">Due</th>
                       <th className="px-6 py-4 text-center text-xs font-bold text-slate-700 uppercase">Actions</th>
                     </tr>
@@ -373,15 +367,6 @@ export default function AdminProjects() {
                         <td className="px-6 py-4 text-sm font-medium text-slate-700">{getLeaderName(project.leader)}</td>
                         <td className="px-6 py-4">
                           <StatusBadge value={project.status} />
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="w-full bg-slate-200 rounded-full h-2">
-                            <div
-                              className="bg-gradient-to-r from-blue-500 to-blue-700 h-2 rounded-full"
-                              style={{ width: `${project.progress}%` }}
-                            />
-                          </div>
-                          <p className="text-xs font-bold text-slate-600 mt-1">{project.progress}%</p>
                         </td>
                         <td className="px-6 py-4 text-sm font-medium text-slate-700">{formatDate(project.dueDate)}</td>
                         <td className="px-6 py-4 text-center">
@@ -452,13 +437,6 @@ export default function AdminProjects() {
                       </div>
 
                       <div className="border-t border-slate-100 pt-4 mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs font-bold text-slate-700 uppercase">Progress</p>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-700">
-                            {project.progress}%
-                          </span>
-                        </div>
-                        <ProgressBar value={project.progress} />
                       </div>
 
                       <button
@@ -513,14 +491,6 @@ export default function AdminProjects() {
             <div>
               <p className="text-xs font-bold text-slate-600 uppercase mb-2">Description</p>
               <p className="text-slate-700">{selectedProject.description}</p>
-            </div>
-
-            <div>
-              <p className="text-xs font-bold text-slate-600 uppercase mb-3">Progress</p>
-              <div className="space-y-2">
-                <ProgressBar value={selectedProject.progress} />
-                <p className="text-sm font-bold text-slate-700">{selectedProject.progress}% Complete</p>
-              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">

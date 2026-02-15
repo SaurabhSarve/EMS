@@ -21,7 +21,7 @@ export default function Footer() {
               href="https://www.linkedin.com/company/graphura-india-private-limited/"
               title="LinkedIn"
             >
-              <i class="fa-brands fa-linkedin"></i>
+              <i className="fa-brands fa-linkedin"></i>
             </a>
 
             {/* <a href="#" title="Twitter">
@@ -32,14 +32,14 @@ export default function Footer() {
               href="https://www.facebook.com/share/19nKAMTopZ/"
               title="Facebook"
             >
-              <i class="fa-brands fa-facebook"></i>
+              <i className="fa-brands fa-facebook"></i>
             </a>
 
             <a
               href="https://www.instagram.com/graphura.in?igsh=MXNqNmtidzljNDJlag=="
               title="Instagram"
             >
-              <i class="fa-brands fa-instagram"></i>
+              <i className="fa-brands fa-instagram"></i>
             </a>
           </div>
         </div>
@@ -81,14 +81,14 @@ export default function Footer() {
           <ul>
             <li>
               <a href="#">
-                <i class="fa-solid fa-location-dot"></i>{" "}
+                <i className="fa-solid fa-location-dot"></i>{" "}
                 <span style={{fontWeight: "600"}}>Graphura India Private Limited,</span> near RSF, Pataudi,
                 Gurgaon, Haryana 122503
               </a>
             </li>
             <li>
               <a href="#">
-                <i class="fa-solid fa-phone"></i> 7378021327
+                <i className="fa-solid fa-phone"></i> 7378021327
               </a>
             </li>
             {/* <li>
@@ -96,7 +96,7 @@ export default function Footer() {
             </li> */}
             <li>
               <a href="#">
-                <i class="fa-solid fa-envelope"></i> official@graphura.in
+                <i className="fa-solid fa-envelope"></i> official@graphura.in
               </a>
             </li>
             {/* <li>

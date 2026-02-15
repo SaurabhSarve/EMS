@@ -35,11 +35,11 @@ import AdminProfile from "./pages/admin/profile";
 import Tickets from "./pages/admin/Ticekts";
 import DepartmentHeadPayroll from "./pages/departmentHead/Payroll";
 import HeadApplyLeave from "./pages/departmentHead/ApplyLeave";
+import HeadDashboard from "./pages/departmentHead/HeadDashboard";
 import DepartmentHeadProjects from "./pages/departmentHead/Projects";
 import AdminPaymentHistory from "./pages/admin/AdminPaymentHistory";
 import DepartmentEmployee from "./pages/admin/DepartmentEmployee";
 import PaymentHistory from './pages/admin/PaymentHistory';
-import DepartmentHeadPayroll from "./pages/departmentHead/Payroll.jsx"
 import EmployeePayroll from './pages/employee/Payroll.jsx';
 import Settings from "./pages/admin/Settings";
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -66,7 +66,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    if (user.role === "Admin" || user.role === "Department Head") {
+    if (user.role === "Department Head") {
+      return <Navigate to="/head/dashboard" replace />;
+    } else if (user.role === "Admin") {
       return <Navigate to="/admin/dashboard" replace />;
     } else {
       return <Navigate to="/employee/dashboard" replace />;
@@ -93,8 +95,17 @@ function App() {
           <Route
             path="/admin/dashboard"
             element={
-              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
+              <ProtectedRoute allowedRoles={["Admin"]}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/head/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["Department Head"]}>
+                <HeadDashboard />
               </ProtectedRoute>
             }
           />
@@ -248,7 +259,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          
+
           <Route
             path="/admin/me"
             element={

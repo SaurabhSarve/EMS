@@ -20,6 +20,7 @@ const LeaveRecord = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [headTab, setHeadTab] = useState("requests");
   const [headLeaveStatusUpdates, setHeadLeaveStatusUpdates] = useState([]);
+  const [leaveFilter, setLeaveFilter] = useState("all"); // all, employee, head
 
   const showToastMessage = (message, type = "success") => {
     setToast({ show: true, message, type });
@@ -157,13 +158,13 @@ const LeaveRecord = () => {
 
   const handleApprove = async (id, Lid) => {
     try {
-      console.log(Lid);
+      console.log("Approving leave:", Lid);
       // Backend expects capitalized "Approved"
       const response = await leaveService.leaveAction(Lid, "Approved");
-      console.log(response);
+      console.log("Approve response:", response);
       
       // Check if response is successful
-      if (response.success || response.data?.success) {
+      if (response?.success) {
         const targetLeave = leaves.find((leave) => leave?._id === Lid);
         // Update state optimistically
         setLeaves(leaves.map(leave => 
@@ -175,22 +176,25 @@ const LeaveRecord = () => {
         }
         
         showToastMessage("Leave approved successfully!", "success");
+      } else {
+        showToastMessage(response?.message || "Failed to approve leave", "error");
       }
     } catch (err) {
-      console.log("leave approving err", err);
-      showToastMessage(err.response?.data?.message || "Failed to approve leave", "error");
+      console.error("Leave approval error:", err);
+      const errorMsg = err?.response?.data?.message || err?.message || "Failed to approve leave";
+      showToastMessage(errorMsg, "error");
     }
   };
 
   const handleReject = async (id, Lid) => {
     try {
-      console.log(id);
+      console.log("Rejecting leave:", Lid);
       // Backend expects capitalized "Rejected"
       const response = await leaveService.leaveAction(Lid, "Rejected");
-      console.log(response);
+      console.log("Reject response:", response);
       
       // Check if response is successful
-      if (response.success || response.data?.success) {
+      if (response?.success) {
         const targetLeave = leaves.find((leave) => leave?._id === Lid);
         // Update state optimistically
         setLeaves(leaves.map(leave => 
@@ -202,10 +206,37 @@ const LeaveRecord = () => {
         }
         
         showToastMessage("Leave rejected successfully!", "success");
+      } else {
+        showToastMessage(response?.message || "Failed to reject leave", "error");
       }
     } catch (err) {
-      console.log("leave rejecting err", err);
-      showToastMessage(err.response?.data?.message || "Failed to reject leave", "error");
+      console.error("Leave rejection error:", err);
+      const errorMsg = err?.response?.data?.message || err?.message || "Failed to reject leave";
+      showToastMessage(errorMsg, "error");
+    }
+  };
+
+  const handleDelete = async (leaveId) => {
+    try {
+      if (!window.confirm("Are you sure you want to delete this leave request?")) {
+        return;
+      }
+
+      console.log("Deleting leave:", leaveId);
+      const response = await leaveService.deleteLeave(leaveId);
+      console.log("Delete response:", response);
+
+      if (response?.success) {
+        // Remove from state
+        setLeaves(leaves.filter(leave => leave?._id !== leaveId));
+        showToastMessage("Leave deleted successfully!", "success");
+      } else {
+        showToastMessage(response?.message || "Failed to delete leave", "error");
+      }
+    } catch (err) {
+      console.error("Leave deletion error:", err);
+      const errorMsg = err?.response?.data?.message || err?.message || "Failed to delete leave";
+      showToastMessage(errorMsg, "error");
     }
   };
 
@@ -257,7 +288,15 @@ const LeaveRecord = () => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const displayLeaves = leaves;
+  const displayLeaves = (() => {
+    if (leaveFilter === "employee") {
+      return leaves.filter(leave => !leave.isHeadRequest);
+    } else if (leaveFilter === "head") {
+      return leaves.filter(leave => leave.isHeadRequest);
+    } else {
+      return leaves;
+    }
+  })();
 
   const totalLeaves = displayLeaves.length;
   const pendingLeaves = displayLeaves.filter((leave) => leave?.status === 'pending').length;
@@ -524,30 +563,36 @@ const LeaveRecord = () => {
                         </span>
                       </td>
                       <td className="px-6 py-5">
-                        {leave.status === 'pending' ? (
-                          canApproveLeave(leave) ? (
-                            <div className="flex gap-2.5 min-w-max">
-                              <button
-                                onClick={() => handleApprove(leave?.employee?._id, leave?._id)}
-                                className="flex items-center justify-center gap-1 px-4 py-2.5 bg-gradient-to-br from-green-500 to-emerald-600 text-white text-xs font-bold rounded-lg hover:from-green-600 hover:to-emerald-700 active:scale-95 transition-all shadow-lg hover:shadow-xl whitespace-nowrap uppercase tracking-wide"
-                              >
-                                <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => handleReject(leave?.employee?._id, leave?._id)}
-                                className="flex items-center justify-center gap-1 px-4 py-2.5 bg-gradient-to-br from-red-500 to-rose-600 text-white text-xs font-bold rounded-lg hover:from-red-600 hover:to-rose-700 active:scale-95 transition-all shadow-lg hover:shadow-xl whitespace-nowrap uppercase tracking-wide"
-                              >
-                                <XCircle className="w-4 h-4 flex-shrink-0" />
-                                Reject
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-gray-500 whitespace-nowrap font-bold">Pending approval</span>
-                          )
-                        ) : (
-                          <span className="text-xs text-gray-400 whitespace-nowrap font-bold">Processed</span>
-                        )}
+                        <div className="flex flex-col gap-2.5 min-w-max">
+                          {leave.status === 'pending' ? (
+                            canApproveLeave(leave) ? (
+                              <div className="flex gap-2.5">
+                                <button
+                                  onClick={() => handleApprove(leave?.employee?._id, leave?._id)}
+                                  className="flex items-center justify-center gap-1 px-3 py-2 bg-gradient-to-br from-green-500 to-emerald-600 text-white text-xs font-bold rounded-lg hover:from-green-600 hover:to-emerald-700 active:scale-95 transition-all shadow-lg hover:shadow-xl whitespace-nowrap uppercase tracking-wide"
+                                >
+                                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleReject(leave?.employee?._id, leave?._id)}
+                                  className="flex items-center justify-center gap-1 px-3 py-2 bg-gradient-to-br from-red-500 to-rose-600 text-white text-xs font-bold rounded-lg hover:from-red-600 hover:to-rose-700 active:scale-95 transition-all shadow-lg hover:shadow-xl whitespace-nowrap uppercase tracking-wide"
+                                >
+                                  <XCircle className="w-4 h-4 flex-shrink-0" />
+                                  Reject
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-500 whitespace-nowrap font-bold">Pending approval</span>
+                            )
+                          ) : null}
+                          <button
+                            onClick={() => handleDelete(leave?._id)}
+                            className="flex items-center justify-center gap-1 px-3 py-2 bg-gradient-to-br from-orange-500 to-red-600 text-white text-xs font-bold rounded-lg hover:from-orange-600 hover:to-red-700 active:scale-95 transition-all shadow-lg hover:shadow-xl whitespace-nowrap uppercase tracking-wide"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -623,30 +668,36 @@ const LeaveRecord = () => {
                   </div>
 
                   {/* Card Footer - Actions */}
-                  {leave.status === 'pending' ? (
-                    canApproveLeave(leave) ? (
-                      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex gap-2">
-                        <button
-                          onClick={() => handleApprove(leave?.employee?._id, leave?._id)}
-                          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gradient-to-br from-green-500 to-emerald-600 text-white text-xs font-semibold rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleReject(leave?.employee?._id, leave?._id)}
-                          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gradient-to-br from-red-500 to-rose-600 text-white text-xs font-semibold rounded-lg hover:from-red-600 hover:to-rose-700 transition-all"
-                        >
-                          <XCircle className="w-4 h-4" />
-                          Reject
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                  <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex flex-col gap-2">
+                    {leave.status === 'pending' ? (
+                      canApproveLeave(leave) ? (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleApprove(leave?.employee?._id, leave?._id)}
+                            className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gradient-to-br from-green-500 to-emerald-600 text-white text-xs font-semibold rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleReject(leave?.employee?._id, leave?._id)}
+                            className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gradient-to-br from-red-500 to-rose-600 text-white text-xs font-semibold rounded-lg hover:from-red-600 hover:to-rose-700 transition-all"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            Reject
+                          </button>
+                        </div>
+                      ) : (
                         <span className="text-xs text-gray-500 font-semibold">Pending approval</span>
-                      </div>
-                    )
-                  ) : null}
+                      )
+                    ) : null}
+                    <button
+                      onClick={() => handleDelete(leave?._id)}
+                      className="w-full flex items-center justify-center gap-1 px-3 py-2 bg-gradient-to-br from-orange-500 to-red-600 text-white text-xs font-semibold rounded-lg hover:from-orange-600 hover:to-red-700 transition-all"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
                 );
               })}
@@ -700,7 +751,7 @@ const LeaveRecord = () => {
                     <div>
                       <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg tracking-tight">Leave Management</h1>
                       <p className="text-cyan-100 mt-2 text-sm md:text-base font-medium drop-shadow">
-                        Efficiently manage and process all employee leave requests
+                        Manage and Process all employee leave requests
                       </p>
                     </div>
                   </div>
@@ -709,13 +760,34 @@ const LeaveRecord = () => {
                       <div className="flex flex-wrap gap-2 rounded-2xl border border-white/30 bg-white/20 p-2">
                         {[
                           { key: "requests", label: "Leave Requests" },
-                          { key: "apply", label: "Apply Leave" },
+                          // { key: "apply", label: "Apply Leave" },
                         ].map((tab) => (
                           <button
                             key={tab.key}
                             onClick={() => setHeadTab(tab.key)}
                             className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                               headTab === tab.key
+                                ? "bg-white text-blue-600 shadow-md"
+                                : "text-white/90 hover:bg-white/15"
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {isAdmin && (
+                      <div className="flex flex-wrap gap-2 rounded-2xl border border-white/30 bg-white/20 p-2">
+                        {[
+                          { key: "all", label: "All Leaves" },
+                          { key: "employee", label: "Employee Leaves" },
+                          { key: "head", label: "Head Leaves" },
+                        ].map((tab) => (
+                          <button
+                            key={tab.key}
+                            onClick={() => setLeaveFilter(tab.key)}
+                            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                              leaveFilter === tab.key
                                 ? "bg-white text-blue-600 shadow-md"
                                 : "text-white/90 hover:bg-white/15"
                             }`}
