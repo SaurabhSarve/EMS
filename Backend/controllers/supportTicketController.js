@@ -87,6 +87,7 @@ const getTickets = async (req, res) => {
     const tickets = await SupportTicket.find(query)
       .populate("employee", "firstName lastName")
       .populate("assignedTo", "firstName lastName")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.json({ success: true, tickets });
@@ -397,6 +398,7 @@ const getMyQueriesForDepartmentHead = async (req, res) => {
     const tickets = await SupportTicket.find(query)
       .populate("employee", "firstName lastName profilePhoto employeeId personalEmail department")
       .populate("assignedTo", "firstName lastName email")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -422,6 +424,7 @@ const getDepartmentHeadQueries = async (req, res) => {
     const tickets = await SupportTicket.find(query)
       .populate("employee", "firstName lastName profilePhoto employeeId personalEmail department")
       .populate("assignedTo", "firstName lastName email")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -492,6 +495,7 @@ const getDepartmentEmployeesTickets = async (req, res) => {
     const tickets = await SupportTicket.find(query)
       .populate("employee", "firstName lastName profilePhoto employeeId personalEmail department")
       .populate("assignedTo", "firstName lastName email")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
