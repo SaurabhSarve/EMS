@@ -33,10 +33,10 @@ import CreatePasswordForm from "./pages/auth/CreatePasswordForm";
 import NotFound from "./pages/common/NotFoundPage";
 import AdminProfile from "./pages/admin/profile";
 import Tickets from "./pages/admin/Ticekts";
-import AdminPaymentHistory from "./pages/admin/AdminPaymentHistory";
-import DepartmentEmployee from "./pages/admin/DepartmentEmployee";
-import PaymentHistory from './pages/admin/PaymentHistory';
-import Settings from "./pages/admin/Settings";
+// import AdminPaymentHistory from "./pages/admin/AdminPaymentHistory";
+// import DepartmentEmployee from "./pages/admin/DepartmentEmployee";
+// import PaymentHistory from './pages/admin/PaymentHistory';
+// import Settings from "./pages/admin/Settings";
 import ChatPage from "./pages/common/ChatPage";
 
 
