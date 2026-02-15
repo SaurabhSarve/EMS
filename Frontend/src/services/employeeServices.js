@@ -27,10 +27,8 @@ export const employeeService = {
         } catch (error) {
             throw error;
         }
-    },  
-
     },
-      
+
     getAllEmployees: async () => {
         try {
             const response = await api.get('/admin/employees',);
@@ -190,7 +188,7 @@ export const employeeService = {
     }
     ,
 
-    
+
     addTaskComment: async (taskId, comment) => {
         try {
             const response = await api.post(`/employee/tasks/${taskId}/comments`, { comment });
@@ -220,26 +218,26 @@ export const employeeService = {
     },
 
     getProfile: async () => {
-    deleteTask: async (taskId) => {
-        try {
-            const response = await api.delete(`/admin/tasks/${taskId}`);
-            return response.data;
+        deleteTask: async (taskId) => {
+            try {
+                const response = await api.delete(`/admin/tasks/${taskId}`);
+                return response.data;
 
-        } catch (error) {
-            throw error;
+            } catch (error) {
+                throw error;
+            }
         }
-    }
-    ,
+    },
 
-        updateTaskByAdmin : async(taskId, updateData) => {
-        try{
-const response = await api.patch(`/admin/tasks/${taskId}`, updateData);
+    updateTaskByAdmin: async (taskId, updateData) => {
+        try {
+            const response = await api.patch(`/admin/tasks/${taskId}`, updateData);
             return response.data;
         } catch (error) {
             throw error;
         }
     },
-    
+
     updateTicket: async (ticketId) => {
         try {
             const response = await api.patch(`/admin/support-tickets/${ticketId}/mark-read`, { ticketId });
@@ -248,8 +246,7 @@ const response = await api.patch(`/admin/tasks/${taskId}`, updateData);
         } catch (error) {
             throw error;
         }
-    }
-    ,
+    },
     //     updateTicketStatus : async(ticketId, status) => {
     //         try{
     // const response = await api.patch(`/admin/support-tickets/${ticketId}/status`,{ status } );
@@ -316,7 +313,7 @@ const response = await api.patch(`/admin/tasks/${taskId}`, updateData);
             throw error;
         }
     },
-  
+
     employeePromotion: async (department, formData) => {
         try {
             const apiResponse = await api.put(`/admin/employees/promotion?department=${department}`, { formData })
@@ -327,7 +324,7 @@ const response = await api.patch(`/admin/tasks/${taskId}`, updateData);
         }
     },
 
-   deleteEmployeeTickets: async (ticketId) => {
+    deleteEmployeeTickets: async (ticketId) => {
         try {
             const response = await api.delete(`/admin/support-tickets/${ticketId}`);
             return response.data;
@@ -335,7 +332,7 @@ const response = await api.patch(`/admin/tasks/${taskId}`, updateData);
             throw error;
         }
     },
-      
+
     getAllEmployeesByDepartment: async (department) => {
         try {
             const response = await api.get(`/admin/employees/bydepartment?department=${department}`);
