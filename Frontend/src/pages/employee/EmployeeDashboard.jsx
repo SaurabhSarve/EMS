@@ -10,6 +10,7 @@ import {
 import EmployeesSidebar from "../../Components/EmployeesSidebar";
 import { employeeService } from "../../services/employeeServices";
 import { capitalize } from "../../utils/helper";
+import { BsBuilding, BsChatDots } from "react-icons/bs";
 
 export default function EmployeeDashboard() {
   const navigate = useNavigate();
@@ -213,11 +214,8 @@ export default function EmployeeDashboard() {
                   onClick={() => navigate("/chat")}
                   className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-xl transition-all border border-white/10 shadow-lg backdrop-blur-md group/btn"
                 >
-                  <MessageCircle
-                    size={20}
-                    className="group-hover/btn:scale-110 transition-transform"
-                  />
-                  <span className="font-bold text-sm">Chat</span>
+                  <BsChatDots className="text-lg" />
+                  <span className="hidden sm:inline">Chat</span>
                 </button>
                 {unreadCount > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-blue-500 shadow-md animate-bounce">

@@ -78,8 +78,8 @@ const ChatPage = () => {
     const { sendJsonMessage, lastJsonMessage, readyState } = useChatWebSocket(WS_URL);
 
     const handleGoBack = () => {
-        if (user.role === 'Admin') navigate('/admin-dashboard');
-        else navigate('/employee-dashboard');
+        if (user.role === 'Admin') navigate('/admin/dashboard');
+        else navigate('/employee/dashboard');
     };
 
     const fetchRecentChats = async () => {
