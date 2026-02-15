@@ -35,11 +35,6 @@ const connectTodb = async() => {
 
 const PORT = process.env.PORT || 5000;
 
-
-
-
-
-
 app.get('/', (req, res) => {
     res.json({
         success: true,
@@ -49,8 +44,6 @@ app.get('/', (req, res) => {
 });
 
 app.use("/api/v1" , apiRoutes);
-
-
 
 app.use((err , req,res,next) => {
     
