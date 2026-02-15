@@ -1,3 +1,4 @@
+// import { deleteDepartmentHeadTicket } from '../../../Backend/controllers/supportTicketController';
 import api from './api';
 
 export const employeeService = {
@@ -26,7 +27,7 @@ export const employeeService = {
         } catch (error) {
             throw error;
         }
-    },
+    },  
 
     getAllEmployees: async () => {
         try {
@@ -191,8 +192,7 @@ export const employeeService = {
     },
 
     updateTicketStatus: (ticketId, payload) => {
-        return api.patch(
-            `/admin/support-tickets/${ticketId}/status`,
+        return api.patch(`/admin/support-tickets/${ticketId}/status`,
             payload // { status, comment }
         );
     },
@@ -255,14 +255,32 @@ export const employeeService = {
             throw error;
         }
     },
-  
-    employeePromotion : async (department, formData) => {
-        try{
-            const apiResponse = await api.put(`/admin/employees/promotion?department=${department}`, {formData})
+
+    employeePromotion: async (department, formData) => {
+        try {
+            const apiResponse = await api.put(`/admin/employees/promotion?department=${department}`, { formData })
             return apiResponse.data
         }
-        catch(err){
+        catch (err) {
             throw err
         }
-    }
+    },
+
+    deleteEmployeeTickets: async (ticketId) => {
+        try {
+            const response = await api.delete(`/admin/support-tickets/${ticketId}`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    deleteDepartmentHeadTicket: async (ticketId) => {
+        try {
+            const response = await api.delete(`/admin/support-tickets/department-head/${ticketId}`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
 };
