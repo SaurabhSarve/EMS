@@ -33,6 +33,13 @@ import CreatePasswordForm from "./pages/auth/CreatePasswordForm";
 import NotFound from "./pages/common/NotFoundPage";
 import AdminProfile from "./pages/admin/profile";
 import Tickets from "./pages/admin/Ticekts";
+// import AdminPaymentHistory from "./pages/admin/AdminPaymentHistory";
+// import DepartmentEmployee from "./pages/admin/DepartmentEmployee";
+// import PaymentHistory from './pages/admin/PaymentHistory';
+// import Settings from "./pages/admin/Settings";
+import ChatPage from "./pages/common/ChatPage";
+
+
 import DepartmentHeadPayroll from "./pages/departmentHead/Payroll";
 import HeadApplyLeave from "./pages/departmentHead/ApplyLeave";
 import HeadDashboard from "./pages/departmentHead/HeadDashboard";
@@ -339,6 +346,11 @@ function App() {
             }
           />
 
+          <Route path="/chat" element={
+            <ProtectedRoute allowedRoles={["Admin", "Department Head", "employee"]}>
+              <ChatPage />
+            </ProtectedRoute>
+          } />
           <Route
             path="/employee/payroll"
             element={

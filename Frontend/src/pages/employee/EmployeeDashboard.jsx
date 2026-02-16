@@ -1,15 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
 import {
-  LayoutDashboard,
   FileText,
-  Calendar,
-  ClipboardList,
-  Settings,
-  Download,
-  LogIn,
-  LogOut,
-  Plus,
   Ticket,
+  MessageCircle,
   FolderOpen,
   Users,
   CheckCircle2,
@@ -21,59 +17,119 @@ import EmployeesSidebar from "../../Components/EmployeesSidebar";
 import { employeeService } from "../../services/employeeServices";
 import { projectService } from "../../services/projectService";
 import { capitalize } from "../../utils/helper";
+import { BsBuilding, BsChatDots } from "react-icons/bs";
 
 export default function EmployeeDashboard() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [me, setMe] = useState();
   const [salarydetails, setSalaryDetails] = useState([]);
   const [taskdetails, setTaskDetails] = useState([]);
   const [ticketDetails, setTicketDetails] = useState([]);
+
+  // --- REAL-TIME NOTIFICATION STATE (From HEAD) ---
+  const [unreadCount, setUnreadCount] = useState(0);
+  const socketRef = useRef(null);
+
   const [projects, setProjects] = useState([]);
   const [showViewAllProjects, setShowViewAllProjects] = useState(false);
   const [showProjectDetails, setShowProjectDetails] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const getCurrentDate = () => {
     const options = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     };
-    return new Date().toLocaleDateString('en-US', options);
+    return new Date().toLocaleDateString("en-US", options);
   };
 
+  // --- WEBSOCKET & CHAT LOGIC (From HEAD) ---
+  // 1. Initial Fetch
+  const fetchUnreadCount = async () => {
+    if (!user?._id && !user?.id) return;
+    try {
+      const id = user._id || user.id;
+      const res = await axios.get(
+        `http://127.0.0.1:8000/api/chat/unread/total/${id}`,
+      );
+      setUnreadCount(res.data.count);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // 2. WebSocket Connection
+  useEffect(() => {
+    fetchUnreadCount();
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/?token=${token}`);
+    socketRef.current = ws;
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        // Push Notification logic
+        if ((data.sender_id && !data.type) || data.type === "chat_message") {
+          const myId = user._id || user.id;
+          if (data.sender_id !== myId) {
+            setUnreadCount((prev) => prev + 1);
+          }
+        }
+
+        if (data.type === "activity") {
+          fetchUnreadCount();
+        }
+      } catch (e) {
+        console.error("WS Error", e);
+      }
+    };
+
+    return () => {
+      if (ws) ws.close();
+    };
+  }, [user]);
+
+  // --- SIDEBAR LOGIC (Merged) ---
   const openSidebar = () => {
     setSidebarOpen(true);
     setTimeout(() => {
-      const wrapper = document.querySelector('div.fixed.inset-y-0.left-0.z-50');
+      const wrapper = document.querySelector("div.fixed.inset-y-0.left-0.z-50");
       if (!wrapper) return;
-      const aside = wrapper.querySelector('aside');
+      const aside = wrapper.querySelector("aside");
       if (aside) {
-        aside.classList.add('translate-x-0');
-        aside.classList.remove('-translate-x-full');
-        aside.style.transform = 'translateX(0)';
+        aside.classList.add("translate-x-0");
+        aside.classList.remove("-translate-x-full");
+        aside.style.transform = "translateX(0)";
       }
-      const innerToggle = wrapper.querySelector('button.fixed.top-4.left-4');
-      if (innerToggle) innerToggle.style.display = 'none';
+      const innerToggle = wrapper.querySelector("button.fixed.top-4.left-4");
+      if (innerToggle) innerToggle.style.display = "none";
     }, 20);
   };
 
   const closeSidebar = () => {
     setSidebarOpen(false);
     setTimeout(() => {
-      const wrapper = document.querySelector('div.fixed.inset-y-0.left-0.z-50');
+      const wrapper = document.querySelector("div.fixed.inset-y-0.left-0.z-50");
       if (!wrapper) return;
-      const aside = wrapper.querySelector('aside');
+      const aside = wrapper.querySelector("aside");
       if (aside) {
-        aside.classList.remove('translate-x-0');
-        aside.classList.add('-translate-x-full');
-        aside.style.transform = '';
+        aside.classList.remove("translate-x-0");
+        aside.classList.add("-translate-x-full");
+        aside.style.transform = "";
       }
-      const innerToggle = wrapper.querySelector('button.fixed.top-4.left-4');
-      if (innerToggle) innerToggle.style.display = '';
+      const innerToggle = wrapper.querySelector("button.fixed.top-4.left-4");
+      if (innerToggle) innerToggle.style.display = "";
     }, 20);
   };
 
+  // --- DATA FETCHING ---
   useEffect(() => {
     fetchEmployee();
     fetchProjects();
@@ -82,7 +138,6 @@ export default function EmployeeDashboard() {
   const fetchEmployee = async () => {
     try {
       const result = await employeeService.getEmployeedashboardStats();
-      console.log(result);
       if (result && result.success) {
         setMe(result.data.employee);
         setSalaryDetails(result.data.salaryDetails);
@@ -125,22 +180,26 @@ export default function EmployeeDashboard() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const activeTasks = taskdetails?.filter(t => t.status !== "completed") || [];
-  const upcomingTasks = activeTasks.filter(t => {
+  const activeTasks =
+    taskdetails?.filter((t) => t.status !== "completed") || [];
+  const upcomingTasks = activeTasks.filter((t) => {
     if (!t.dueDate) return false;
     const due = new Date(t.dueDate);
     due.setHours(0, 0, 0, 0);
     const diffDays = (due - today) / (1000 * 60 * 60 * 24);
     return diffDays >= 0 && diffDays <= 7;
   });
-  const overdueTasks = activeTasks.filter(t => {
+  const overdueTasks = activeTasks.filter((t) => {
     if (!t.dueDate) return false;
     const due = new Date(t.dueDate);
     due.setHours(0, 0, 0, 0);
     return due < today;
   });
   const upcomingPercent = activeTasks.length
-    ? Math.min(100, Math.round((upcomingTasks.length / activeTasks.length) * 100))
+    ? Math.min(
+        100,
+        Math.round((upcomingTasks.length / activeTasks.length) * 100),
+      )
     : 0;
 
   return (
@@ -148,8 +207,14 @@ export default function EmployeeDashboard() {
       {/* Animated Background Particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute w-96 h-96 bg-blue-400/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse"></div>
-        <div className="absolute w-96 h-96 bg-purple-400/10 rounded-full blur-3xl top-1/3 -right-48 animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute w-96 h-96 bg-indigo-400/10 rounded-full blur-3xl -bottom-48 left-1/3 animate-pulse" style={{ animationDelay: '4s' }}></div>
+        <div
+          className="absolute w-96 h-96 bg-purple-400/10 rounded-full blur-3xl top-1/3 -right-48 animate-pulse"
+          style={{ animationDelay: "2s" }}
+        ></div>
+        <div
+          className="absolute w-96 h-96 bg-indigo-400/10 rounded-full blur-3xl -bottom-48 left-1/3 animate-pulse"
+          style={{ animationDelay: "4s" }}
+        ></div>
       </div>
       <EmployeesSidebar />
 
@@ -162,7 +227,10 @@ export default function EmployeeDashboard() {
           </div>
           {/* Decorative Background Elements */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl transform translate-x-32 -translate-y-32 animate-pulse"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-900/20 rounded-full blur-2xl transform -translate-x-20 translate-y-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div
+            className="absolute bottom-0 left-0 w-64 h-64 bg-blue-900/20 rounded-full blur-2xl transform -translate-x-20 translate-y-20 animate-pulse"
+            style={{ animationDelay: "1s" }}
+          ></div>
 
           <div className="relative z-10 px-6 py-4 sm:px-7 sm:py-5">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
@@ -171,11 +239,31 @@ export default function EmployeeDashboard() {
                 <div className="flex items-center gap-3">
                   <div className="w-1 h-6 bg-white/60 rounded-full"></div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-white drop-shadow-lg leading-tight">
-                    Welcome back, {capitalize(me?.firstName) || "Employee"} {capitalize(me?.lastName) || ""}
+                    Welcome back, {capitalize(me?.firstName) || "Employee"}{" "}
+                    {capitalize(me?.lastName) || ""}
                   </h1>
                 </div>
-                <p className="text-white/90 text-xs sm:text-sm font-semibold ml-4 opacity-90">{getCurrentDate()}</p>
+                <p className="text-white/90 text-xs sm:text-sm font-semibold ml-4 opacity-90">
+                  {getCurrentDate()}
+                </p>
               </div>
+
+              {/* --- CHAT BUTTON --- */}
+              <div className="relative">
+                <button
+                  onClick={() => navigate("/chat")}
+                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-xl transition-all border border-white/10 shadow-lg backdrop-blur-md group/btn"
+                >
+                  <BsChatDots className="text-lg" />
+                  <span className="hidden sm:inline">Chat</span>
+                </button>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-blue-500 shadow-md animate-bounce">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </div>
+              {/* ----------------------------- */}
             </div>
           </div>
         </div>
@@ -187,11 +275,23 @@ export default function EmployeeDashboard() {
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-indigo-500/0 group-hover:from-blue-500/5 group-hover:to-indigo-500/5 transition-all duration-500"></div>
             <div className="p-6 relative">
               <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-2xl flex items-center justify-center group-hover:scale-105 group-hover:rotate-6 transition-all duration-300 group-hover:shadow-lg">
-                <svg className="w-6 h-6 text-white group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-6 h-6 text-white group-hover:scale-110 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Due This Week</p>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
+                Due This Week
+              </p>
               <div className="flex items-baseline gap-2 mb-3">
                 <h3 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
                   {upcomingTasks.length}
@@ -220,37 +320,56 @@ export default function EmployeeDashboard() {
               <div className="absolute top-3 right-3 w-10 h-10 bg-gradient-to-br from-indigo-600 via-purple-500 to-pink-400 rounded-xl flex items-center justify-center group-hover:scale-105 group-hover:rotate-6 transition-all duration-300 group-hover:shadow-lg">
                 <Ticket className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
               </div>
-              <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">My Tickets</p>
+              <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">
+                My Tickets
+              </p>
               <div className="flex items-baseline gap-2 mb-2">
                 <h3 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
                   {ticketDetails?.length || 0}
                 </h3>
-                <span className="text-slate-400 text-xs group-hover:text-slate-600 transition-colors">Total Tickets</span>
+                <span className="text-slate-400 text-xs group-hover:text-slate-600 transition-colors">
+                  Total Tickets
+                </span>
               </div>
 
               <div className="space-y-1 mt-1">
                 {ticketDetails?.length > 0 ? (
                   ticketDetails.slice(0, 3).map((ticket, index) => (
-                    <div key={ticket._id || index} className="flex items-center justify-between gap-3 p-1.5 rounded-lg bg-slate-50 border border-slate-100 group-hover:border-indigo-100 transition-colors">
+                    <div
+                      key={ticket._id || index}
+                      className="flex items-center justify-between gap-3 p-1.5 rounded-lg bg-slate-50 border border-slate-100 group-hover:border-indigo-100 transition-colors"
+                    >
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-bold text-slate-700 truncate">{ticket.subject}</p>
+                        <p className="text-[11px] font-bold text-slate-700 truncate">
+                          {ticket.subject}
+                        </p>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold whitespace-nowrap shadow-sm uppercase ${ticket.status === 'Open' ? 'bg-blue-100 text-blue-700' :
-                        ticket.status === 'In Progress' ? 'bg-amber-100 text-amber-700' :
-                          ticket.status === 'Resolved' ? 'bg-green-100 text-green-700' :
-                            'bg-slate-200 text-slate-700'
-                        }`}>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-bold whitespace-nowrap shadow-sm uppercase ${
+                          ticket.status === "Open"
+                            ? "bg-blue-100 text-blue-700"
+                            : ticket.status === "In Progress"
+                              ? "bg-amber-100 text-amber-700"
+                              : ticket.status === "Resolved"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-slate-200 text-slate-700"
+                        }`}
+                      >
                         {ticket.status}
                       </span>
                     </div>
                   ))
                 ) : (
                   <div className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-50 border border-slate-100">
-                    <p className="text-xs text-slate-500 font-medium italic">No tickets raised yet</p>
+                    <p className="text-xs text-slate-500 font-medium italic">
+                      No tickets raised yet
+                    </p>
                   </div>
                 )}
                 {ticketDetails?.length > 3 && (
-                  <p className="text-[9px] text-slate-400 text-center font-semibold mt-1">+ {ticketDetails.length - 3} more tickets</p>
+                  <p className="text-[9px] text-slate-400 text-center font-semibold mt-1">
+                    + {ticketDetails.length - 3} more tickets
+                  </p>
                 )}
               </div>
             </div>
@@ -261,16 +380,32 @@ export default function EmployeeDashboard() {
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-indigo-500/0 group-hover:from-blue-500/5 group-hover:to-indigo-500/5 transition-all duration-500"></div>
             <div className="p-6 relative">
               <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-2xl flex items-center justify-center group-hover:scale-105 group-hover:rotate-6 transition-all duration-300 group-hover:shadow-lg">
-                <svg className="w-6 h-6 text-white group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <svg
+                  className="w-6 h-6 text-white group-hover:scale-110 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
               </div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Leave Balance</p>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
+                Leave Balance
+              </p>
               <div className="flex items-baseline gap-2 mb-3">
                 <h3 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
-                  {(me?.leaveBalance?.annual || 0) + (me?.leaveBalance?.sick || 0) + (me?.leaveBalance?.personal || 0)}
+                  {(me?.leaveBalance?.annual || 0) +
+                    (me?.leaveBalance?.sick || 0) +
+                    (me?.leaveBalance?.personal || 0)}
                 </h3>
-                <span className="text-slate-400 text-sm group-hover:text-slate-600 transition-colors">Days</span>
+                <span className="text-slate-400 text-sm group-hover:text-slate-600 transition-colors">
+                  Days
+                </span>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-3">
                 <span className="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 px-2.5 py-1 rounded-lg text-xs font-semibold border border-blue-200 hover:scale-110 hover:shadow-md transition-all cursor-pointer">
@@ -291,21 +426,40 @@ export default function EmployeeDashboard() {
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-indigo-500/0 group-hover:from-blue-500/5 group-hover:to-indigo-500/5 transition-all duration-500"></div>
             <div className="p-6 relative">
               <div className="absolute top-4 right-4 w-12 h-12 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-2xl flex items-center justify-center group-hover:scale-105 group-hover:rotate-6 transition-all duration-300 group-hover:shadow-lg">
-                <svg className="w-6 h-6 text-white group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                <svg
+                  className="w-6 h-6 text-white group-hover:scale-110 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
                 </svg>
               </div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Active Tasks</p>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
+                Active Tasks
+              </p>
               <div className="flex items-baseline gap-2 mb-3">
                 <h3 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
-                  {taskdetails?.filter(t => t.status !== "completed").length || 0}
+                  {taskdetails?.filter((t) => t.status !== "completed")
+                    .length || 0}
                 </h3>
-                <span className="text-slate-400 text-sm group-hover:text-slate-600 transition-colors">Pending</span>
+                <span className="text-slate-400 text-sm group-hover:text-slate-600 transition-colors">
+                  Pending
+                </span>
               </div>
               <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 group-hover:border-amber-100 transition-colors">
-                <span className="text-xs text-slate-500 group-hover:text-slate-700 transition-colors">Completed</span>
+                <span className="text-xs text-slate-500 group-hover:text-slate-700 transition-colors">
+                  Completed
+                </span>
                 <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg hover:scale-110 transition-transform group-hover:bg-green-100">
-                  {taskdetails?.filter(t => t.status === "completed").length || 0} / {taskdetails?.length || 0}
+                  {taskdetails?.filter((t) => t.status === "completed")
+                    .length || 0}{" "}
+                  / {taskdetails?.length || 0}
                 </span>
               </div>
             </div>
@@ -554,23 +708,26 @@ const MyTasks = ({ taskdetails }) => {
         <div>
           <h3 className="text-slate-900 font-bold text-lg flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
               </svg>
             </div>
             My Tasks
           </h3>
-          <p className="text-slate-500 text-sm mt-1">Assigned for this week</p>
+          <p className="text-slate-500 text-sm mt-1">
+            Assigned for this week
+          </p>
         </div>
-        {/* <button
-          aria-label="Add task"
-          className="h-10 w-10 flex items-center justify-center
-               rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 
-               hover:from-blue-600 hover:to-indigo-700 shadow-lg hover:shadow-lg 
-               transition-all hover:scale-102"
-        >
-          <Plus className="h-5 w-5 text-white" />
-        </button> */}
       </div>
 
       <div className="flex-1 p-4 flex flex-col gap-3 overflow-y-auto bg-gradient-to-b from-slate-50/50 to-white">
@@ -596,11 +753,15 @@ const MyTasks = ({ taskdetails }) => {
                 />
               </svg>
             </div>
-            <p className="text-slate-500 text-sm font-medium">No tasks assigned</p>
-            <p className="text-slate-400 text-xs mt-1">Check back later for updates</p>
+            <p className="text-slate-500 text-sm font-medium">
+              No tasks assigned
+            </p>
+            <p className="text-slate-400 text-xs mt-1">
+              Check back later for updates
+            </p>
           </div>
         ) : (
-          taskdetails?.map((task) => (
+          taskdetails?.map((task) =>
             task.status === "completed" ? (
               <TaskDone key={task._id || task.id} title={task?.taskName} />
             ) : (
@@ -608,11 +769,17 @@ const MyTasks = ({ taskdetails }) => {
                 key={task._id || task.id}
                 title={task?.taskName}
                 priority={task?.priority}
-                color={task?.priority === "Low" ? "amber" : task?.priority === "High" ? "blue" : "red"}
+                color={
+                  task?.priority === "Low"
+                    ? "amber"
+                    : task?.priority === "High"
+                      ? "blue"
+                      : "red"
+                }
                 due={task?.dueDate}
               />
-            )
-          ))
+            ),
+          )
         )}
       </div>
 
@@ -628,7 +795,8 @@ const MyTasks = ({ taskdetails }) => {
 const TaskItem = ({ title, priority, color, due }) => {
   const colors = {
     red: "text-red-600 bg-gradient-to-r from-red-50 to-red-100 border-red-200",
-    amber: "text-amber-600 bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200",
+    amber:
+      "text-amber-600 bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200",
     blue: "text-blue-600 bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200",
   };
 
@@ -654,22 +822,36 @@ const TaskItem = ({ title, priority, color, due }) => {
       return "Overdue";
     } else {
       // Format as "Due Oct 27" or "Due Jan 15"
-      const options = { month: 'short', day: 'numeric' };
-      return `Due ${date.toLocaleDateString('en-US', options)}`;
+      const options = { month: "short", day: "numeric" };
+      return `Due ${date.toLocaleDateString("en-US", options)}`;
     }
   };
 
   return (
     <div className="group flex items-start gap-3 p-4 rounded-xl bg-white border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all cursor-pointer">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">{title}</p>
+        <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">
+          {title}
+        </p>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
-          <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${colors[color] || 'text-slate-600 bg-slate-50 border-slate-200'}`}>
+          <span
+            className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${colors[color] || "text-slate-600 bg-slate-50 border-slate-200"}`}
+          >
             {priority}
           </span>
           <span className="text-xs text-slate-500 flex items-center gap-1">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
             </svg>
             {formatDueDate(due)}
           </span>
@@ -682,12 +864,24 @@ const TaskItem = ({ title, priority, color, due }) => {
 const TaskDone = ({ title }) => (
   <div className="group flex items-start gap-3 p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 hover:shadow-md transition-all cursor-pointer">
     <div className="w-5 h-5 rounded bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-      <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+      <svg
+        className="w-3.5 h-3.5 text-white"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={3}
+          d="M5 13l4 4L19 7"
+        />
       </svg>
     </div>
     <div className="flex-1 min-w-0">
-      <p className="text-sm font-semibold text-green-800 line-through leading-snug">{title}</p>
+      <p className="text-sm font-semibold text-green-800 line-through leading-snug">
+        {title}
+      </p>
       <div className="flex items-center gap-2 mt-2">
         <span className="text-xs font-bold text-green-700 bg-green-100 px-2.5 py-1 rounded-lg border border-green-300">
           Completed
@@ -699,82 +893,16 @@ const TaskDone = ({ title }) => (
 
 const SalaryHistory = ({ salarydetails }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const formatINR = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
-  const calcDeduction = (baseSalary, taxApply, deduction) => (
-    (parseFloat(baseSalary) || 0) * (parseFloat(taxApply) || 0) / 100 + (parseFloat(deduction) || 0)
-  );
+  const formatINR = (value) =>
+    `₹${Number(value || 0).toLocaleString("en-IN")}`;
+  const calcDeduction = (baseSalary, taxApply, deduction) =>
+    ((parseFloat(baseSalary) || 0) * (parseFloat(taxApply) || 0)) / 100 +
+    (parseFloat(deduction) || 0);
 
   return (
     <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-xl border border-slate-100 flex flex-col hover:shadow-lg transition-shadow min-h-[520px]">
-      {/* HEADER */}
-      {/*<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-xl flex items-center justify-center">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <h2 className="font-bold text-lg text-slate-900">Salary History</h2>
-            <p className="text-sm text-slate-500">Recent payment activity</p>
-          </div>
-        </div>
-
-        {/* <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2.5 rounded-xl text-sm font-semibold flex gap-2 items-center w-full sm:w-auto justify-center shadow-lg hover:shadow-lg transition-all hover:scale-102">
-          <Download size={18} /> Download Payslip
-        </button>
-      </div>*/}
-
-      {/* ================= TABLE VIEW (Tablet + Desktop) ================= */}
-      {/*<div className="hidden sm:block overflow-x-auto lg:overflow-visible flex-1 min-h-0">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-          </div>
-        ) : salarydetails && salarydetails.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mb-4">
-              <FileText className="h-10 w-10 text-slate-400" />
-            </div>
-            <p className="text-slate-500 text-sm font-medium">No salary records found</p>
-            <p className="text-slate-400 text-xs mt-1">Check back later for updates</p>
-          </div>
-        ) : (
-          <div className="bg-gradient-to-b from-slate-50/50 to-white rounded-xl p-1 max-h-[360px] overflow-auto">
-            <table className="min-w-[720px] lg:min-w-full w-full text-sm">
-              <thead className="text-xs font-bold text-slate-500 border-b-2 border-slate-200">
-                <tr>
-                  <th className="text-left py-4 px-4">MONTH</th>
-                  <th className="text-center px-4">BASE SALARY</th>
-                  <th className="text-center px-4">DEDUCTIONS</th>
-                  <th className="text-center px-4">NET PAY</th>
-                  <th className="text-center px-4">STATUS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {salarydetails?.map((salary, index) => (
-                  <SalaryRow
-                    key={salary._id || salary.id}
-                    month={salary.month}
-                    year={new Date().getFullYear()}
-                    baseSalary={salary.baseSalary}
-                    deduction={salary.deductions}
-                    taxApply={salary?.taxApply}
-                    net={salary.netSalary}
-                    status={salary.Status}
-                    isLast={index === salarydetails.length - 1}
-                    formatINR={formatINR}
-                    calcDeduction={calcDeduction}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>/*}
-
       {/* ================= MOBILE CARD VIEW ================= */}
-      <div className="sm:hidden space-y-4 flex-1 min-h-0 overflow-auto max-h-[360px]">
+      <div className="space-y-4 flex-1 min-h-0 overflow-auto max-h-[360px]">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
@@ -784,8 +912,12 @@ const SalaryHistory = ({ salarydetails }) => {
             <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mb-4">
               <FileText className="h-10 w-10 text-slate-400" />
             </div>
-            <p className="text-slate-500 text-sm font-medium">No salary records found</p>
-            <p className="text-slate-400 text-xs mt-1">Check back later for updates</p>
+            <p className="text-slate-500 text-sm font-medium">
+              No salary records found
+            </p>
+            <p className="text-slate-400 text-xs mt-1">
+              Check back later for updates
+            </p>
           </div>
         ) : (
           salarydetails?.map((salary) => (
@@ -804,47 +936,21 @@ const SalaryHistory = ({ salarydetails }) => {
           ))
         )}
       </div>
-
-      {/* FOOTER
-      <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-xl sticky bottom-0">
-        <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-semibold hover:bg-blue-50 py-2 rounded-lg transition-all">
-          View All Payslips ({salarydetails?.length || 0})
-        </button>
-      </div> */}
     </div>
   );
 };
 
-const SalaryRow = ({ month, year, baseSalary, taxApply, deduction, net, status, isLast, formatINR, calcDeduction }) => {
-  const normalizedStatus = (status || "").toLowerCase();
-
-  return (
-    <tr className={`hover:bg-blue-50/50 transition-colors ${!isLast ? 'border-b border-slate-100' : ''}`}>
-      <td className="py-4 px-4">
-        <div className="font-semibold text-slate-900">{month}</div>
-        <div className="text-xs text-slate-400">{year}</div>
-      </td>
-      <td className="text-center px-4 font-semibold text-slate-900">{formatINR(baseSalary)}</td>
-      <td className="text-center px-4 font-semibold text-red-600">- {formatINR(calcDeduction(baseSalary, taxApply, deduction))}</td>
-      <td className="text-center px-4 font-bold text-green-600">{formatINR(net)}</td>
-      <td className="text-center px-4">
-        <span className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 ${normalizedStatus === 'paid' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-300' :
-          normalizedStatus === 'processing' ? 'bg-gradient-to-r from-blue-100 to-sky-100 text-blue-700 border border-blue-300' :
-            'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 border border-yellow-300'
-          }`}>
-          {normalizedStatus === 'paid' && (
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          )}
-          {capitalize(normalizedStatus || 'pending')}
-        </span>
-      </td>
-    </tr>
-  );
-};
-
-const MobileSalaryCard = ({ month, year, baseSalary, taxApply, deduction, netSalary, status, formatINR, calcDeduction }) => {
+const MobileSalaryCard = ({
+  month,
+  year,
+  baseSalary,
+  taxApply,
+  deduction,
+  netSalary,
+  status,
+  formatINR,
+  calcDeduction,
+}) => {
   const normalizedStatus = (status || "").toLowerCase();
 
   return (
@@ -854,23 +960,32 @@ const MobileSalaryCard = ({ month, year, baseSalary, taxApply, deduction, netSal
           <p className="font-bold text-slate-900 text-lg">{month}</p>
           <p className="text-xs text-slate-400 font-medium">{year}</p>
         </div>
-        <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${normalizedStatus === 'paid' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-300' :
-          normalizedStatus === 'processing' ? 'bg-gradient-to-r from-blue-100 to-sky-100 text-blue-700 border border-blue-300' :
-            'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 border border-yellow-300'
-          }`}>
-          {capitalize(normalizedStatus || 'pending')}
+        <span
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
+            normalizedStatus === "paid"
+              ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-300"
+              : normalizedStatus === "processing"
+                ? "bg-gradient-to-r from-blue-100 to-sky-100 text-blue-700 border border-blue-300"
+                : "bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 border border-yellow-300"
+          }`}
+        >
+          {capitalize(normalizedStatus || "pending")}
         </span>
       </div>
 
       <div className="space-y-3">
         <div className="flex justify-between text-sm items-center p-2.5 bg-slate-50 rounded-lg">
           <span className="text-slate-600 font-medium">Base Salary</span>
-          <span className="font-bold text-slate-900">{formatINR(baseSalary)}</span>
+          <span className="font-bold text-slate-900">
+            {formatINR(baseSalary)}
+          </span>
         </div>
 
         <div className="flex justify-between text-sm items-center p-2.5 bg-red-50 rounded-lg">
           <span className="text-red-600 font-medium">Deductions</span>
-          <span className="font-bold text-red-600">- {formatINR(calcDeduction(baseSalary, taxApply, deduction))}</span>
+          <span className="font-bold text-red-600">
+            - {formatINR(calcDeduction(baseSalary, taxApply, deduction))}
+          </span>
         </div>
 
         <div className="flex justify-between font-semibold items-center p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">

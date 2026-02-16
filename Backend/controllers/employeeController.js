@@ -12,6 +12,25 @@ const Attendance = require("../models/Attendance");
 const Salary = require("../models/Salary");
 
 
+const getAllEmployees = async (req, res) => {
+  try {
+    // Fetch all users to populate the chat list
+    // We select specific fields to keep it secure and lightweight
+    const employees = await User.find()
+      .select('firstName lastName _id role department profilePhoto email');
+
+    return res.status(200).json({
+      success: true,
+      employees // This matches response.data.employees in your frontend
+    });
+  } catch (err) {
+    console.log("get all employees error", err);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching employees for chat'
+    });
+  }
+}
 
 const getEmployeedashboard = async (req, res) => {
   try {
