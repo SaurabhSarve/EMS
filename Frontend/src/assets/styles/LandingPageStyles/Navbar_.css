@@ -14,20 +14,19 @@ body {
 
 /* Animated Navbar */
 .animated-navbar {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  background: linear-gradient(150deg,#ffffff 0%,#eff6ff 35%,#dbeafe 65%,#bfdbfe 100%);
   position: sticky;
   top: 0;
   width: 100%;
   z-index: 1000;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.3s ease, border-color 0.3s ease;
-  backdrop-filter: blur(10px);
 }
 
 .animated-navbar.scrolled {
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-  border-bottom-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-bottom-color: rgba(0, 0, 0, 0.08);
 }
 
 .animated-navbar-container {
@@ -71,7 +70,7 @@ body {
 }
 
 .animated-nav-link {
-  color: #e2e8f0;
+  color: #1f2937;
   text-decoration: none;
   font-size: 0.9375rem;
   font-weight: 500;
@@ -82,7 +81,7 @@ body {
 }
 
 .animated-nav-link:hover {
-  color: #60a5fa;
+  color: #2563eb;
 }
 
 /* Animated Underline */
@@ -107,7 +106,7 @@ body {
 }
 
 .animated-nav-link.active {
-  color: #60a5fa;
+  color: #2563eb;
 }
 
 /* Desktop Register Button with Animations */
@@ -181,7 +180,7 @@ body {
 .animated-hamburger-line {
   width: 26px;
   height: 2.5px;
-  background-color: #e2e8f0;
+  background-color: #1f2937;
   border-radius: 3px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -227,10 +226,10 @@ body {
   width: 340px;
   max-width: 85vw;
   height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  background-color: #ffffff;
   z-index: 1002;
   transition: right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.3);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
 }
@@ -242,7 +241,7 @@ body {
 /* Mobile Sidebar Header */
 .animated-mobile-sidebar-header {
   padding: 1.75rem 1.75rem 1.5rem;
-  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -262,15 +261,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #cbd5e1;
+  color: #6b7280;
   transition: all 0.3s ease;
   border-radius: 6px;
   animation: fadeSlideIn 0.5s ease 0.2s backwards;
 }
 
 .animated-close-btn:hover {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #60a5fa;
+  background-color: #f3f4f6;
+  color: #1f2937;
   transform: rotate(90deg);
 }
 
@@ -310,7 +309,7 @@ body {
   display: flex;
   align-items: center;
   gap: 1rem;
-  color: #e2e8f0;
+  color: #1f2937;
   text-decoration: none;
   font-size: 1.0625rem;
   font-weight: 500;
@@ -350,8 +349,8 @@ body {
 }
 
 .animated-mobile-nav-link:hover {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #60a5fa;
+  background-color: #f9fafb;
+  color: #2563eb;
 }
 
 .animated-mobile-nav-link:hover .link-icon {
@@ -359,15 +358,15 @@ body {
 }
 
 .animated-mobile-nav-link.active {
-  color: #60a5fa;
-  background-color: rgba(59, 130, 246, 0.15);
-  border-left-color: #60a5fa;
+  color: #2563eb;
+  background-color: #eff6ff;
+  border-left-color: #2563eb;
 }
 
 /* Mobile Sidebar Footer with Animation */
 .animated-mobile-sidebar-footer {
   padding: 1.75rem;
-  border-top: 1px solid rgba(59, 130, 246, 0.2);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
   opacity: 0;
   transform: translateY(20px);
 }

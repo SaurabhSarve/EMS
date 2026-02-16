@@ -74,7 +74,7 @@ const Navbar_ = () => {
           <ul className="animated-navbar-links" role="menubar">
             <li role="none">
               <a
-                href="#home"
+                href="/"
                 role="menuitem"
                 className={`animated-nav-link ${activeLink === 'home' ? 'active' : ''}`}
                 onClick={() => handleLinkClick('home')}
@@ -90,7 +90,7 @@ const Navbar_ = () => {
                 className={`animated-nav-link ${activeLink === 'admin' ? 'active' : ''}`}
                 onClick={() => handleLinkClick('admin')}
               >
-                Admin
+                Admin Login
                 <span className="animated-nav-underline"></span>
               </a>
             </li>
@@ -160,7 +160,7 @@ const Navbar_ = () => {
 
         <nav className="animated-mobile-nav-links">
           <a
-            href="#home"
+            href="/"
             className={`animated-mobile-nav-link ${activeLink === 'home' ? 'active' : ''} ${isMobileMenuOpen ? 'stagger-1' : ''}`}
             onClick={() => handleLinkClick('home')}
           >
