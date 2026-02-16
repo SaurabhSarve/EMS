@@ -58,7 +58,7 @@ const Footer = () => {
               </a>
 
               <a
-                href="#"
+                href="https://x.com/Graphura"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-2xl text-slate-400
