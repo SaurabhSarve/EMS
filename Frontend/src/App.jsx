@@ -49,6 +49,10 @@ import DepartmentEmployee from "./pages/admin/DepartmentEmployee";
 import PaymentHistory from './pages/admin/PaymentHistory';
 import EmployeePayroll from './pages/employee/Payroll.jsx';
 import Settings from "./pages/admin/Settings";
+import TermsAndCondition from "./pages/common/Terms&Condition.jsx";
+import PrivacyAndPolicy from "./pages/common/PrivacyAndPolicy.jsx";
+import CookiePolicy from "./pages/common/CookiePolicy.jsx";
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
 
@@ -97,6 +101,9 @@ function App() {
           <Route path="/create-password" element={<CreatePasswordForm />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/terms" element={<TermsAndCondition />} />
+          <Route path="/privacy" element={<PrivacyAndPolicy />} />
+          <Route path="/cookie-policy" element={<CookiePolicy />} />
 
           {/* Protected Admin Routes */}
           <Route
