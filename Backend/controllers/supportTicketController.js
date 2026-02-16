@@ -87,6 +87,7 @@ const getTickets = async (req, res) => {
     const tickets = await SupportTicket.find(query)
       .populate("employee", "firstName lastName")
       .populate("assignedTo", "firstName lastName")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.json({ success: true, tickets });
@@ -100,96 +101,96 @@ const getTickets = async (req, res) => {
 // IMPORTANT: Department Heads should only see tickets from employees CURRENTLY in their department
 // This prevents department heads from seeing tickets after they are reassigned to a new department
 const getAdminTickets = async (req, res) => {
-    try {
-        const adminId = req.user.id;
-        let query = {};
-        
-        if (req.user.role === "Department Head") {
-            // Get the department - first try user's department field, then look for department where user is manager
-            let departmentId = req.user.department;
-            
-            if (!departmentId) {
-              const dept = await Department.findOne({ manager: adminId });
-              if (dept) {
-                departmentId = dept._id;
-              }
-            }
-            
-            if (!departmentId) {
-              return res.status(400).json({ message: "Department not assigned" });
-            }
-            
-            // Only get employees CURRENTLY in this department
-            // This ensures that when a department head is moved to a new department,
-            // they can no longer see tickets from employees in their old department
-            const employees = await User.find({ department: departmentId, role: "Employee" }).select('_id');
-            const employeeIds = employees.map(emp => emp._id);
-            
-            if (employeeIds.length === 0) {
-              return res.status(200).json({
-                success: true,
-                count: 0,
-                unreadCount: 0,
-                tickets: [],
-                message: "No employees found in your department"
-              });
-            }
-            
-            query = {
-              raisedByRole: "Employee",
-              employee: { $in: employeeIds }
-            };
+  try {
+    const adminId = req.user.id;
+    let query = {};
+
+    if (req.user.role === "Department Head") {
+      // Get the department - first try user's department field, then look for department where user is manager
+      let departmentId = req.user.department;
+
+      if (!departmentId) {
+        const dept = await Department.findOne({ manager: adminId });
+        if (dept) {
+          departmentId = dept._id;
         }
+      }
 
-        const tickets = await SupportTicket.find(query)
-            .populate("employee", "firstName lastName profilePhoto employeeId personalEmail department")
-            .populate("assignedTo", "firstName lastName email")
-            .sort({ createdAt: -1 });
+      if (!departmentId) {
+        return res.status(400).json({ message: "Department not assigned" });
+      }
 
-        console.log(tickets);
+      // Only get employees CURRENTLY in this department
+      // This ensures that when a department head is moved to a new department,
+      // they can no longer see tickets from employees in their old department
+      const employees = await User.find({ department: departmentId, role: "Employee" }).select('_id');
+      const employeeIds = employees.map(emp => emp._id);
 
-        res.status(200).json({
-            success: true,
-            count: tickets.length,
-            unreadCount: tickets.filter(t => !t.isReadByAdmin).length,
-            tickets: tickets
+      if (employeeIds.length === 0) {
+        return res.status(200).json({
+          success: true,
+          count: 0,
+          unreadCount: 0,
+          tickets: [],
+          message: "No employees found in your department"
         });
+      }
 
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching tickets',
-            error: error.message
-        });
+      query = {
+        raisedByRole: "Employee",
+        employee: { $in: employeeIds }
+      };
     }
+
+    const tickets = await SupportTicket.find(query)
+      .populate("employee", "firstName lastName profilePhoto employeeId personalEmail department")
+      .populate("assignedTo", "firstName lastName email")
+      .sort({ createdAt: -1 });
+
+    console.log(tickets);
+
+    res.status(200).json({
+      success: true,
+      count: tickets.length,
+      unreadCount: tickets.filter(t => !t.isReadByAdmin).length,
+      tickets: tickets
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching tickets',
+      error: error.message
+    });
+  }
 };
 
 
 const updateTicket = async (req, res) => {
-    try {
-        const ticket = await SupportTicket.findByIdAndUpdate(
-            req.params.id,
-            { isReadByAdmin: true },
-            { new: true }
-        );
+  try {
+    const ticket = await SupportTicket.findByIdAndUpdate(
+      req.params.id,
+      { isReadByAdmin: true },
+      { new: true }
+    );
 
-        if (!ticket) {
-            return res.status(404).json({
-                success: false,
-                message: 'Ticket not found'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            ticket
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket not found'
+      });
     }
+
+    res.status(200).json({
+      success: true,
+      ticket
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 }
 
 // const updateTicketStatus = async (req, res) => {
@@ -397,6 +398,7 @@ const getMyQueriesForDepartmentHead = async (req, res) => {
     const tickets = await SupportTicket.find(query)
       .populate("employee", "firstName lastName profilePhoto employeeId personalEmail department")
       .populate("assignedTo", "firstName lastName email")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -422,6 +424,7 @@ const getDepartmentHeadQueries = async (req, res) => {
     const tickets = await SupportTicket.find(query)
       .populate("employee", "firstName lastName profilePhoto employeeId personalEmail department")
       .populate("assignedTo", "firstName lastName email")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -445,16 +448,16 @@ const getDepartmentHeadQueries = async (req, res) => {
 const getDepartmentEmployeesTickets = async (req, res) => {
   try {
     const dept = await Department.findOne({ manager: req.user._id });
-console.log("Department Found:", dept);
+    console.log("Department Found:", dept);
 
     if (req.user.role !== "Department Head") {
       return res.status(403).json({ message: "Unauthorized" });
     }
-console.log("REQ USER:", req.user);
+    console.log("REQ USER:", req.user);
 
     // Get the department - first try user's department field, then look for department where user is manager
     let departmentId = req.user.department;
-    
+
     if (!departmentId) {
       // Find department where this user is the manager
       const dept = await Department.findOne({ manager: req.user._id });
@@ -470,7 +473,7 @@ console.log("REQ USER:", req.user);
     // CRITICAL: Only get employees CURRENTLY in this department
     // This ensures that when a department head is moved to a new department,
     // they can no longer see tickets from employees in their old department
-    const employees = await User.find({ department: departmentId, role: { $regex: /^employee$/i}}).select('_id');
+    const employees = await User.find({ department: departmentId, role: { $regex: /^employee$/i } }).select('_id');
     const employeeIds = employees.map(emp => emp._id);
 
     // If no employees in current department, return empty array
@@ -492,6 +495,7 @@ console.log("REQ USER:", req.user);
     const tickets = await SupportTicket.find(query)
       .populate("employee", "firstName lastName profilePhoto employeeId personalEmail department")
       .populate("assignedTo", "firstName lastName email")
+      .populate("comments")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -509,16 +513,73 @@ console.log("REQ USER:", req.user);
   }
 };
 
+// Delete a employee query ticket from head and admin side 
+
+const deleteEmployeeTicket = async (req, res) => {
+  try {
+    // Role guard
+    if (!["Department Head", "Admin"].includes(req.user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const ticket = await SupportTicket.findById(req.params.id);
+
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    // Optional: Admin sirf forwarded ticket delete kare
+    // if (req.user.role === "Admin" && !ticket.forwardedToAdmin) {
+    //   return res.status(403).json({
+    //     message: "Admin can delete only forwarded tickets",
+    //   });
+    // }
+
+    await ticket.deleteOne();
+
+    res.status(200).json({ message: "Ticket deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// delete Department head ticket from admin side
+
+const deleteDepartmentHeadTicket = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const ticket = await SupportTicket.findById(id);
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    await ticket.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Ticket deleted successfully",
+      ticketId: id,
+    });
+  } catch (error) {
+    console.error("DELETE TICKET ERROR:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 
 module.exports = {
-    createTicket,
-    getAdminTickets,
-    updateTicket,
-    getTickets,
-    updateTicketStatus,
-    forwardToAdmin,
-    getDepartmentHeadQueries,
-    getMyQueriesForDepartmentHead,
-    getDepartmentEmployeesTickets
+  createTicket,
+  getAdminTickets,
+  updateTicket,
+  getTickets,
+  updateTicketStatus,
+  forwardToAdmin,
+  getDepartmentHeadQueries,
+  getMyQueriesForDepartmentHead,
+  getDepartmentEmployeesTickets,
+  deleteEmployeeTicket,
+  deleteDepartmentHeadTicket,
+  
 }

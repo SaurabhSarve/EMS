@@ -42,6 +42,7 @@ import ChatPage from "./pages/common/ChatPage";
 
 import DepartmentHeadPayroll from "./pages/departmentHead/Payroll";
 import HeadApplyLeave from "./pages/departmentHead/ApplyLeave";
+import HeadDashboard from "./pages/departmentHead/HeadDashboard";
 import DepartmentHeadProjects from "./pages/departmentHead/Projects";
 import AdminPaymentHistory from "./pages/admin/AdminPaymentHistory";
 import DepartmentEmployee from "./pages/admin/DepartmentEmployee";
@@ -72,7 +73,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    if (user.role === "Admin" || user.role === "Department Head") {
+    if (user.role === "Department Head") {
+      return <Navigate to="/head/dashboard" replace />;
+    } else if (user.role === "Admin") {
       return <Navigate to="/admin/dashboard" replace />;
     } else {
       return <Navigate to="/employee/dashboard" replace />;
@@ -99,8 +102,17 @@ function App() {
           <Route
             path="/admin/dashboard"
             element={
-              <ProtectedRoute allowedRoles={["Admin", "Department Head"]}>
+              <ProtectedRoute allowedRoles={["Admin"]}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/head/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["Department Head"]}>
+                <HeadDashboard />
               </ProtectedRoute>
             }
           />
@@ -254,7 +266,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          
+
           <Route
             path="/admin/me"
             element={

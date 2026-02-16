@@ -12,6 +12,19 @@ export const leaveService = {
         }
     },
 
+    applyLeaveWithDocument : async (formData) => {
+        try {
+            const response = await api.post('employee/apply-leave', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     getAppliedLeave :  async () => {
         try {
             const response = await api.get('employee/apply-leave');
@@ -27,6 +40,15 @@ export const leaveService = {
                 Leaveid,
                 action : value
             });
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    deleteLeave : async (leaveId) => {
+        try {
+            const response = await api.delete(`admin/employees/leaves/${leaveId}`);
             return response.data;
         } catch (error) {
             throw error;

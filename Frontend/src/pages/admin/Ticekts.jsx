@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AdminSidebar from "../../Components/AdminSidebar";
 import { employeeService } from "../../services/employeeServices";
 import { ticketService } from "../../services/ticketService";
+import swal from "sweetalert2";
 
 export default function Tickets() {
   const [tickets, setTickets] = useState([]);
@@ -30,6 +31,10 @@ export default function Tickets() {
 
   // sub-view for Department Head to toggle between list and form
   const [myQueriesSubView, setMyQueriesSubView] = useState("list"); // "list" or "form"
+
+  // head can view replies
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [activeReply, setActiveReply] = useState([]);
 
   //  Logged-in user
   const user = JSON.parse(localStorage.getItem("user"));
@@ -106,6 +111,7 @@ export default function Tickets() {
 
     return false;
   });
+  console.log("Employee", tickets.comments);
 
   const formatDate = (date) => {
     if (!date) return "—";
@@ -357,6 +363,64 @@ export default function Tickets() {
     }
   };
 
+  // delete Employee created Tickets
+  const handleDeleteEmployeeTicket = async (ticketId) => {
+    const result = await swal.fire({
+      title: "Delete ticket?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Yes, delete it",
+      customClass: {
+        popup: "rounded-2xl shadow-lg",
+      },
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await employeeService.deleteEmployeeTickets(ticketId);
+      setTickets((prev) => prev.filter((t) => t._id !== ticketId));
+
+      swal.fire("Deleted!", "Ticket has been deleted.", "success");
+    } catch {
+      swal.fire("Error", "Failed to delete ticket", "error");
+    }
+  };
+
+  // delete Department Head created Tickets (visible to Admin only)
+  const handleDeleteDepartmentHeadTicket = async (ticketId) => {
+    const result = await swal.fire({
+      title: "Delete Department Head ticket?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        popup: "rounded-2xl p-6",
+        confirmButton:
+          "rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700",
+        cancelButton:
+          "rounded-lg bg-slate-300 px-4 py-2 text-slate-800 hover:bg-slate-400",
+      },
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await employeeService.deleteDepartmentHeadTicket(ticketId);
+
+      // THIS updates UI instantly
+      setTickets((prev) => prev.filter((t) => t._id !== ticketId));
+    } catch (err) {
+      swal.fire("Error", "Failed to delete ticket", "error");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-white">
       <AdminSidebar />
@@ -451,33 +515,33 @@ export default function Tickets() {
                   placeholder="Search by subject, employee, category..."
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
                 /> */}
+
                 {["Admin", "Department Head"].includes(user?.role) && (
                   <button
                     onClick={() => setActiveView("Employee_Queries")}
                     className={`
-    relative inline-flex items-center justify-center
-    px-6 py-2.5 rounded-xl
-    text-sm font-semibold tracking-wide
-    transition-all duration-200
-    focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60
-    ${
-      activeView === "Employee_Queries"
-        ? `
-          text-white
-          bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400
-          shadow-[0_8px_24px_-6px_rgba(59,130,246,0.6)]
-          border border-blue-500/60
-        `
-        : `
-          text-blue-700
-          bg-white
-          border border-slate-200
-          hover:border-blue-300
-          hover:text-blue-600
-          hover:bg-blue-50/50
-        `
-    }
-  `}
+                    relative inline-flex items-center justify-center
+                    px-6 py-2.5 rounded-xl
+                    text-sm font-semibold tracking-wide
+                    transition-all duration-200
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60
+                    ${
+                      activeView === "Employee_Queries"
+                        ? `
+                   text-white
+                   bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400
+                   shadow-[0_8px_24px_-6px_rgba(59,130,246,0.6)]
+                   border border-blue-500/60
+                   `
+                        : `
+                     text-blue-700
+                     bg-white
+                     border border-slate-200
+                     hover:border-blue-300
+                     hover:text-blue-600
+                     hover:bg-blue-50/50`
+                    }
+                   `}
                   >
                     {/* subtle shine layer (active only) */}
                     {activeView === "Employee_Queries" && (
@@ -567,11 +631,11 @@ export default function Tickets() {
                     {employeeQueryTickets.map((ticket) => (
                       <div
                         key={ticket._id}
-                        className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-lg transition-shadow relative overflow-hidden"
+                        className="bg-white border border-slate-100 rounded-2xl p-3 shadow-sm hover:shadow-lg transition-shadow relative overflow-hidden"
                       >
                         <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-blue-500 via-indigo-500 to-sky-400" />
 
-                        <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center justify-between gap-3">
                           <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 font-bold flex items-center justify-center">
                               {(ticket.employee?.firstName || "U").charAt(0)}
@@ -597,12 +661,12 @@ export default function Tickets() {
                               onClick={() => handleForwardToAdmin(ticket._id)}
                               disabled={ticket.forwardedToAdmin}
                               className={`text-xs flex items-center justify-center font-semibold px-3 py-1.5 rounded-lg rounded-md transition
-                          ${
-                            ticket.forwardedToAdmin
-                              ? "bg-blue-200 text-blue-700 cursor-not-allowed"
-                              : "bg-blue-600 text-white hover:bg-blue-700"
-                          }
-                          `}
+                            ${
+                              ticket.forwardedToAdmin
+                                ? "bg-blue-200 text-blue-700 cursor-not-allowed"
+                                : "bg-blue-600 text-white hover:bg-blue-700"
+                            }
+                           `}
                             >
                               {ticket.forwardedToAdmin
                                 ? "Forwarded"
@@ -616,6 +680,16 @@ export default function Tickets() {
                                 Forwarded
                               </span>
                             )}
+
+                          <button
+                            onClick={() =>
+                              handleDeleteEmployeeTicket(ticket._id)
+                            }
+                            className="inline-block text-xs font-semibold px-3 py-1.5 rounded-lg
+                            bg-red-100 text-red-700 hover:bg-red-200 transition"
+                          >
+                            Delete
+                          </button>
                         </div>
 
                         <p className="text-sm text-slate-600 mt-3 line-clamp-2">
@@ -737,7 +811,14 @@ export default function Tickets() {
                                 {ticket.subject}
                               </p>
                               <p className="text-sm text-blue-600 mt-1 font-semibold">
-                                🏢 Department Head Query
+                                {ticket.employee?.firstName}
+
+                                {/* {ticket.employee?.department?.name && (
+                                  <span className="text-slate-500 font-medium">
+                                    {" "}
+                                    • {ticket.employee.department.name}
+                                  </span>
+                                )} */}
                               </p>
                             </div>
                           </div>
@@ -746,6 +827,16 @@ export default function Tickets() {
                           >
                             {ticket.status}
                           </span>
+
+                          <button
+                            onClick={() =>
+                              handleDeleteDepartmentHeadTicket(ticket._id)
+                            }
+                            className="inline-block text-xs font-semibold px-3 py-1.5 rounded-lg
+                            bg-red-100 text-red-700 hover:bg-red-200 transition"
+                          >
+                            Delete
+                          </button>
                         </div>
 
                         <p className="text-sm text-slate-600 mt-3 line-clamp-2">
@@ -922,7 +1013,7 @@ export default function Tickets() {
                                       {ticket.subject}
                                     </p>
                                     <p className="text-sm text-blue-600 mt-1 font-semibold">
-                                      🏢 Department Head Query
+                                      {ticket.employee?.firstName}
                                     </p>
                                   </div>
                                 </div>
@@ -932,10 +1023,24 @@ export default function Tickets() {
                                   {ticket.status}
                                 </span>
                               </div>
-
-                              <p className="text-sm text-slate-600 mt-3 line-clamp-2">
-                                {ticket.description}
-                              </p>
+                              <div className="flex justify-between items-center">
+                                <p className="text-sm text-slate-600  line-clamp-2">
+                                  {ticket.description}
+                                </p>
+                                {ticket.comments && ticket.comments.length > 0 ? (
+                                  <button
+                                    onClick={() => {
+                                      setActiveReply(ticket.comments || []);
+                                      setShowReplyModal(true);
+                                    }}
+                                    className="px-2 py-1.5 text-xs font-semibold text-blue-600 border border-blue-500 rounded-lg hover:bg-blue-500 hover:text-white"
+                                  >
+                                    View Remarks ({ticket.comments.length})
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-slate-400">No remarks</span>
+                                )}
+                              </div>
 
                               <div className="flex flex-wrap items-center gap-2 mt-4">
                                 <span
@@ -960,6 +1065,50 @@ export default function Tickets() {
                         </div>
                       )}
                     </>
+                  )}
+
+                  {/* comment section of by admin and view by head  */}
+
+                  {showReplyModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-6">
+                        <h3 className="text-lg font-bold text-slate-900 mb-3">
+                          Ticket Remarks
+                        </h3>
+
+                        <div className="max-h-80 overflow-y-auto space-y-3">
+                          {activeReply && activeReply.length > 0 ? (
+                            activeReply.map((reply, idx) => (
+                              <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-semibold text-blue-600">
+                                    {reply.role}
+                                  </span>
+                                  <span className="text-xs text-slate-400">
+                                    {reply.createdAt ? new Date(reply.createdAt).toLocaleString() : ''}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-slate-700 whitespace-pre-wrap">
+                                  {reply.message}
+                                </div>
+                                <div className="mt-2 text-xs text-slate-500">
+                                  Status: <span className="font-semibold">{reply.statusAtThatTime}</span>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-slate-500 text-center py-4">No remarks available</p>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => setShowReplyModal(false)}
+                          className="mt-5 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl font-semibold"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
                   )}
 
                   {/* Form View */}

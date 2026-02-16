@@ -48,12 +48,6 @@ const projectSchema = new mongoose.Schema({
     enum: ['High', 'Medium', 'Low'],
     default: 'Medium'
   },
-  progress: {
-    type: Number,
-    min: 0,
-    max: 100,
-    default: 0
-  },
   status: {
     type: String,
     enum: ['Pending', 'Ongoing', 'Completed', 'Overdue', 'Archived'],

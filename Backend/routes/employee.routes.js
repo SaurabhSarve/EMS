@@ -1,7 +1,7 @@
 const express = require('express').default || require('express');
 const router = express.Router();
 const multer = require('multer');
-const { taskAttachmentStorage } = require('../config/cloudConfig');
+const { taskAttachmentStorage, leaveDocumentStorage } = require('../config/cloudConfig');
 
 const { protect} = require('../middleware/auth');
 
@@ -12,6 +12,7 @@ const { getProjectsByEmployee } = require("../controllers/projectController.js")
 const { updateProjectProgress, addProjectComment } = require("../controllers/projectUpdateController.js");
 
 const taskUpload = multer({ storage: taskAttachmentStorage });
+const leaveDocumentUpload = multer({ storage: leaveDocumentStorage });
 
 router.use(protect);
 
@@ -40,7 +41,7 @@ router.put("/update-security-key", updateSecurityKey);
 
 router.route("/apply-leave")
 .get(getAppliedLeave)
-.post(applyLeave);
+.post(leaveDocumentUpload.single('document'), applyLeave);
 
 // Employee Projects routes
 router.get("/projects", getProjectsByEmployee);

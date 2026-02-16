@@ -20,6 +20,7 @@ const {
     updateSalary,
     runPayroll,
     leaveAction,
+    deleteLeave,
     sentEmail,
     getDepartmentTasks,
     payIndividual,
@@ -43,7 +44,7 @@ const { downloadInvoice } = require("../controllers/downloadInvoice");
 
 
 const { protect, authorize } = require('../middleware/auth');
-const { getAdminTickets,getTickets, updateTicket, updateTicketStatus, forwardToAdmin, getDepartmentHeadQueries, getMyQueriesForDepartmentHead, getDepartmentEmployeesTickets } = require('../controllers/supportTicketController.js');
+const { getAdminTickets, deleteEmployeeTicket, deleteDepartmentHeadTicket, updateTicket, updateTicketStatus, forwardToAdmin, getDepartmentHeadQueries, getMyQueriesForDepartmentHead, getDepartmentEmployeesTickets } = require('../controllers/supportTicketController.js');
 const { ActivatePaymentMode, UpdateBankDetails } = require("../controllers/paymentController.js");
 const { getRecentActivities } = require('../controllers/activityController.js');
 const { 
@@ -91,6 +92,12 @@ router.get("/tickets/department-employees", getDepartmentEmployeesTickets);
 router.patch("/support-tickets/:id/update", updateTicket);
 router.patch("/support-tickets/:id/status", updateTicketStatus);
 router.put("/tickets/:id/forward-to-admin", forwardToAdmin);
+
+// delete employee ticket by admin
+router.delete("/support-tickets/:id", deleteEmployeeTicket);
+
+// delete department head ticket by admin
+router.delete("/support-tickets/department-head/:id", deleteDepartmentHeadTicket);
 
 
 
@@ -144,7 +151,11 @@ router.post('/salary/pay-individual/:salaryId', payIndividual);
 // router.post("/employees/salary/" , updateSalary);
 
 
-// leaves detail 
+// delete leave - MUST come before /employees/leaves to avoid route conflicts
+router.route("/employees/leaves/:leaveId")
+    .delete(deleteLeave);
+
+// leaves detail and actions
 router.route("/employees/leaves")
     .get(getleavesDetail)
     .post(leaveAction);

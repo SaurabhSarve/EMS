@@ -4,7 +4,7 @@ import Footer from "../../Components/Footer";
 import { Link } from "react-router-dom";
 import Navbar_ from "../../Components/Navbar_";
 
-import { Lock, CalendarDays, IndianRupee, TrendingUp } from "lucide-react";
+import { Lock, CalendarDays, IndianRupee, TrendingUp, Users, Shield, Zap, ArrowRight } from "lucide-react";
 
 export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -33,12 +33,14 @@ export default function HomePage() {
 
               <div className="hero-buttons">
                 <div className="hero-btn">
-                  <a href="/register" className="btn-secondary get-started-btn">
-                    Get Started
-                  </a>
-                  {/* <a href="#features" className="btn-secondary book-demo-btn">
-                    <i class="fa-solid fa-arrow-trend-up"></i> Book Demo
-                  </a> */}
+                  <Link to="/admin-login" className="btn-primary btn-admin">
+                    <Lock size={20} />
+                    Admin Login
+                  </Link>
+                  <Link to="/employee-login" className="btn-primary btn-employee">
+                    <Users size={20} />
+                    Employee Login
+                  </Link>
                 </div>
               </div>
 
@@ -90,7 +92,7 @@ export default function HomePage() {
                 securely, and compliantly in a single platform.
               </p>
               <a href="#features" className="view-all">
-                View all features <i class="fa-solid fa-arrow-right"></i>
+                View all features <i className="fa-solid fa-arrow-right"></i>
               </a>
             </div>
 
@@ -128,23 +130,50 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+        {/* Statistics Section */}
+        <section className="stats-section">
+          <div className="stats-container">
+            <div className="stat-item">
+              <h3>500+</h3>
+              <p>Enterprise Clients</p>
+            </div>
+            <div className="stat-item">
+              <h3>2M+</h3>
+              <p>Employees Managed</p>
+            </div>
+            <div className="stat-item">
+              <h3>99.9%</h3>
+              <p>System Uptime</p>
+            </div>
+            <div className="stat-item">
+              <h3>150+</h3>
+              <p>Countries</p>
+            </div>
+          </div>
+        </section>
         {/* CTA Section */}
-        {/* <section className="cta-section">
+        <section className="cta-section">
           <div className="cta-container">
-            <h2>Ready to optimize your workforce?</h2>
+            <h2>Ready to Transform Your Workforce Management?</h2>
             <p>
-              Join over 500+ enterprises managing their teams with EMS. Start
-              your 14-day free trial today.
+              Join leading enterprises that trust EMS to streamline their operations, 
+              enhance productivity, and ensure compliance with our comprehensive platform.
             </p>
 
             <div className="cta-buttons">
-              <button className="btn-cta-primary">Join Now</button>
-              <button className="btn-cta-secondary">Watch videos</button>
+              <Link to="/admin-login" className="btn-cta-primary">
+                <Lock size={18} />
+                Admin Login
+              </Link>
+              <Link to="/employee-login" className="btn-cta-secondary">
+                <Users size={18} />
+                Employee Login
+              </Link>
             </div>
 
-            <p className="cta-note">No credit card required for trial.</p>
+            <p className="cta-note">Instant access • No credit card required • Enterprise security</p>
           </div>
-        </section> */}
+        </section>
         <Footer />
       </div>
     </>

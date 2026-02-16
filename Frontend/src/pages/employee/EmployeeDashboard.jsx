@@ -6,9 +6,16 @@ import {
   FileText,
   Ticket,
   MessageCircle,
+  FolderOpen,
+  Users,
+  CheckCircle2,
+  AlertCircle,
+  Building,
+  User,
 } from "lucide-react";
 import EmployeesSidebar from "../../Components/EmployeesSidebar";
 import { employeeService } from "../../services/employeeServices";
+import { projectService } from "../../services/projectService";
 import { capitalize } from "../../utils/helper";
 import { BsBuilding, BsChatDots } from "react-icons/bs";
 
@@ -25,6 +32,10 @@ export default function EmployeeDashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   const socketRef = useRef(null);
 
+  const [projects, setProjects] = useState([]);
+  const [showViewAllProjects, setShowViewAllProjects] = useState(false);
+  const [showProjectDetails, setShowProjectDetails] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
   const getCurrentDate = () => {
     const options = {
       weekday: "long",
@@ -121,6 +132,7 @@ export default function EmployeeDashboard() {
   // --- DATA FETCHING ---
   useEffect(() => {
     fetchEmployee();
+    fetchProjects();
   }, []);
 
   const fetchEmployee = async () => {
@@ -135,6 +147,34 @@ export default function EmployeeDashboard() {
     } catch (error) {
       console.error("employee dashboard error", error);
     }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const result = await projectService.getProjectsByEmployee();
+      if (result && result.success) {
+        setProjects(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching projects", error);
+      setProjects([]);
+    }
+  };
+
+  // Project handlers
+  const handleProjectCardClick = (project) => {
+    setSelectedProject(project);
+    setShowProjectDetails(true);
+  };
+
+  const handleViewAllClick = () => {
+    setShowViewAllProjects(true);
+  };
+
+  const closeAllModals = () => {
+    setShowViewAllProjects(false);
+    setShowProjectDetails(false);
+    setSelectedProject(null);
   };
 
   const today = new Date();
@@ -428,15 +468,236 @@ export default function EmployeeDashboard() {
 
         {/* SALARY + TASKS */}
         <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <SalaryHistory salarydetails={salarydetails} />
+          <MyProjects 
+            projects={projects} 
+            onCardClick={handleProjectCardClick}
+            onViewAllClick={handleViewAllClick}
+          />
           <MyTasks taskdetails={taskdetails} />
         </section>
       </main>
+
+      {/* MODALS */}
+      {showProjectDetails && (
+        <ProjectDetailsModal 
+          project={selectedProject} 
+          onClose={closeAllModals}
+        />
+      )}
+      {showViewAllProjects && (
+        <ViewAllProjectsModal 
+          projects={projects} 
+          onProjectClick={handleProjectCardClick}
+          onClose={closeAllModals}
+        />
+      )}
     </div>
   );
 }
 
 /* COMPONENTS */
+
+const MyProjects = ({ projects, onCardClick, onViewAllClick }) => {
+
+  const getStatusColor = (status) => {
+    const statusLower = (status || "").toLowerCase();
+    if (statusLower === "ongoing" || statusLower === "in progress") 
+      return { 
+        bg: "from-blue-50 to-blue-100", 
+        text: "text-blue-700", 
+        badge: "bg-blue-100 text-blue-700 border-blue-300",
+        icon: "text-blue-600",
+        progress: "bg-gradient-to-r from-blue-400 to-blue-600"
+      };
+    if (statusLower === "completed") 
+      return { 
+        bg: "from-green-50 to-green-100", 
+        text: "text-green-700", 
+        badge: "bg-green-100 text-green-700 border-green-300",
+        icon: "text-green-600",
+        progress: "bg-gradient-to-r from-green-400 to-green-600"
+      };
+    if (statusLower === "overdue") 
+      return { 
+        bg: "from-red-50 to-red-100", 
+        text: "text-red-700", 
+        badge: "bg-red-100 text-red-700 border-red-300",
+        icon: "text-red-600",
+        progress: "bg-gradient-to-r from-red-400 to-red-600"
+      };
+    if (statusLower === "pending") 
+      return { 
+        bg: "from-amber-50 to-amber-100", 
+        text: "text-amber-700", 
+        badge: "bg-amber-100 text-amber-700 border-amber-300",
+        icon: "text-amber-600",
+        progress: "bg-gradient-to-r from-amber-400 to-amber-600"
+      };
+    return { 
+      bg: "from-slate-50 to-slate-100", 
+      text: "text-slate-700", 
+      badge: "bg-slate-100 text-slate-700 border-slate-300",
+      icon: "text-slate-600",
+      progress: "bg-gradient-to-r from-slate-400 to-slate-600"
+    };
+  };
+
+  const getDaysRemaining = (dueDate) => {
+    if (!dueDate) return null;
+    const due = new Date(dueDate);
+    const now = new Date();
+    const daysLeft = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+    return daysLeft;
+  };
+
+  return (
+    <div className="lg:col-span-2 bg-white rounded-2xl shadow-xl border border-slate-100 flex flex-col min-h-[420px] overflow-hidden hover:shadow-lg transition-shadow">
+      <div className="p-6 bg-white border-b border-slate-100">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-slate-900 font-bold text-lg flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
+                <FolderOpen className="w-5 h-5 text-white" />
+              </div>
+              My Projects
+            </h3>
+            <p className="text-slate-500 text-sm mt-1">
+              {projects?.length || 0} project{(projects?.length || 0) !== 1 ? "s" : ""} assigned
+            </p>
+          </div>
+          {projects?.length > 0 && (
+            <div className="text-right">
+              <div className="text-2xl font-bold text-blue-600">
+                {projects?.filter(p => p.status?.toLowerCase() === "completed").length}
+              </div>
+              <p className="text-xs text-slate-500 font-medium">Completed</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex-1 p-4 flex flex-col gap-3 overflow-y-auto bg-white">
+        {projects && projects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center h-full">
+            <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mb-4">
+              <FolderOpen className="h-10 w-10 text-slate-400" />
+            </div>
+            <p className="text-slate-500 text-sm font-medium">No projects assigned</p>
+            <p className="text-slate-400 text-xs mt-1">Projects will appear here once assigned</p>
+          </div>
+        ) : (
+          projects?.map((project) => {
+            const colors = getStatusColor(project.status);
+            const teamCount = project.assignees?.length || project.teamSize || 0;
+            const daysLeft = getDaysRemaining(project.dueDate);
+            const isOverdue = project.status?.toLowerCase() === "overdue";
+
+            return (
+              <div 
+                key={project._id || project.id} 
+                onClick={() => onCardClick(project)}
+                className={`group flex flex-col p-4 rounded-2xl bg-white border border-slate-100 hover:border-blue-200 hover:shadow-lg transition-all cursor-pointer hover:-translate-y-1 duration-300 relative overflow-hidden`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-indigo-500/0 group-hover:from-blue-500/5 group-hover:to-indigo-500/5 transition-all duration-500"></div>
+                
+                {/* Header */}
+                <div className="flex justify-between items-start mb-3 relative">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform text-sm md:text-base leading-tight">
+                      {project.name || project.projectName}
+                    </h4>
+                    <p className="text-xs text-slate-600 mt-1.5 line-clamp-2">
+                      {project.description || "No description"}
+                    </p>
+                  </div>
+                  <span className="ml-2 px-3 py-1 rounded-lg text-xs font-bold border border-blue-200 text-blue-700 bg-blue-50 whitespace-nowrap group-hover:bg-blue-100 transition-colors">
+                    {project.status}
+                  </span>
+                </div>
+
+                {/* Progress Bar - Real-time from Backend */}
+
+                {/* Info Row 1 - Team & Deadline */}
+                <div className="flex gap-2 mb-2 flex-wrap relative">
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-lg group-hover:border-blue-200 transition-colors">
+                    <Users size={13} className="text-blue-600" />
+                    <span className="text-xs text-slate-700 font-medium">
+                      {teamCount} {teamCount === 1 ? "member" : "members"}
+                    </span>
+                  </div>
+                  
+                  {daysLeft !== null && (
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-colors ${isOverdue ? 'bg-red-50 border-red-200 text-red-600' : 'bg-slate-50 border-slate-100 text-blue-600 group-hover:border-blue-200'}`}>
+                      <Calendar size={13} className={isOverdue ? "text-red-600" : "text-blue-600"} />
+                      <span className={`text-xs font-medium ${isOverdue ? 'text-red-700' : 'text-slate-700'}`}>
+                        {isOverdue ? `Overdue` : daysLeft === 0 ? 'Due today' : daysLeft < 0 ? 'Overdue' : `${daysLeft}d left`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Due Date */}
+                {project.dueDate && (
+                  <div className="flex gap-2 text-xs text-slate-600 px-2.5 py-1.5 bg-slate-50 border border-slate-100 rounded-lg mb-2 items-center group-hover:border-blue-200 transition-colors relative">
+                    <Calendar size={14} className="text-blue-600" />
+                    <span>
+                      Due: {new Date(project.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+                )}
+
+                {/* Lead & Department */}
+                {(project.leaderName || project.departmentName) && (
+                  <div className="flex gap-3 text-xs text-slate-600 px-2.5 py-1.5 bg-slate-50 border border-slate-100 rounded-lg flex-wrap items-center group-hover:border-blue-200 transition-colors relative">
+                    {project.leaderName && (
+                      <span className="flex items-center gap-1.5">
+                        <User size={13} className="text-blue-600" />
+                        Lead: {project.leaderName}
+                      </span>
+                    )}
+                    {project.departmentName && (
+                      <span className="flex items-center gap-1.5">
+                        <Building size={13} className="text-blue-600" />
+                        {project.departmentName}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Priority Badge */}
+                {project.priority && (
+                  <div className="mt-2.5 flex items-center gap-1.5 relative">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border group-hover:scale-105 transition-transform ${
+                      project.priority === "High" ? "bg-red-50 text-red-700 border-red-200" :
+                      project.priority === "Medium" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                      "bg-green-50 text-green-700 border-green-200"
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full ${
+                        project.priority === "High" ? "bg-red-600" :
+                        project.priority === "Medium" ? "bg-amber-600" :
+                        "bg-green-600"
+                      }`} />
+                      {project.priority} Priority
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <div className="p-4 border-t border-slate-100 bg-white flex gap-2">
+        <button 
+          onClick={onViewAllClick}
+          className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-semibold hover:bg-blue-50 py-2 rounded-lg transition-all"
+        >
+          View All ({projects?.length || 0})
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const MyTasks = ({ taskdetails }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -734,4 +995,231 @@ const MobileSalaryCard = ({
       </div>
     </div>
   );
+};
+
+// Project Details Modal
+const ProjectDetailsModal = ({ project, onClose }) => {
+  if (!project) return null;
+  
+  const getDaysRemaining = (dueDate) => {
+    if (!dueDate) return null;
+    const due = new Date(dueDate);
+    const now = new Date();
+    const daysLeft = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+    return daysLeft;
+  };
+
+  const daysLeft = getDaysRemaining(project.dueDate);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        {/* Header */}
+        <div className="sticky top-0 p-6 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">{project.name || project.projectName}</h2>
+            <p className="text-sm text-slate-600 mt-1">{project.description}</p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="text-slate-500 hover:text-slate-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Status & Priority */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-semibold text-slate-600">Status</label>
+              <p className="mt-1 px-3 py-1 inline-block rounded-lg bg-blue-100 text-blue-700 font-medium">
+                {project.status}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-slate-600">Priority</label>
+              <p className="mt-1 px-3 py-1 inline-block rounded-lg font-medium" style={{
+                backgroundColor: project.priority === "High" ? "#fee2e2" : project.priority === "Medium" ? "#fef3c7" : "#dcfce7",
+                color: project.priority === "High" ? "#991b1b" : project.priority === "Medium" ? "#92400e" : "#166534"
+              }}>
+                {project.priority} Priority
+              </p>
+            </div>
+          </div>
+
+          {/* Progress */}
+          <div>
+            <label className="text-sm font-semibold text-slate-600">Progress</label>
+            <div className="mt-2 flex items-center gap-3">
+              <div className="flex-1 bg-slate-200 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-500"
+                  style={{ width: `${parseInt(project.progress) || 0}%` }}
+                />
+              </div>
+              <span className="text-sm font-bold text-blue-600">{parseInt(project.progress) || 0}%</span>
+            </div>
+          </div>
+
+          {/* Details Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-50 p-4 rounded-lg">
+              <label className="text-xs font-semibold text-slate-500 uppercase">Due Date</label>
+              <p className="mt-2 text-sm font-medium text-slate-900">
+                {project.dueDate ? new Date(project.dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A'}
+              </p>
+              {daysLeft !== null && (
+                <p className={`text-xs mt-1 font-semibold ${daysLeft < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {daysLeft < 0 ? `${Math.abs(daysLeft)} days overdue` : `${daysLeft} days left`}
+                </p>
+              )}
+            </div>
+            
+            <div className="bg-slate-50 p-4 rounded-lg">
+              <label className="text-xs font-semibold text-slate-500 uppercase">Team Size</label>
+              <p className="mt-2 text-sm font-medium text-slate-900">
+                {project.assignees?.length || project.teamSize || 0} members
+              </p>
+            </div>
+
+            <div className="bg-slate-50 p-4 rounded-lg col-span-2">
+              <label className="text-xs font-semibold text-slate-500 uppercase">Project Lead</label>
+              <p className="mt-2 text-sm font-medium text-slate-900">
+                {project.leaderName || 'N/A'}
+              </p>
+            </div>
+
+            <div className="bg-slate-50 p-4 rounded-lg col-span-2">
+              <label className="text-xs font-semibold text-slate-500 uppercase">Department</label>
+              <p className="mt-2 text-sm font-medium text-slate-900">
+                {project.departmentName || 'N/A'}
+              </p>
+            </div>
+          </div>
+
+          {/* Team Members */}
+          {project.assignees && project.assignees.length > 0 && (
+            <div>
+              <label className="text-sm font-semibold text-slate-600">Team Members</label>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {project.assignees.map((member, idx) => (
+                  <span key={idx} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
+                    {member.name || `Team Member ${idx + 1}`}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 text-slate-700 font-semibold hover:bg-slate-200 rounded-lg transition-all"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// View All Projects Modal
+const ViewAllProjectsModal = ({ projects, onProjectClick, onClose }) => {
+  const getStatusColor = (status) => {
+    const statusLower = (status || "").toLowerCase();
+    if (statusLower === "ongoing") return "bg-blue-100 text-blue-700";
+    if (statusLower === "completed") return "bg-green-100 text-green-700";
+    if (statusLower === "overdue") return "bg-red-100 text-red-700";
+    if (statusLower === "pending") return "bg-amber-100 text-amber-700";
+    return "bg-slate-100 text-slate-700";
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        {/* Header */}
+        <div className="sticky top-0 p-6 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">All Projects</h2>
+            <p className="text-sm text-slate-600 mt-1">{projects?.length || 0} projects assigned</p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="text-slate-500 hover:text-slate-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Projects List */}
+        <div className="p-6">
+          {!projects || projects.length === 0 ? (
+            <div className="text-center py-12">
+              <FolderOpen className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+              <p className="text-slate-500 font-medium">No projects assigned</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {projects.map((project) => (
+                <div 
+                  key={project._id}
+                  onClick={() => { onProjectClick(project); onClose(); }}
+                  className="p-4 border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer group"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                      {project.name}
+                    </h3>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${getStatusColor(project.status)}`}>
+                      {project.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 line-clamp-2 mb-3">{project.description}</p>
+                  <div className="flex justify-between text-xs text-slate-600">
+                    <span>Progress: <strong>{project.progress}%</strong></span>
+                    <span>Team: <strong>{project.assignees?.length || project.teamSize || 0}</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-slate-200 bg-slate-50 flex justify-end">
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 text-slate-700 font-semibold hover:bg-slate-200 rounded-lg transition-all"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const NavItem = ({ icon, label, active }) => (
+  <div className={`flex items-center gap-3 px-4 py-3 sm:py-2 rounded-xl cursor-pointer ${active ? "bg-white/15 text-white" : "text-gray-300 hover:bg-white/5"}`}>
+    {icon}
+    {label}
+  </div>
+);
+
+const Card = ({ children }) => (
+  <div className="bg-white rounded-2xl p-6 shadow-sm">{children}</div>
+);
+
+const Badge = ({ text, color }) => {
+  const map = {
+    blue: "bg-blue-100 text-blue-700",
+    purple: "bg-purple-100 text-purple-700",
+    orange: "bg-orange-100 text-orange-700",
+  };
+  return <span className={`px-3 py-1 rounded-full ${map[color]}`}>{text}</span>;
 };
