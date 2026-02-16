@@ -1,0 +1,13 @@
+.profile-edit-form {
+  background: #fff;
+  border-radius: 16px !important;
+  box-shadow:
+    0 6px 8px rgba(0, 0, 0, 0.08),
+    0 10px 20px rgba(0, 0, 0, 0.12);
+}
+
+.profile-edit-form:hover{
+    box-shadow:
+    0 10px 12px rgba(0, 0, 0, 0.08),
+    0 14px 24px rgba(0, 0, 0, 0.12);
+}

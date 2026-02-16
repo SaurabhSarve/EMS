@@ -1,0 +1,134 @@
+body {
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+    "Helvetica Neue", sans-serif;
+  background: #f6f7fb;
+  margin: 0;
+}
+
+.layout {
+  display: flex;
+}
+
+.sidebar {
+  width: 240px;
+  background: #fff;
+  padding: 20px;
+  height: 100vh;
+  position: relative;
+}
+
+.sidebar h2 {
+  margin-bottom: 30px;
+}
+
+.sidebar ul li {
+  list-style: none;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.sidebar ul .active {
+  background: #e2e3e4;
+  border-radius: 20px;
+}
+
+.profile {
+  position: absolute;
+  bottom: 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.content {
+  flex: 1;
+  padding: 30px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.add-btn {
+  background: #070707;
+  color: #fff;
+  padding: 8px 25px;
+  border-radius: 15px;
+  border: none;
+  cursor: pointer;
+}
+
+.filters {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.filters input,
+.filters select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+/* TABLE */
+.employee-table {
+  width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  border-collapse: collapse;
+}
+
+.employee-table th,
+.employee-table td {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+/* EMPLOYEE INFO */
+.emp-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.emp-info img {
+  border-radius: 50%;
+}
+
+/* 🔥 ROLE & DEPT FIX */
+.role-dept {
+  display: flex;
+  flex-direction: column;
+}
+
+.role-dept small {
+  color: #777;
+  font-size: 13px;
+}
+
+/* STATUS */
+.status {
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.status.Active {
+  background: #9cd59d;
+  color: #12422b;
+}
+
+.status.OnLeave {
+  background: #fff3cd;
+  color: #785e0e;
+}
+
+.status.Terminated {
+  background: #f8d7da;
+  color: #c82333;
+}
