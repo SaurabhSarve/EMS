@@ -77,8 +77,10 @@ const ChatPage = () => {
     const WS_URL = jwtToken ? `ws://127.0.0.1:8000/ws/chat/?token=${jwtToken}` : null;
     const { sendJsonMessage, lastJsonMessage, readyState } = useChatWebSocket(WS_URL);
 
+    // --- NAVIGATION HANDLER ---
     const handleGoBack = () => {
         if (user.role === 'Admin') navigate('/admin/dashboard');
+        else if (user.role === 'Department Head') navigate('/department-head/dashboard');
         else navigate('/employee/dashboard');
     };
 
@@ -327,6 +329,7 @@ const ChatPage = () => {
                                         <span className="text-[10px] font-black uppercase tracking-widest">Chat Locked</span>
                                     </div>
                                 )}
+                                {/* --- UPDATED PERMISSION LOGIC --- */}
                                 {(user.role === 'Admin' || (user.role === 'Department Head' && selectedUser.role !== 'Admin')) && (
                                     <button onClick={toggleChat} className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest text-white shadow-xl transition-all hover:-translate-y-0.5 active:translate-y-0 ${isChatDisabled ? 'bg-gradient-to-r from-emerald-500 to-green-600 shadow-green-100' : 'bg-gradient-to-r from-red-500 to-rose-600 shadow-rose-100'}`}>
                                         {isChatDisabled ? 'Unlock Chat' : 'Lock Chat'}
@@ -370,7 +373,7 @@ const ChatPage = () => {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className={`px-5 py-3 shadow-sm text-[15px] leading-relaxed relative group break-words break-all whitespace-pre-wrap transition-all
+                                                <div className={`px-5 py-3 shadow-sm text-[15px] leading-relaxed relative group break-words whitespace-pre-wrap transition-all
                                                     ${isMe 
                                                         ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none shadow-indigo-100' 
                                                         : 'bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-tl-none shadow-slate-100'}`}>
@@ -433,15 +436,12 @@ const ChatPage = () => {
                             Select a colleague from the sidebar or start a secure new conversation using the plus button.
                         </p>
                         <button 
-    onClick={() => { setShowNewChatModal(true); setGlobalSearchQuery(''); }} 
-    // CHANGE: Removed 'hover:bg-indigo-600' and 'hover:text-white' logic.
-    // ADDED: 'hover:bg-indigo-50' for a subtle effect while keeping the animation.
-    className="group bg-white border-2 border-indigo-600 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:bg-indigo-50 transition-all hover:-translate-y-1 flex items-center gap-3 active:scale-95"
->
-    {/* Text and Icon stay Indigo */}
-    <FiPlus size={18} className="text-indigo-600" /> 
-    <span className="text-indigo-600">Start New Chat</span>
-</button>
+                            onClick={() => { setShowNewChatModal(true); setGlobalSearchQuery(''); }} 
+                            className="group bg-white border-2 border-indigo-600 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:bg-indigo-50 transition-all hover:-translate-y-1 flex items-center gap-3 active:scale-95"
+                        >
+                            <FiPlus size={18} className="text-indigo-600" /> 
+                            <span className="text-indigo-600">Start New Chat</span>
+                        </button>
                     </div>
                 )}
             </div>

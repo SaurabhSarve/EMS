@@ -51,9 +51,13 @@ def get_recent_chats(request, user_id):
             })
 
     current_user = users_collection.find_one({"_id": ObjectId(user_id)})
-    if current_user and current_user.get('role') in ['Employee', 'employee']:
+    
+    if current_user:
+        role = current_user.get('role')
         dept = current_user.get('department')
-        if dept:
+
+        # --- LOGIC 1: Employee sees Dept Head ---
+        if role in ['Employee', 'employee'] and dept:
             dept_head = users_collection.find_one({"department": dept, "role": "Department Head"}, {"password": 0, "AccessKey": 0})
             if dept_head:
                 head_id_str = str(dept_head['_id'])
@@ -66,6 +70,27 @@ def get_recent_chats(request, user_id):
                         "is_disabled": False,
                         "unread_count": 0
                     })
+
+        # --- LOGIC 2: Dept Head sees ALL Employees in Dept ---
+        elif role == 'Department Head' and dept:
+            # Find all employees in the same department
+            employees = users_collection.find({
+                "department": dept,
+                "role": {"$in": ["Employee", "employee"]}
+            }, {"password": 0, "AccessKey": 0})
+
+            for emp in employees:
+                emp_id_str = str(emp['_id'])
+                if emp_id_str not in existing_partner_ids and emp_id_str != user_id:
+                    results.append({
+                        "conversation_id": f"new_{emp_id_str}",
+                        "user": enrich_user(emp),
+                        "last_message": "Tap to start chatting",
+                        "updated_at": datetime.datetime.now().isoformat(),
+                        "is_disabled": False,
+                        "unread_count": 0
+                    })
+
     return Response(results)
 
 @api_view(['GET'])

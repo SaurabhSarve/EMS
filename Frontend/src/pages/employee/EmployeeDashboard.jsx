@@ -53,7 +53,7 @@ export default function EmployeeDashboard() {
     try {
       const id = user._id || user.id;
       const res = await axios.get(
-        `http://127.0.0.1:5000/api/chat/unread/total/${id}`,
+        `http://127.0.0.1:8000/api/chat/unread/total/${id}`,
       );
       setUnreadCount(res.data.count);
     } catch (e) {

@@ -1,8 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from 'axios';
 import { useAuth } from "../../context/AuthContext";
 import AdminSidebar from "../../Components/AdminSidebar";
 import { employeeService } from "../../services/employeeServices";
+import { BsChatDots } from "react-icons/bs";
 import { 
   FaUsers, 
   FaCheckCircle, 
@@ -19,7 +21,7 @@ import {
   Line, 
   BarChart, 
   Bar,
-  PieChart,
+  PieChart, 
   Pie,
   Cell,
   XAxis, 
@@ -46,6 +48,56 @@ const HeadDashboard = () => {
     tasksPending: 0,
     tasksCompleted: 0
   });
+
+  // --- START: CHAT FUNCTIONALITY ADDITION ---
+  const [unreadCount, setUnreadCount] = useState(0);
+  const socketRef = useRef(null);
+
+  // 1. Fetch Chat Count
+  const fetchUnreadCount = async () => {
+    if (!user?._id && !user?.id) return;
+    try {
+      const id = user._id || user.id;
+      // Using port 8000 for Django Chat Backend
+      const res = await axios.get(`http://127.0.0.1:8000/api/chat/unread/total/${id}`);
+      setUnreadCount(res.data.count);
+    } catch (e) {
+      console.error("Chat Count Error:", e);
+    }
+  };
+
+  // 2. WebSocket Connection
+  useEffect(() => {
+    fetchUnreadCount();
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/?token=${token}`);
+    socketRef.current = ws;
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        // Push Notification logic
+        if ((data.sender_id && !data.type) || data.type === "chat_message") {
+          const myId = user._id || user.id;
+          if (data.sender_id !== myId) {
+            setUnreadCount((prev) => prev + 1);
+          }
+        }
+        if (data.type === "activity") {
+          fetchUnreadCount();
+        }
+      } catch (e) {
+        console.error("WS Error", e);
+      }
+    };
+
+    return () => {
+      if (ws) ws.close();
+    };
+  }, [user]);
+  // --- END: CHAT FUNCTIONALITY ADDITION ---
 
   useEffect(() => {
     const fetchDepartmentData = async () => {
@@ -285,14 +337,34 @@ const HeadDashboard = () => {
                 <h1 className="text-4xl font-bold mb-2">Welcome back, {user?.firstName}!</h1>
                 <p className="text-blue-100 text-lg">Here's your department's performance overview</p>
               </div>
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="ml-4 px-4 py-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 rounded-lg flex items-center gap-2 transition-all"
-              >
-                <FaSync className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                <span className="text-sm font-medium">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-              </button>
+
+              {/* ACTION BUTTONS: CHAT & REFRESH */}
+              <div className="flex items-center gap-3 ml-4">
+                {/* --- CHAT BUTTON --- */}
+                <div className="relative">
+                  <button 
+                    onClick={() => navigate('/chat')}
+                    className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-all border border-white/10 backdrop-blur-md"
+                  >
+                    <BsChatDots className="w-5 h-5" />
+                    <span className="font-bold text-sm">Chat</span>
+                  </button>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-blue-500 shadow-md animate-pulse">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 disabled:opacity-50 rounded-lg flex items-center gap-2 transition-all"
+                >
+                  <FaSync className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                  <span className="text-sm font-medium">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
