@@ -1,6 +1,6 @@
 import React from "react";
-import Navbar from "../../components/Navbar_.jsx";
-import Footer from "../../components/Footer.jsx";
+import Navbar from "../../Components/Navbar_.jsx";
+import Footer from "../../Components/Footer.jsx";
 import { useNavigate } from "react-router-dom";
 
 export default function CookiePolicy() {

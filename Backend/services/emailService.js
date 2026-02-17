@@ -1,39 +1,54 @@
 // emailService.js
-const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
+const brevoClient = require('@getbrevo/brevo');
+require('dotenv').config()
 
-// Email configuration
-require('dotenv').config();
+// Create API instance
+const emailApi = new brevoClient.TransactionalEmailsApi();
 
-// Test karo values load ho rahi hain ya nahi
-console.log('EMAIL_USER:', process.env.EMAIL_USER);
-console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? '***loaded***' : 'NOT LOADED');
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+// Set API key properly
+emailApi.setApiKey(
+  brevoClient.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY
+);
 
 const generateTransactionId = () => {
   return 'TXN' + Date.now() + Math.random().toString(36).substr(2, 9).toUpperCase();
 };
 
 
+// Test karo values load ho rahi hain ya nahi
+console.log('EMAIL_USER:', process.env.EMAIL_USER);
+console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? '***loaded***' : 'NOT LOADED');
+
+// const transporter = nodemailer.createTransport({
+//   service: 'gmail',
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS
+//   }
+// });
 
 
-const sendOtp = async (userDetails) => {
-  const { user, otp } = userDetails;
-  console.log(user);
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: user.personalEmail || user.email,
-    subject: 'Password Reset OTP - Graphura HR',
-    html: `
+
+
+
+const sendOtp = async ({ user, otp }) => {
+
+  const emailData = {
+    sender: {
+      name: "Graphura HR",
+      email: process.env.EMAIL_FROM
+    },
+    to: [
+      {
+        email: user.personalEmail || user.email
+      }
+    ],
+    subject: "Password Reset OTP - Graphura HR",
+    htmlContent: `
             <!DOCTYPE html>
             <html>
             <head>
@@ -128,14 +143,13 @@ const sendOtp = async (userDetails) => {
           `
   };
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('otp  sent:', info.messageId);
-    return { success: true, messageId: info.messageId };
+    const response = await emailApi.sendTransacEmail(emailData);
+    return { success: true, messageId: response.body.messageId };
   } catch (error) {
-    console.error('Error sending Otp', error);
+    console.error("Error sending OTP:", error.response?.body || error);
     throw error;
   }
-}
+};
 
 
 
@@ -145,11 +159,14 @@ const sendEmployeeRegistrationEmail = async (employeeData) => {
 
   const passwordCreationLink = `${process.env.FRONTEND_URL}create-password?employeeId=${encodeURIComponent(employeeId)}`;
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email.trim(),
-    subject: 'Welcome to Graphura HR - Create Your Password',
-    html: `
+  const emailData = {
+    sender: {
+      name: "Graphura HR",
+      email: process.env.EMAIL_FROM
+    },
+    to: [{ email: email.trim() }],
+    subject: "Welcome to Graphura HR - Create Your Password",
+    htmlContent: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -320,11 +337,10 @@ p{
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Employee registration email sent:', info.messageId);
-    return { success: true, messageId: info.messageId };
+    const response = await emailApi.sendTransacEmail(emailData);
+    return { success: true, messageId: response.body.messageId };
   } catch (error) {
-    console.error('Error sending registration email:', error);
+    console.error("Error sending registration email:", error.response?.body || error);
     throw error;
   }
 };
@@ -336,14 +352,14 @@ const sendSalaryReceiptEmail = async (salaryData, pdfBuffer) => {
   const { email, employeeName, employeeId, amount, month, year } = salaryData;
   const transactionId = generateTransactionId();
 
-  const mailOptions = {
-    from: {
-      name: 'Company Payroll',
-      address: process.env.EMAIL_USER
+  const emailData = {
+    sender: {
+      name: "Company Payroll",
+      email: process.env.EMAIL_FROM
     },
-    to: email,
+    to: [{ email }],
     subject: `Salary Credited - ${month} ${year}`,
-    html: `
+    htmlContent: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -399,25 +415,24 @@ const sendSalaryReceiptEmail = async (salaryData, pdfBuffer) => {
       </body>
       </html>
     `,
-    attachments: [
+    attachment: [
       {
-        filename: `Salary_Receipt_${employeeId}_${month}_${year}.pdf`,
-        content: pdfBuffer,
-        contentType: 'application/pdf'
+        content: pdfBuffer.toString('base64'),
+        name: `Salary_Receipt_${employeeId}_${month}_${year}.pdf`,
+        url:""
       }
     ]
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Salary receipt email sent:', info.messageId);
+    const response = await emailApi.sendTransacEmail(emailData);
     return {
       success: true,
-      messageId: info.messageId,
-      transactionId: transactionId
+      messageId: response.body.messageId,
+      transactionId
     };
   } catch (error) {
-    console.error('Error sending salary receipt email:', error);
+    console.error("Error sending salary receipt:", error.response?.body || error);
     throw error;
   }
 };
