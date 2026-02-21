@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import registerImg from "../../assets/images/regis.webp";
 import "../../assets/styles/LandingPageStyles/Register.css";
 import { useAuth } from "../../context/AuthContext";
+import Navbar_ from "../../Components/Navbar_.jsx"
+import BackButton from "../../Components/BackButton.jsx"
 
 export default function CreateAccount() {
   const [form, setForm] = useState({
@@ -11,7 +13,7 @@ export default function CreateAccount() {
     password: "",
     confirmPassword: "",
     registerAs: "Admin",
-    secretKey: ""
+    secretKey: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -27,7 +29,7 @@ export default function CreateAccount() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
-    
+
     if (errors[name]) {
       setErrors({ ...errors, [name]: "" });
     }
@@ -58,8 +60,6 @@ export default function CreateAccount() {
       newErrors.confirmPassword = "Passwords do not match";
     }
 
-   
-
     if (!form.secretKey.trim()) {
       newErrors.secretKey = "Secret key is required";
     }
@@ -81,15 +81,17 @@ export default function CreateAccount() {
     try {
       const result = await register(form);
 
-     console.log(result);
-
+      console.log(result);
 
       if (!result.success) {
         throw new Error(result.message || "Registration failed");
       }
 
       if (result.success) {
-        showToast("Registration successful! Redirecting to login...", "success");
+        showToast(
+          "Registration successful! Redirecting to login...",
+          "success",
+        );
         setForm({
           fullName: "",
           email: "",
@@ -97,8 +99,8 @@ export default function CreateAccount() {
           password: "",
           confirmPassword: "",
           registerAs: "Admin",
-          
-          secretKey: ""
+
+          secretKey: "",
         });
         setTimeout(() => {
           window.location.href = "/admin-login";
@@ -108,116 +110,131 @@ export default function CreateAccount() {
       }
     } catch (error) {
       console.error("Registration error:", error);
-      showToast(error.response.data.message || "Registration failed. Please try again.", "error");
+      showToast(
+        error.response.data.message || "Registration failed. Please try again.",
+        "error",
+      );
     } finally {
       setIsLoading(false);
     }
   };
-  
 
   return (
-    <div className="register-page">
-      {/* Toast Notification */}
-      {toast.show && (
-        <div
-          style={{
-            position: "fixed",
-            top: "20px",
-            right: "20px",
-            zIndex: 9999,
-            padding: "12px 24px",
-            borderRadius: "8px",
-            color: "white",
-            fontSize: "14px",
-            fontWeight: "500",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            backgroundColor: toast.type === "error" ? "#ef4444" : "#22c55e",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            minWidth: "280px",
-            maxWidth: "400px"
-          }}
-        >
+    <>
+      <Navbar_ />
+      <div className="register-page pt-3">
+        {/* Toast Notification */}
+        {toast.show && (
           <div
             style={{
-              width: "8px",
-              height: "8px",
-              borderRadius: "50%",
-              backgroundColor: toast.type === "error" ? "#fca5a5" : "#86efac"
-            }}
-          ></div>
-          <span>{toast.message}</span>
-          <button
-            onClick={() => setToast({ show: false, message: "", type: "" })}
-            style={{
-              marginLeft: "auto",
-              background: "none",
-              border: "none",
-              color: "rgba(255,255,255,0.8)",
-              cursor: "pointer",
-              fontSize: "18px",
-              padding: "0",
-              lineHeight: "1"
+              position: "fixed",
+              top: "20px",
+              right: "20px",
+              zIndex: 9999,
+              padding: "12px 24px",
+              borderRadius: "8px",
+              color: "white",
+              fontSize: "14px",
+              fontWeight: "500",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              backgroundColor: toast.type === "error" ? "#ef4444" : "#22c55e",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              minWidth: "280px",
+              maxWidth: "400px",
             }}
           >
-            ✕
-          </button>
-        </div>
-      )}
+            <div
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                backgroundColor: toast.type === "error" ? "#fca5a5" : "#86efac",
+              }}
+            ></div>
+            <span>{toast.message}</span>
+            <button
+              onClick={() => setToast({ show: false, message: "", type: "" })}
+              style={{
+                marginLeft: "auto",
+                background: "none",
+                border: "none",
+                color: "rgba(255,255,255,0.8)",
+                cursor: "pointer",
+                fontSize: "18px",
+                padding: "0",
+                lineHeight: "1",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
-      <div className="register-joined-card">
-        {/* FORM (BORDER ONLY HERE) */}
-        <div className="register-form-section">
-          <h2>Create Account</h2>
+        <div className="register-joined-card ">
+          <BackButton/>
+          {/* FORM (BORDER ONLY HERE) */}
+          <div className="register-form-section">
+            <h2>Create Account</h2>
 
-          <label>Full Name</label>
-          <input
-            name="fullName"
-            value={form.fullName}
-            placeholder="Enter your full name"
-            onChange={handleChange}
-          />
-          {errors.fullName && (
-            <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>
-              {errors.fullName}
-            </p>
-          )}
+            <label>Full Name</label>
+            <input
+              name="fullName"
+              value={form.fullName}
+              placeholder="Enter your full name"
+              onChange={handleChange}
+            />
+            {errors.fullName && (
+              <p
+                style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+              >
+                {errors.fullName}
+              </p>
+            )}
 
-          <label>Email Address</label>
-          <input
-            name="email"
-            type="email"
-            value={form.email}
-            placeholder="Enter your email"
-            onChange={handleChange}
-          />
-          {errors.email && (
-            <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>
-              {errors.email}
-            </p>
-          )}
+            <label>Email Address</label>
+            <input
+              name="email"
+              type="email"
+              value={form.email}
+              placeholder="Enter your email"
+              onChange={handleChange}
+            />
+            {errors.email && (
+              <p
+                style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+              >
+                {errors.email}
+              </p>
+            )}
 
-          <label>Mobile Number</label>
-          <input
-            name="mobileNumber"
-            value={form.mobileNumber}
-            placeholder="Enter your mobile number"
-            onChange={handleChange}
-          />
-          {errors.mobileNumber && (
-            <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>
-              {errors.mobileNumber}
-            </p>
-          )}
+            <label>Mobile Number</label>
+            <input
+              name="mobileNumber"
+              value={form.mobileNumber}
+              placeholder="Enter your mobile number"
+              onChange={handleChange}
+            />
+            {errors.mobileNumber && (
+              <p
+                style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+              >
+                {errors.mobileNumber}
+              </p>
+            )}
 
-          <label>Register As</label>
-          <select name="registerAs" value={form.registerAs} onChange={handleChange}>
-            <option value="Admin">Admin</option>
-            <option value="Department Head">Department Head</option>
-          </select>
+            <label>Register As</label>
+            <select
+              name="registerAs"
+              value={form.registerAs}
+              onChange={handleChange}
+            >
+              <option value="Admin">Admin</option>
+              <option value="Department Head">Department Head</option>
+            </select>
 
-         {/* {form.registerAs === "Department Head" && (
+            {/* {form.registerAs === "Department Head" && (
             <>
               <label>Department</label>
               <select
@@ -241,63 +258,76 @@ export default function CreateAccount() {
             </>
           )} */}
 
-          <label>Password</label>
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            placeholder="********"
-            onChange={handleChange}
-          />
-          {errors.password && (
-            <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>
-              {errors.password}
+            <label>Password</label>
+            <input
+              type="password"
+              name="password"
+              value={form.password}
+              placeholder="********"
+              onChange={handleChange}
+            />
+            {errors.password && (
+              <p
+                style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+              >
+                {errors.password}
+              </p>
+            )}
+
+            <label>Confirm Password</label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={form.confirmPassword}
+              placeholder="Re-enter your password"
+              onChange={handleChange}
+            />
+            {errors.confirmPassword && (
+              <p
+                style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+              >
+                {errors.confirmPassword}
+              </p>
+            )}
+
+            <label>Secret Key for {form.registerAs}</label>
+            <input
+              type="password"
+              name="secretKey"
+              value={form.secretKey}
+              placeholder={`Enter ${form.registerAs} secret key`}
+              onChange={handleChange}
+            />
+            {errors.secretKey && (
+              <p
+                style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+              >
+                {errors.secretKey}
+              </p>
+            )}
+
+            <button
+              className="register-btn"
+              onClick={handleSubmit}
+              disabled={isLoading}
+            >
+              {isLoading ? "Registering..." : "Register"}
+            </button>
+
+            <p className="login-link">
+              Already have an account?{" "}
+              <span onClick={() => (window.location.href = "/admin-login")}>
+                Login here
+              </span>
             </p>
-          )}
+          </div>
 
-          <label>Confirm Password</label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={form.confirmPassword}
-            placeholder="Re-enter your password"
-            onChange={handleChange}
-          />
-          {errors.confirmPassword && (
-            <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>
-              {errors.confirmPassword}
-            </p>
-          )}
-
-          <label>Secret Key for {form.registerAs}</label>
-          <input
-            type="password"
-            name="secretKey"
-            value={form.secretKey}
-            placeholder={`Enter ${form.registerAs} secret key`}
-            onChange={handleChange}
-          />
-          {errors.secretKey && (
-            <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>
-              {errors.secretKey}
-            </p>
-          )}
-
-          <button className="register-btn" onClick={handleSubmit} disabled={isLoading}>
-            {isLoading ? "Registering..." : "Register"}
-          </button>
-
-          <p className="login-link">
-            Already have an account?{" "}
-            <span onClick={() => (window.location.href = "/admin-login")}>Login here</span>
-          </p>
-        </div>
-
-        {/* IMAGE (NO BORDER, WIDER IMAGE) */}
-        <div className="register-image-section">
-          <img src={registerImg} alt="Register Illustration" />
+          {/* IMAGE (NO BORDER, WIDER IMAGE) */}
+          <div className="register-image-section">
+            <img src={registerImg} alt="Register Illustration" />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

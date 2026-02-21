@@ -113,3 +113,26 @@ input, select, textarea {
     font-size: 14px;
   }
 }
+
+
+/* added animation only for home page customer review card */
+
+/* Hide scrollbar */
+.auto-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .auto-scroll {
+    animation: scrollLeft 25s linear infinite;
+  }
+
+  @keyframes scrollLeft {
+    0% {
+      transform: translateX(0%);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+}
