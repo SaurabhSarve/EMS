@@ -1,11 +1,13 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect } from "react";
 import "../assets/styles/LandingPageStyles/Navbar_.css";
 import { useNavigate } from "react-router-dom";
+import { Lock, Users } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 const Navbar_ = () => {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeLink, setActiveLink] = useState('home');
+  const [activeLink, setActiveLink] = useState("home");
   const [scrolled, setScrolled] = useState(false);
 
   const toggleMobileMenu = () => {
@@ -27,28 +29,26 @@ const Navbar_ = () => {
       setScrolled(window.scrollY > 10);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isMobileMenuOpen]);
 
   const handleRegister = () => {
-   
-      navigate("/register");
-    
-  }
+    navigate("/register");
+  };
 
   // Close mobile menu on window resize
   useEffect(() => {
@@ -58,17 +58,23 @@ const Navbar_ = () => {
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [isMobileMenuOpen]);
+
+  const location = useLocation();
 
   return (
     <>
-      <nav className={`animated-navbar ${scrolled ? 'scrolled' : ''}`} role="navigation" aria-label="Main navigation">
+      <nav
+        className={`animated-navbar ${scrolled ? "scrolled" : ""}`}
+        role="navigation"
+        aria-label="Main navigation"
+      >
         <div className="animated-navbar-container">
           {/* Logo */}
           <div className="navbar-logo">
-            <img src="navbarLogo.png" alt="logo" className='logo'/>
+            <img src="navbarLogo.png" alt="logo" className="logo" />
           </div>
 
           <ul className="animated-navbar-links" role="menubar">
@@ -76,8 +82,9 @@ const Navbar_ = () => {
               <a
                 href="/"
                 role="menuitem"
-                className={`animated-nav-link ${activeLink === 'home' ? 'active' : ''}`}
-                onClick={() => handleLinkClick('home')}
+                className={`animated-nav-link ${
+                  location.pathname === "/" ? "active" : ""
+                }`}
               >
                 Home
                 <span className="animated-nav-underline"></span>
@@ -87,8 +94,9 @@ const Navbar_ = () => {
               <a
                 href="/admin-login"
                 role="menuitem"
-                className={`animated-nav-link ${activeLink === 'admin' ? 'active' : ''}`}
-                onClick={() => handleLinkClick('admin')}
+                className={`animated-nav-link ${
+                  location.pathname === "/admin-login" ? "active" : ""
+                }`}
               >
                 Admin Login
                 <span className="animated-nav-underline"></span>
@@ -98,8 +106,9 @@ const Navbar_ = () => {
               <a
                 href="/employee-login"
                 role="menuitem"
-                className={`animated-nav-link ${activeLink === 'employee' ? 'active' : ''}`}
-                onClick={() => handleLinkClick('employee')}
+                className={`animated-nav-link ${
+                  location.pathname === "/employee-login" ? "active" : ""
+                }`}
               >
                 Employee
                 <span className="animated-nav-underline"></span>
@@ -109,7 +118,11 @@ const Navbar_ = () => {
 
           {/* Desktop Register Button */}
           <div className="animated-navbar-cta">
-            <button onClick={handleRegister} className="animated-register-btn" aria-label="Register for an account">
+            <button
+              onClick={handleRegister}
+              className="animated-register-btn"
+              aria-label="Register for an account"
+            >
               <span className="btn-text">Admin Register</span>
               <span className="btn-shine"></span>
             </button>
@@ -117,9 +130,9 @@ const Navbar_ = () => {
 
           {/* Mobile Hamburger Icon */}
           <button
-            className={`animated-hamburger ${isMobileMenuOpen ? 'active' : ''}`}
+            className={`animated-hamburger ${isMobileMenuOpen ? "active" : ""}`}
             onClick={toggleMobileMenu}
-            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={isMobileMenuOpen}
           >
             <span className="animated-hamburger-line"></span>
@@ -131,29 +144,41 @@ const Navbar_ = () => {
 
       {/* Mobile Sidebar */}
       <div
-        className={`animated-mobile-overlay ${isMobileMenuOpen ? 'active' : ''}`}
+        className={`animated-mobile-overlay ${isMobileMenuOpen ? "active" : ""}`}
         onClick={closeMobileMenu}
         aria-hidden="true"
       ></div>
 
       {/* Mobile Sidebar Menu */}
       <aside
-        className={`animated-mobile-sidebar ${isMobileMenuOpen ? 'open' : ''}`}
+        className={`animated-mobile-sidebar ${isMobileMenuOpen ? "open" : ""}`}
         aria-label="Mobile navigation"
       >
         <div className="animated-mobile-sidebar-header">
           <div className="navbar-logo">
-            <img src="logo.png" alt="" className='logo'/>
+            <img src="logo.png" alt="" className="logo" />
           </div>
-          
+
           {/* Close Button */}
           <button
             className="animated-close-btn"
             onClick={closeMobileMenu}
             aria-label="Close menu"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6L6 18M6 6L18 18"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
         </div>
@@ -161,37 +186,55 @@ const Navbar_ = () => {
         <nav className="animated-mobile-nav-links">
           <a
             href="/"
-            className={`animated-mobile-nav-link ${activeLink === 'home' ? 'active' : ''} ${isMobileMenuOpen ? 'stagger-1' : ''}`}
-            onClick={() => handleLinkClick('home')}
+            className={`animated-mobile-nav-link ${activeLink === "home" ? "active" : ""} ${isMobileMenuOpen ? "stagger-1" : ""}`}
+            onClick={() => handleLinkClick("home")}
           >
-            {/* <span className="link-icon">🏠</span> */}
             <span>Home</span>
           </a>
           <a
-            href="#"
-            className={`animated-mobile-nav-link ${activeLink === 'admin' ? 'active' : ''} ${isMobileMenuOpen ? 'stagger-2' : ''}`}
-            onClick={() => handleLinkClick('admin')}
+            href="/admin-login"
+            className={`animated-mobile-nav-link ${activeLink === "admin" ? "active" : ""} ${isMobileMenuOpen ? "stagger-2" : ""}`}
+            onClick={() => handleLinkClick("admin")}
           >
-            {/* <span className="link-icon">⚡</span> */}
+            {/* <Lock size={18} className="text-white/90" /> */}
             <span>Admin Login</span>
           </a>
           <a
-            href="#"
-            className={`animated-mobile-nav-link ${activeLink === 'employee' ? 'active' : ''} ${isMobileMenuOpen ? 'stagger-3' : ''}`}
-            onClick={() => handleLinkClick('employee')}
+            href="/employee-login"
+            className={`animated-mobile-nav-link ${activeLink === "employee" ? "active" : ""} ${isMobileMenuOpen ? "stagger-3" : ""}`}
+            onClick={() => handleLinkClick("employee")}
           >
-            {/* <span className="link-icon">💬</span> */}
-            <span>&gt;Employee Login</span>
+            {/* <Users size={18} /> */}
+            <span>Employee Login</span>
           </a>
         </nav>
 
-        <div className={`animated-mobile-sidebar-footer ${isMobileMenuOpen ? 'stagger-4' : ''}`}>
-          <button className="animated-mobile-register-btn" onClick={closeMobileMenu}>
-            <span>Admin Register</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
+        <div
+          className={`animated-mobile-sidebar-footer ${isMobileMenuOpen ? "stagger-4" : ""}`}
+        >
+          <a href="/register">
+            <button
+              className="animated-mobile-register-btn"
+              onClick={closeMobileMenu}
+            >
+              <span>Admin Register</span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M6 12L10 8L6 4"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </a>
         </div>
       </aside>
     </>

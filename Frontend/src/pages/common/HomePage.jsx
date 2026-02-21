@@ -18,15 +18,12 @@ import {
   Cpu,
   Bell,
   ChevronUp,
-  Ticket
+  Ticket,
 } from "lucide-react";
 
 import Footer from "../../components/Footer";
-import Navbar from "../../components/Navbar_";
+import Navbar_ from "../../components/Navbar_";
 
-/* ══════════════════════════════════════════
-   ANIMATED COUNTER
-══════════════════════════════════════════ */
 function Counter({ end, suffix = "", duration = 2200 }) {
   const [count, setCount] = useState(0);
   const ref = useRef(null);
@@ -59,9 +56,7 @@ function Counter({ end, suffix = "", duration = 2200 }) {
   );
 }
 
-/* ══════════════════════════════════════════
-   LIVE DASHBOARD CARD
-══════════════════════════════════════════ */
+// dashboard card
 function DashboardCard() {
   const [active, setActive] = useState(4);
   const [notif, setNotif] = useState(false);
@@ -392,17 +387,6 @@ function FeatureCard({ icon, title, desc, tag, delay }) {
       >
         {desc}
       </p>
-
-      <div
-        className="relative z-10 mt-5 flex items-center gap-1.5 text-xs font-bold transition-all duration-300"
-        style={{
-          color: "#3b82f6",
-          opacity: hov ? 1 : 0,
-          transform: hov ? "translateY(0)" : "translateY(6px)",
-        }}
-      >
-        Learn more <ArrowRight size={13} />
-      </div>
     </div>
   );
 }
@@ -416,6 +400,17 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState(0);
   const [showTop, setShowTop] = useState(false);
 
+  // is mobile open or not
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     const fn = () => {
       setScrolled(window.scrollY > 20);
@@ -423,6 +418,20 @@ export default function HomePage() {
     };
     window.addEventListener("scroll", fn);
     return () => window.removeEventListener("scroll", fn);
+  }, []);
+
+  // scroll content at bottom of home page
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) =>
+        prev === testimonials.length - 1 ? 0 : prev + 1,
+      );
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const features = [
@@ -471,24 +480,6 @@ export default function HomePage() {
   ];
 
   const tabs = [
-    // {
-    //   // label: "Attendance",
-    //   // icon: <CalendarDays size={15} />,
-    //   // title: "Real-Time Attendance Intelligence",
-    //   // desc: "Track every check-in with biometric precision. Integrates with face recognition, fingerprint scanners and GPS geofencing — live workforce pulse at all times.",
-    //   // points: [
-    //   //   "Biometric & GPS geofencing",
-    //   //   "Automatic overtime computation",
-    //   //   "Shift scheduling engine",
-    //   //   "Mobile app check-in",
-    //   // ],
-    //   metrics: [
-    //     { l: "Tracking Accuracy", v: 99 },
-    //     { l: "Auto-Processing", v: 97 },
-    //     { l: "Mobile Adoption", v: 91 },
-    //     { l: "Satisfaction Score", v: 96 },
-    //   ],
-    // },
     {
       label: "Payroll",
       icon: <IndianRupee size={15} />,
@@ -556,7 +547,7 @@ export default function HomePage() {
 
   return (
     <div>
-      <Navbar />
+      <Navbar_ />
       <div
         className="min-h-screen bg-white overflow-x-hidden"
         style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
@@ -625,23 +616,23 @@ export default function HomePage() {
               "linear-gradient(150deg,#ffffff 0%,#eff6ff 35%,#dbeafe 65%,#bfdbfe 100%)",
           }}
         >
-          {/* Animated blobs */}
+          {/* Animated blobs - reduced size on mobile */}
           <div
-            className="blob-1 absolute top-16 left-8 w-80 h-80 rounded-full pointer-events-none blur-3xl"
+            className="blob-1 absolute top-16 left-8 w-40 h-40 md:w-80 md:h-80 rounded-full pointer-events-none blur-3xl"
             style={{
               background:
                 "radial-gradient(circle,rgba(59,130,246,0.2) 0%,transparent 70%)",
             }}
           />
           <div
-            className="blob-2 absolute bottom-8 right-8 w-96 h-96 rounded-full pointer-events-none blur-3xl"
+            className="blob-2 absolute bottom-8 right-8 w-48 h-48 md:w-96 md:h-96 rounded-full pointer-events-none blur-3xl"
             style={{
               background:
                 "radial-gradient(circle,rgba(147,197,253,0.18) 0%,transparent 70%)",
             }}
           />
           <div
-            className="blob-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none blur-3xl"
+            className="blob-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full pointer-events-none blur-3xl"
             style={{
               background:
                 "radial-gradient(circle,rgba(96,165,250,0.1) 0%,transparent 65%)",
@@ -661,11 +652,11 @@ export default function HomePage() {
             }}
           />
 
-          <div className="w-full relative z-10 max-w-7xl mx-auto px-2 pt-20 pb-20 grid lg:grid-cols-2 gap-16 items-center">
+          <div className="w-full relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-10 lg:pt-20 pb-20 grid lg:grid-cols-2 gap-8 md:gap-16 items-center">
             {/* Left */}
-            <div className="w-full anim-left">
+            <div className="w-full anim-left order-1 lg:order-1">
               <div
-                className="inline-flex items-center gap-2 mb-7 px-4 py-2 rounded-full border"
+                className="inline-flex items-center gap-2 mb-5 md:mb-7 px-3 md:px-4 py-1.5 md:py-2 rounded-full border"
                 style={{
                   background: "rgba(255,255,255,0.9)",
                   borderColor: "#bfdbfe",
@@ -677,7 +668,7 @@ export default function HomePage() {
                   <span className="relative block w-2 h-2 rounded-full bg-blue-600" />
                 </span>
                 <span
-                  className="text-sm font-bold"
+                  className="text-xs md:text-sm font-bold"
                   style={{ color: "#1d4ed8" }}
                 >
                   New: AI-Powered Analytics Module
@@ -685,7 +676,7 @@ export default function HomePage() {
               </div>
 
               <h1
-                className="text-6xl lg:text-7xl font-black leading-[1.07] mb-6"
+                className="text-5xl  md:text-5xl lg:text-7xl font-black leading-[1.1] md:leading-[1.07] mb-4 md:mb-6"
                 style={{ color: "#0f172a" }}
               >
                 Empowering
@@ -696,46 +687,24 @@ export default function HomePage() {
               </h1>
 
               <p
-                className="text-lg leading-relaxed mb-10 max-w-lg"
+                className="text-base md:text-lg leading-relaxed mb-6 md:mb-10 max-w-lg"
                 style={{ color: "#475569" }}
               >
-                Streamline attendance, payroll, and performance in one secure,
-                cloud-based ecosystem designed for modern enterprises that
-                demand excellence.
+                Streamline payroll, and performance in one secure, cloud-based
+                ecosystem designed for modern enterprises that demand
+                excellence.
               </p>
 
-              {/* <div className="flex gap-4 mb-12">
-              <a href="#admin"
-                className="btn-shine group flex items-center gap-3 text-white font-bold px-7 py-4 rounded-2xl transition-all duration-300 hover:-translate-y-1.5"
-                style={{ background: "linear-gradient(135deg,#3b82f6,#1d4ed8)", boxShadow: "0 10px 32px rgba(59,130,246,0.4)" }}>
-                <Lock size={18} />
-                Admin Login
-                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-200" />
-              </a>
-              <a
-                href="#employee"
-                className="group flex items-center gap-3 font-bold px-7 py-4 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-400"
-                style={{
-                  color: "#2563eb",
-                  borderColor: "#bfdbfe",
-                  background: "rgba(255,255,255,0.85)",
-                  backdropFilter: "blur(8px)",
-                  boxShadow: "0 4px 16px rgba(59,130,246,0.12)",
-                }}
-              >
-                <Users size={18} />
-                Employee Login
-              </a>
-            </div> */}
               <div className="!w-full flex">
-                <div className="flex gap-8 w-full  mb-10">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full mb-6 md:mb-10">
                   <a
                     href="/admin-login"
-                    className="cursor-pointer group flex items-center gap-3 px-4 py-3 font-semibold px-4 py-2 rounded-2xl
-                  transition-all duration-300
-                  hover:-translate-y-1 hover:scale-[1.03]
-                  active:scale-95
-                  focus:outline-none focus:ring-4 focus:ring-blue-400/40"
+                    className="cursor-pointer group flex items-center justify-center sm:justify-start gap-3 px-4 py-3 font-semibold rounded-2xl
+                    transition-all duration-300
+                    hover:-translate-y-1 hover:scale-[1.03]
+                    active:scale-95
+                    focus:outline-none focus:ring-4 focus:ring-blue-400/40
+                    w-full sm:w-auto"
                     style={{
                       background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
                       color: "#ffffff",
@@ -747,7 +716,7 @@ export default function HomePage() {
                   </a>
                   <a
                     href="/employee-login"
-                    className="cursor-pointer group flex items-center gap-3 font-bold px-4 py-3 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-400"
+                    className="cursor-pointer group flex items-center justify-center sm:justify-start gap-3 font-bold px-4 py-3 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-400 w-full sm:w-auto"
                     style={{
                       color: "#2563eb",
                       borderColor: "#bfdbfe",
@@ -764,7 +733,7 @@ export default function HomePage() {
 
               {/* Trust */}
               <div
-                className="flex flex-wrap items-center gap-5 text-sm"
+                className="flex flex-wrap items-center gap-3 md:gap-5 text-xs md:text-sm"
                 style={{ color: "#64748b" }}
               >
                 <div className="flex items-center gap-2">
@@ -772,7 +741,7 @@ export default function HomePage() {
                     {["#3b82f6", "#60a5fa", "#93c5fd"].map((c, i) => (
                       <div
                         key={i}
-                        className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-black"
+                        className="w-6 h-6 md:w-8 md:h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-black"
                         style={{
                           background: `linear-gradient(135deg,${c},#1d4ed8)`,
                         }}
@@ -785,7 +754,10 @@ export default function HomePage() {
                     500+ Enterprises
                   </span>
                 </div>
-                <div style={{ width: 1, height: 20, background: "#bfdbfe" }} />
+                <div
+                  className="hidden sm:block"
+                  style={{ width: 1, height: 20, background: "#bfdbfe" }}
+                />
                 <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <Star
@@ -798,27 +770,30 @@ export default function HomePage() {
                     4.9/5
                   </span>
                 </div>
-                <div style={{ width: 1, height: 20, background: "#bfdbfe" }} />
+                <div
+                  className="hidden sm:block"
+                  style={{ width: 1, height: 20, background: "#bfdbfe" }}
+                />
                 <span className="font-semibold" style={{ color: "#334155" }}>
                   2M+ Managed
                 </span>
               </div>
             </div>
 
-            {/* Right */}
-            <div className="anim-right float-card">
+            {/* Right - Dashboard Card */}
+            <div className="anim-right float-card order-2 lg:order-2 mb-8 lg:mb-0">
               <DashboardCard />
             </div>
           </div>
 
           <div
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 animate-bounce"
+            className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 animate-bounce"
             style={{ color: "#93c5fd" }}
           >
-            <span className="text-[10px] font-bold uppercase tracking-widest">
+            <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest">
               Scroll
             </span>
-            <ChevronDown size={18} />
+            <ChevronDown size={16} />
           </div>
         </section>
 
@@ -887,7 +862,7 @@ export default function HomePage() {
         {/* ━━━━━━━━━━━━━━━━━━ FEATURES ━━━━━━━━━━━━━━━━━━ */}
         <section
           id="features"
-          className="py-28"
+          className="py-16 lg:py-22 md:py-20"
           style={{
             background:
               "linear-gradient(180deg,#ffffff 0%,#f5f9ff 50%,#eff6ff 100%)",
@@ -908,7 +883,7 @@ export default function HomePage() {
                 </span>
               </div>
               <h2
-                className="text-5xl font-black mb-5"
+                className="text-4xl lg:text-6xl md:text-5xl font-black mb-5"
                 style={{ color: "#0f172a" }}
               >
                 Everything your enterprise{" "}
@@ -932,10 +907,10 @@ export default function HomePage() {
 
         <div className="section-line" />
 
-        {/* ━━━━━━━━━━━━━━━━━━ DEEP DIVE TABS ━━━━━━━━━━━━━━━━━━ */}
+        {/* Deep Dive */}
         <section
           id="analytics"
-          className="py-28"
+          className="py-16 lg:py-22 md:py-20"
           style={{
             background:
               "linear-gradient(160deg,#eff6ff 0%,#ffffff 40%,#dbeafe 100%)",
@@ -956,7 +931,7 @@ export default function HomePage() {
                 </span>
               </div>
               <h2
-                className="text-5xl font-black mb-4"
+                className="text-4xl md:text-5xl lg:text-6xl font-black mb-4"
                 style={{ color: "#0f172a" }}
               >
                 Go beyond the <span className="text-shimmer">surface</span>
@@ -1163,9 +1138,9 @@ export default function HomePage() {
 
         <div className="section-line" />
 
-        {/* ━━━━━━━━━━━━━━━━━━ TESTIMONIALS ━━━━━━━━━━━━━━━━━━ */}
+        {/*  TESTIMONIALS  */}
         <section
-          className="py-28"
+          className="py-14 lg:py-22 md:py-20"
           style={{
             background: "linear-gradient(180deg,#ffffff 0%,#f0f7ff 100%)",
           }}
@@ -1184,57 +1159,66 @@ export default function HomePage() {
                   Customer Stories
                 </span>
               </div>
-              <h2 className="text-5xl font-black" style={{ color: "#0f172a" }}>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-black" style={{ color: "#0f172a" }}>
                 Trusted by{" "}
                 <span className="text-shimmer">industry leaders</span>
               </h2>
             </div>
-            <div className="grid md:grid-cols-3 gap-6">
-              {testimonials.map((t, i) => (
-                <div
-                  key={i}
-                  className="bg-white rounded-2xl p-7 border cursor-default transition-all duration-300 hover:-translate-y-2 hover:border-blue-200"
-                  style={{
-                    borderColor: "#e2e8f0",
-                    boxShadow: "0 2px 20px rgba(59,130,246,0.05)",
-                  }}
-                >
-                  <div className="flex gap-1 mb-4">
-                    {Array.from({ length: t.rating }).map((_, j) => (
-                      <Star
-                        key={j}
-                        size={14}
-                        className="fill-amber-400 text-amber-400"
-                      />
-                    ))}
-                  </div>
-                  <p
-                    className="text-sm leading-relaxed mb-6 italic"
-                    style={{ color: "#475569" }}
+
+            {/* Wrapper */}
+            <div className="relative overflow-hidden md:overflow-visible">
+              {/* Mobile Slider */}
+              <div
+                className="flex md:grid md:grid-cols-3 md:gap-4 lg:gap-6 transition-transform duration-700 ease-in-out"
+                style={{
+                  transform: isMobile
+                    ? `translateX(-${currentIndex * 100}%)`
+                    : `none`,
+                }}
+              >
+                {testimonials.map((t, i) => (
+                  <div
+                    key={i}
+                    className="w-full md:min-w-0 flex-shrink-0 md:flex-shrink bg-white rounded-2xl p-7 border"
+                    style={{
+                      borderColor: "#e2e8f0",
+                      boxShadow: "0 2px 20px rgba(59,130,246,0.05)",
+                    }}
                   >
-                    "{t.text}"
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm"
-                      style={{ background: t.grad }}
-                    >
-                      {t.name[0]}
+                    <div className="flex gap-1 mb-4">
+                      {Array.from({ length: t.rating }).map((_, j) => (
+                        <Star
+                          key={j}
+                          size={14}
+                          className="fill-amber-400 text-amber-400"
+                        />
+                      ))}
                     </div>
-                    <div>
-                      <p
-                        className="font-bold text-sm"
-                        style={{ color: "#0f172a" }}
+
+                    <p className="text-sm leading-relaxed mb-6 italic text-slate-600">
+                      "{t.text}"
+                    </p>
+
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm"
+                        style={{ background: t.grad }}
                       >
-                        {t.name}
-                      </p>
-                      <p className="text-xs" style={{ color: "#94a3b8" }}>
-                        {t.role}, {t.company}
-                      </p>
+                        {t.name[0]}
+                      </div>
+
+                      <div>
+                        <p className="font-bold text-sm text-slate-900">
+                          {t.name}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {t.role}, {t.company}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </section>

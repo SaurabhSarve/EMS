@@ -11,6 +11,8 @@ import { TbShieldSearch } from "react-icons/tb";
 import { useAuth } from "../../context/AuthContext";
 import authService from "../../services/auth";
 import AdminSidePic from "../../assets/images/Admin.jpg";
+import Navbar_ from "../../Components/Navbar_.jsx";
+import BackButton from "../../Components/BackButton.jsx";
 
 export default function AdminLogin() {
   const [view, setView] = useState("login");
@@ -226,6 +228,7 @@ export default function AdminLogin() {
 
   return (
     <>
+    <Navbar_/>
       {toast.show && (
         <div
           className={`fixed top-6 right-6 z-50 animate-slideIn ${
@@ -266,7 +269,10 @@ export default function AdminLogin() {
           </div>
 
           {/* RIGHT FORM SIDE */}
-          <div className="p-6 sm:p-8 md:p-10">
+          <div className="p-6 sm:p-8 md:p-10 relative">
+
+            <BackButton/>
+
             {view === "login" && (
               <>
                 <div className="flex justify-center mb-6">
