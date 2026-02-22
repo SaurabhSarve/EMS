@@ -58,21 +58,20 @@ const HeadDashboard = () => {
     if (!user?._id && !user?.id) return;
     try {
       const id = user._id || user.id;
-      // Using port 8000 for Django Chat Backend
-      const res = await axios.get(`http://127.0.0.1:8000/api/chat/unread/total/${id}`);
+      // UPDATED URL
+      const res = await axios.get(`https://employee-management-system-chat-feature.onrender.com/api/chat/unread/total/${id}`);
       setUnreadCount(res.data.count);
-    } catch (e) {
-      console.error("Chat Count Error:", e);
-    }
+    } catch (e) { console.error(e); }
   };
 
-  // 2. WebSocket Connection
+  // 2. WebSocket
   useEffect(() => {
     fetchUnreadCount();
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/?token=${token}`);
+    // UPDATED URL (wss://)
+    const ws = new WebSocket(`wss://employee-management-system-chat-feature.onrender.com/ws/chat/?token=${token}`);
     socketRef.current = ws;
 
     ws.onmessage = (event) => {

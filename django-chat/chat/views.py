@@ -23,6 +23,7 @@ def enrich_user(user_doc):
 
 @api_view(['GET'])
 def get_recent_chats(request, user_id):
+    # 1. Fetch Existing Conversations
     cursor = conversations_collection.find({"participants": user_id}).sort("updated_at", -1)
     results = []
     existing_partner_ids = set()
@@ -33,7 +34,6 @@ def get_recent_chats(request, user_id):
         user_doc = users_collection.find_one({"_id": ObjectId(other_id)}, {"password": 0, "AccessKey": 0})
         
         if user_doc:
-            # Count Unread (Exclude messages I deleted)
             unread = messages_collection.count_documents({
                 "sender_id": other_id,
                 "receiver_id": user_id,
@@ -50,22 +50,37 @@ def get_recent_chats(request, user_id):
                 "unread_count": unread
             })
 
-    current_user = users_collection.find_one({"_id": ObjectId(user_id)})
+    # 2. Auto-Populate Sidebar based on Role & Department (Robust ObjectId Check)
+    try:
+        current_user = users_collection.find_one({"_id": ObjectId(user_id)})
+    except:
+        current_user = None
     
     if current_user:
         role = current_user.get('role')
         dept = current_user.get('department')
 
-        # --- LOGIC 1: Employee sees Dept Head ---
+        # --- CRITICAL FIX: Match Department ID as both String AND ObjectId ---
+        dept_query = dept
+        if dept and ObjectId.is_valid(str(dept)):
+             dept_query = {"$in": [ObjectId(str(dept)), str(dept)]}
+
+        # --- LOGIC 1: Employee sees their Department Head(s) ---
         if role in ['Employee', 'employee'] and dept:
-            dept_head = users_collection.find_one({"department": dept, "role": "Department Head"}, {"password": 0, "AccessKey": 0})
-            if dept_head:
-                head_id_str = str(dept_head['_id'])
+            # Fetch ALL Department Heads (Handles duplicates or co-heads)
+            dept_heads = users_collection.find({
+                "department": dept_query, 
+                "role": "Department Head"
+            }, {"password": 0, "AccessKey": 0})
+            
+            for head in dept_heads:
+                head_id_str = str(head['_id'])
+                # Only add if not already in conversation list and not self
                 if head_id_str not in existing_partner_ids and head_id_str != user_id:
                     results.insert(0, {
                         "conversation_id": f"new_{head_id_str}",
-                        "user": enrich_user(dept_head),
-                        "last_message": "Tap to start chatting",
+                        "user": enrich_user(head),
+                        "last_message": "Start conversation with Dept Head",
                         "updated_at": datetime.datetime.now().isoformat(),
                         "is_disabled": False,
                         "unread_count": 0
@@ -73,9 +88,8 @@ def get_recent_chats(request, user_id):
 
         # --- LOGIC 2: Dept Head sees ALL Employees in Dept ---
         elif role == 'Department Head' and dept:
-            # Find all employees in the same department
             employees = users_collection.find({
-                "department": dept,
+                "department": dept_query,
                 "role": {"$in": ["Employee", "employee"]}
             }, {"password": 0, "AccessKey": 0})
 
@@ -85,7 +99,7 @@ def get_recent_chats(request, user_id):
                     results.append({
                         "conversation_id": f"new_{emp_id_str}",
                         "user": enrich_user(emp),
-                        "last_message": "Tap to start chatting",
+                        "last_message": "Tap to chat",
                         "updated_at": datetime.datetime.now().isoformat(),
                         "is_disabled": False,
                         "unread_count": 0
@@ -99,11 +113,20 @@ def search_users(request):
     current_user_id = request.GET.get('user_id')
     if not query or not current_user_id: return Response([])
 
-    current_user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+    try:
+        current_user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+    except:
+        return Response([])
+        
     if not current_user: return Response([])
 
     role = current_user.get('role', 'Employee')
     dept = current_user.get('department')
+    
+    # Robust Dept Query
+    dept_query = dept
+    if dept and ObjectId.is_valid(str(dept)):
+         dept_query = {"$in": [ObjectId(str(dept)), str(dept)]}
 
     base_query = {
         "$or": [
@@ -115,11 +138,30 @@ def search_users(request):
     }
 
     final_filter = {}
-    if role == 'Admin': final_filter = base_query
+    if role == 'Admin': 
+        final_filter = base_query
     elif role == 'Department Head':
-        final_filter = {"$and": [base_query, {"$or": [{"role": "Admin"}, {"role": "Employee", "department": dept}, {"role": "employee", "department": dept}]}]}
+        # Head can search: Admins OR their own Employees
+        final_filter = {
+            "$and": [
+                base_query, 
+                {"$or": [
+                    {"role": "Admin"}, 
+                    {"role": {"$in": ["Employee", "employee"]}, "department": dept_query}
+                ]}
+            ]
+        }
     else: 
-        final_filter = {"$and": [base_query, {"role": "Department Head"}, {"department": dept}]}
+        # Employee can search: Admins OR their Department Heads
+        final_filter = {
+            "$and": [
+                base_query, 
+                {"$or": [
+                    {"role": "Admin"}, 
+                    {"role": "Department Head", "department": dept_query}
+                ]}
+            ]
+        }
 
     projection = {"firstName": 1, "lastName": 1, "role": 1, "profilePhoto": 1, "email": 1, "department": 1, "employeeId": 1}
     cursor = users_collection.find(final_filter, projection).limit(10)

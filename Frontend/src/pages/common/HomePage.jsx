@@ -21,8 +21,8 @@ import {
   Ticket
 } from "lucide-react";
 
-import Footer from "../../components/Footer";
-import Navbar from "../../components/Navbar_";
+import Footer from "../../Components/Footer";
+import Navbar from "../../Components/Navbar_";
 
 /* ══════════════════════════════════════════
    ANIMATED COUNTER

@@ -19,7 +19,7 @@ const SuperAdminPanel = ({ onExit }) => {
             const token = localStorage.getItem("token");
 
             const response = await axios.get(
-                "http://localhost:5000/api/v1/key/allkey",
+                "/api/v1/key/allkey",
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
@@ -51,7 +51,7 @@ const SuperAdminPanel = ({ onExit }) => {
             const token = localStorage.getItem("token");
 
             const response = await axios.put(
-                `http://localhost:5000/api/v1/key/changeKey/${selectedKey._id}`,
+                `/api/v1/key/changeKey/${selectedKey._id}`,
                 formData,   // superKey will be sent
                 { headers: { Authorization: `Bearer ${token}` } }
             );

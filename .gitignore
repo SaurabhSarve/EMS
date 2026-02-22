@@ -9,14 +9,14 @@ coverage/
 .vscode/
 .idea/
 
-# --- Environment Variables (CRITICAL) ---
-# .env
-# .env.local
-# .env.development.local
-# .env.test.local
-# .env.production.local
-# Backend/.env
-# django-chat/.env
+--- Environment Variables (CRITICAL) ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+Backend/.env
+django-chat/.env
 
 # --- Frontend (Vite/React) ---
 Frontend/node_modules/

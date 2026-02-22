@@ -74,13 +74,14 @@ const ChatPage = () => {
     const [editText, setEditText] = useState(""); 
 
     const bottomRef = useRef(null);
-    const WS_URL = jwtToken ? `ws://127.0.0.1:8000/ws/chat/?token=${jwtToken}` : null;
+    const CHAT_BASE_URL = "https://employee-management-system-chat-feature.onrender.com"; 
+    const WS_URL = jwtToken ? `wss://employee-management-system-chat-feature.onrender.com/ws/chat/?token=${jwtToken}` : null;
     const { sendJsonMessage, lastJsonMessage, readyState } = useChatWebSocket(WS_URL);
 
     // --- NAVIGATION HANDLER ---
     const handleGoBack = () => {
         if (user.role === 'Admin') navigate('/admin/dashboard');
-        else if (user.role === 'Department Head') navigate('/department-head/dashboard');
+        else if (user.role === 'Department Head') navigate('/head/dashboard');
         else navigate('/employee/dashboard');
     };
 
@@ -88,7 +89,7 @@ const ChatPage = () => {
         if (!user) return;
         try {
             const currentUserId = user.id || user._id;
-            const res = await axios.get(`http://127.0.0.1:8000/api/chat/recent/${currentUserId}`);
+            const res = await axios.get(`/api/chat/recent/${currentUserId}`);
             setConversationList(res.data);
         } catch (err) {}
     };
@@ -99,7 +100,7 @@ const ChatPage = () => {
             if (globalSearchQuery.length > 1) {
                 const currentUserId = user.id || user._id;
                 try {
-                    const res = await axios.get(`http://127.0.0.1:8000/api/chat/search?q=${globalSearchQuery}&user_id=${currentUserId}`);
+                    const res = await axios.get(`/api/chat/search?q=${globalSearchQuery}&user_id=${currentUserId}`);
                     setGlobalSearchResults(res.data);
                 } catch (err) {}
             } else { setGlobalSearchResults([]); }
@@ -116,7 +117,7 @@ const ChatPage = () => {
         setShowMenu(false);
         setConversationList(prev => prev.map(c => c.user._id === targetUser._id ? { ...c, unread_count: 0 } : c));
         const currentUserId = user.id || user._id;
-        axios.get(`http://127.0.0.1:8000/api/chat/history/${currentUserId}?other_user=${targetUser._id}`)
+        axios.get(`/api/chat/history/${currentUserId}?other_user=${targetUser._id}`)
             .then(res => {
                 setMessageHistory(res.data.messages || []);
                 setIsChatDisabled(res.data.is_disabled || false);
@@ -164,7 +165,7 @@ const ChatPage = () => {
         if (!window.confirm("Clear this chat for me?")) return;
         try {
             const currentUserId = user.id || user._id;
-            await axios.delete(`http://127.0.0.1:8000/api/chat/delete_all?user_id=${currentUserId}&other_user=${selectedUser._id}`);
+            await axios.delete(`/api/chat/delete_all?user_id=${currentUserId}&other_user=${selectedUser._id}`);
             setMessageHistory([]); 
             setShowMenu(false);
         } catch (e) {}
@@ -172,7 +173,7 @@ const ChatPage = () => {
 
     const handleDeleteMessage = async (msgId) => {
         if (!window.confirm("Delete message for everyone?")) return;
-        try { await axios.delete(`http://127.0.0.1:8000/api/chat/message/${msgId}?user_id=${user.id || user._id}`); } catch (e) {}
+        try { await axios.delete(`/api/chat/message/${msgId}?user_id=${user.id || user._id}`); } catch (e) {}
     };
 
     const startEditing = (msg) => { setEditingMsgId(msg.id); setEditText(msg.message); };
@@ -180,7 +181,7 @@ const ChatPage = () => {
     const saveEdit = async (msgId) => {
         if (!editText.trim()) return;
         try {
-            await axios.put(`http://127.0.0.1:8000/api/chat/message/${msgId}?user_id=${user.id || user._id}`, { message: editText });
+            await axios.put(`/api/chat/message/${msgId}?user_id=${user.id || user._id}`, { message: editText });
             setEditingMsgId(null);
         } catch (e) {}
     };
@@ -188,7 +189,7 @@ const ChatPage = () => {
     const toggleChat = async () => {
         try {
             const action = isChatDisabled ? 'enable' : 'disable';
-            await axios.post(`http://127.0.0.1:8000/api/chat/toggle`, { admin_id: user.id || user._id, target_user_id: selectedUser._id, action: action });
+            await axios.post(`/api/chat/toggle`, { admin_id: user.id || user._id, target_user_id: selectedUser._id, action: action });
         } catch (err) {}
     };
 

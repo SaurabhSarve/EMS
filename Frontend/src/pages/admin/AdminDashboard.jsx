@@ -63,12 +63,13 @@ const AdminDashboard = () => {
     if (!user?._id && !user?.id) return;
     try {
       const id = user._id || user.id;
+      // UPDATED URL
       const res = await axios.get(
-        `http://127.0.0.1:8000/api/chat/unread/total/${id}`,
+        `https://employee-management-system-chat-feature.onrender.com/api/chat/unread/total/${id}`
       );
       setUnreadCount(res.data.count);
     } catch (e) {
-      console.error(e);
+      console.error("Chat Count Error:", e);
     }
   };
 
@@ -78,7 +79,7 @@ const AdminDashboard = () => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/?token=${token}`);
+    const ws = new WebSocket(`wss://employee-management-system-chat-feature.onrender.com/ws/chat/?token=${token}`);
     socketRef.current = ws;
 
     ws.onmessage = (event) => {

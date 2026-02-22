@@ -28,7 +28,7 @@ const Settings = () => {
             const token = localStorage.getItem("token");
 
             const apiResponse = await axios.post(
-                "http://localhost:5000/api/v1/key/superAdmin",
+                "/api/v1/key/superAdmin",
                 { securityKey: superAdminKey },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -51,7 +51,7 @@ const Settings = () => {
             const token = localStorage.getItem("token");
 
             const response = await axios.get(
-                "http://localhost:5000/api/v1/admin/admins",
+                "/api/v1/admin/admins",
                 {
                     headers: { Authorization: `Bearer ${token}` }
                 }

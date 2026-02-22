@@ -229,6 +229,15 @@ export const employeeService = {
     //         }
     //     }
     // },
+    deleteTask: async (taskId) => {
+        try {
+            const response = await api.delete(`/admin/tasks/${taskId}`);
+            return response.data;
+
+        } catch (error) {
+            throw error;
+        }
+    },
 
     getTasks: async () => {
 
