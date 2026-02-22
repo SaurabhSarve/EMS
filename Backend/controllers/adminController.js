@@ -357,14 +357,20 @@ const updateEmployee = async (req, res) => {
     const updateFields = { ...otherData };
 
     // Handle department update
-    if (department) {
-      const departmentInfo = await Department.findOne({ name: department }).populate("manager", "firstName lastName");
+    if (department !== undefined) {
+      if (department === "" || department === null) {
+        // Unassign employee from department
+        updateFields.department = null;
+        updateFields.reportingManager = "NOT ALLOTED";
+      } else {
+        const departmentInfo = await Department.findOne({ name: department }).populate("manager", "firstName lastName");
 
-      if (departmentInfo) {
-        updateFields.department = departmentInfo._id;
-        updateFields.reportingManager = departmentInfo?.manager
-          ? `${departmentInfo.manager.firstName} ${departmentInfo.manager.lastName}`
-          : "NOT ALLOTED";
+        if (departmentInfo) {
+          updateFields.department = departmentInfo._id;
+          updateFields.reportingManager = departmentInfo?.manager
+            ? `${departmentInfo.manager.firstName} ${departmentInfo.manager.lastName}`
+            : "NOT ALLOTED";
+        }
       }
     }
 
@@ -814,14 +820,16 @@ const deleteDepartment = async (req, res) => {
       });
     }
 
-    // Check if there are employees in this department
+    // Check if there are employees in this department and unassign them
     const employeeCount = await User.countDocuments({ department: id });
     console.log(employeeCount);
+    
+    // Unassign all employees from this department
     if (employeeCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot delete department. ${employeeCount} employee(s) are assigned to this department. Please reassign or remove employees first.`
-      });
+      await User.updateMany(
+        { department: id },
+        { $set: { department: null } }
+      );
     }
 
     const projects = await Project.find({ department: id }).select("_id");
@@ -837,7 +845,9 @@ const deleteDepartment = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Department deleted successfully'
+      message: employeeCount > 0 
+        ? `Department deleted successfully. ${employeeCount} employee(s) have been unassigned.`
+        : 'Department deleted successfully'
     });
 
   } catch (error) {
@@ -845,6 +855,53 @@ const deleteDepartment = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to delete department',
+      error: error.message
+    });
+  }
+};
+
+const assignDepartmentToEmployee = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { departmentId } = req.body;
+
+    // Find employee
+    const employee = await User.findById(id);
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    // If departmentId is provided, verify it exists
+    if (departmentId) {
+      const department = await Department.findById(departmentId);
+      if (!department) {
+        return res.status(404).json({
+          success: false,
+          message: 'Department not found'
+        });
+      }
+      employee.department = departmentId;
+    } else {
+      // If no departmentId, unassign the employee
+      employee.department = null;
+    }
+
+    await employee.save();
+
+    return res.status(200).json({
+      success: true,
+      message: departmentId ? 'Department assigned successfully' : 'Employee unassigned from department',
+      data: employee
+    });
+
+  } catch (error) {
+    console.error('Error assigning department:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to assign department',
       error: error.message
     });
   }
@@ -1003,7 +1060,10 @@ const getAllEmployees = async (req, res) => {
     if (department && department !== 'all') {
       if (department === 'none' || department === 'unassigned') {
         // Filter employees without a department
-        filter.department = { $in: [null, undefined, ""] };
+        filter.$or = [
+          { department: null },
+          { department: { $exists: false } }
+        ];
       } else {
         filter.department = { $regex: new RegExp(department, 'i') };
       }
@@ -2683,6 +2743,7 @@ module.exports = {
   createDepartment,
   deleteDepartment,
   updateDepartment,
+  assignDepartmentToEmployee,
   getleavesDetail,
   getEmployeesSalary,
   updateSalary,

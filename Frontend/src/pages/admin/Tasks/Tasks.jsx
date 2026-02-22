@@ -443,7 +443,7 @@ export default function Tasks() {
       const result = await departmentService.deleteDepartment(selectedDepartment._id);
       
       if (result && result.success) {
-        showToast("Department deleted successfully!", "success");
+        showToast(result.message || "Department deleted successfully!", "success");
         setShowDeleteDepartmentModal(false);
         setSelectedDepartment(null);
         getDepartmentTasks();
@@ -983,6 +983,9 @@ export default function Tasks() {
                 </p>
                 <p className="text-center text-lg font-bold text-gray-900 mb-4">
                   {selectedDepartment.name} ({selectedDepartment.code})?
+                </p>
+                <p className="text-center text-sm text-amber-600 mb-2">
+                  Warning: All employees assigned to this department will be unassigned.
                 </p>
                 <p className="text-center text-sm text-red-600 mb-6">
                   This action cannot be undone. All associated data will be removed.

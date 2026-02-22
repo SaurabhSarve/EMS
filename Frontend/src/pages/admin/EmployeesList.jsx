@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { SearchX } from "lucide-react";
+import { SearchX, Building2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AdminSidebar from "../../Components/AdminSidebar.jsx";
 import { employeeService } from "../../services/employeeServices.js";
@@ -16,6 +16,12 @@ export default function EmployeesList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  
+  // Assign department modal state
+  const [showAssignDeptModal, setShowAssignDeptModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedDeptId, setSelectedDeptId] = useState("");
+  const [isAssigning, setIsAssigning] = useState(false);
 
   useEffect(() => {
     fetchDepartments();
@@ -107,9 +113,15 @@ export default function EmployeesList() {
         searchTerm.toLowerCase(),
       );
 
+    // Helper function to check if employee has no department
+    const hasNoDepartment = (emp) => {
+      return !emp.department || emp.department === null || emp.department === undefined || 
+             (typeof emp.department === 'object' && Object.keys(emp.department).length === 0);
+    };
+
     const matchesDept =
       isAdmin ? (departmentFilter === "all" || 
-        (departmentFilter === "none" ? !employee.department : 
+        (departmentFilter === "none" ? hasNoDepartment(employee) : 
           (employee.department?.name?.toLowerCase() || "") === departmentFilter.toLowerCase())) : true; // Department heads already get filtered employees from API
 
     const matchesStatus =
@@ -132,6 +144,38 @@ export default function EmployeesList() {
     setTimeout(() => {
       navigate(`/admin/employees/${employeeId}`);
     }, 500);
+  };
+
+  const openAssignDeptModal = (employee) => {
+    setSelectedEmployee(employee);
+    setSelectedDeptId(employee.department?._id || "");
+    setShowAssignDeptModal(true);
+  };
+
+  const handleAssignDepartment = async () => {
+    if (!selectedDeptId || !selectedEmployee) return;
+    
+    try {
+      setIsAssigning(true);
+      const result = await employeeService.assignDepartment(selectedEmployee._id, selectedDeptId);
+      
+      if (result && result.success) {
+        // Update the employee in the list
+        setEmployees(prev => prev.map(emp => 
+          emp._id === selectedEmployee._id 
+            ? { ...emp, department: result.data.department }
+            : emp
+        ));
+        setShowAssignDeptModal(false);
+        setSelectedEmployee(null);
+        alert("Department assigned successfully!");
+      }
+    } catch (error) {
+      console.error("Error assigning department:", error);
+      alert("Failed to assign department");
+    } finally {
+      setIsAssigning(false);
+    }
   };
 
   return (
@@ -327,9 +371,24 @@ export default function EmployeesList() {
                               <p className="font-medium text-gray-900">
                                 {employee.position}
                               </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {employee.department?.name}
-                              </p>
+                              {employee.department?.name ? (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {employee.department.name}
+                                </p>
+                              ) : isAdmin ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openAssignDeptModal(employee);
+                                  }}
+                                  className="text-xs text-blue-600 hover:text-blue-800 font-medium mt-1 flex items-center gap-1"
+                                >
+                                  <Building2 size={12} />
+                                  Assign Department
+                                </button>
+                              ) : (
+                                <p className="text-xs text-gray-400 mt-1 italic">Unassigned</p>
+                              )}
                             </div>
                           </td>
                           <td className="p-4">
@@ -426,9 +485,24 @@ export default function EmployeesList() {
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Dept</p>
-                            <p className="font-medium text-gray-900 text-sm truncate">
-                              {employee.department?.name}
-                            </p>
+                            {employee.department?.name ? (
+                              <p className="font-medium text-gray-900 text-sm truncate">
+                                {employee.department.name}
+                              </p>
+                            ) : isAdmin ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openAssignDeptModal(employee);
+                                }}
+                                className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                              >
+                                <Building2 size={14} />
+                                Assign
+                              </button>
+                            ) : (
+                              <p className="text-sm text-gray-400 italic">Unassigned</p>
+                            )}
                           </div>
                           <div>
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Joined</p>
@@ -482,6 +556,90 @@ export default function EmployeesList() {
           }
         }
       `}</style>
+
+      {/* Assign Department Modal */}
+      {showAssignDeptModal && selectedEmployee && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-6">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Building2 className="text-white" size={20} />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Assign Department</h3>
+                </div>
+                <button 
+                  onClick={() => {
+                    setShowAssignDeptModal(false);
+                    setSelectedEmployee(null);
+                  }}
+                  className="text-white/80 hover:text-white hover:bg-white/20 rounded-lg p-1 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              <div className="mb-4">
+                <p className="text-gray-600 text-sm mb-1">Employee</p>
+                <p className="font-semibold text-gray-900">
+                  {selectedEmployee.firstName} {selectedEmployee.lastName}
+                </p>
+                <p className="text-gray-500 text-sm">{selectedEmployee.employeeId}</p>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Select Department
+                </label>
+                <select
+                  value={selectedDeptId}
+                  onChange={(e) => setSelectedDeptId(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <option value="">-- Select Department --</option>
+                  {departments.map((dept) => (
+                    <option key={dept._id} value={dept._id}>
+                      {dept.name} ({dept.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowAssignDeptModal(false);
+                    setSelectedEmployee(null);
+                  }}
+                  disabled={isAssigning}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAssignDepartment}
+                  disabled={!selectedDeptId || isAssigning}
+                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isAssigning ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Assigning...
+                    </>
+                  ) : (
+                    "Assign Department"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
