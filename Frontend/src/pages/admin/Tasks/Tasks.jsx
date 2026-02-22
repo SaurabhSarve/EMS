@@ -496,7 +496,8 @@ export default function Tasks() {
       total, 
       completed, 
       pending,
-      totalEmployees: employees.filter(emp => emp.role === "employee").length 
+      // Include both employees and Department Heads in total count
+      totalEmployees: employees.filter(emp => emp.role === "employee" || emp.role === "Department Head").length 
     };
   };
 
@@ -516,13 +517,23 @@ export default function Tasks() {
   };
 
   const getDepartmentStats = (deptId) => {
-    const deptEmployees = employees.filter(emp => emp.department === deptId);
+    const deptEmployees = employees.filter(emp => {
+      // Handle both populated department (object) and non-populated (string/ObjectId)
+      if (emp.department && typeof emp.department === 'object') {
+        return emp.department._id === deptId || emp.department._id?.toString() === deptId?.toString();
+      }
+      return emp.department === deptId || emp.department?.toString() === deptId?.toString();
+    });
+    // Include both employees and Department Heads for department stats
+    const deptEmployeesWithHeads = deptEmployees.filter(emp => 
+      emp.role === "employee" || emp.role === "Department Head"
+    );
     const deptTasks = allTasks.filter(task => 
-      deptEmployees.some(emp => emp._id === task.employee)
+      deptEmployeesWithHeads.some(emp => emp._id === task.employee)
     );
     
     return {
-      totalEmployees: deptEmployees.length,
+      totalEmployees: deptEmployeesWithHeads.length,
       totalTasks: deptTasks.length,
       completed: deptTasks.filter(t => t.status === "completed").length,
       pending: deptTasks.filter(t => t.status === "pending").length

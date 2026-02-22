@@ -821,13 +821,13 @@ const deleteDepartment = async (req, res) => {
     }
 
     // Check if there are employees in this department and unassign them
-    const employeeCount = await User.countDocuments({ department: id });
+    const employeeCount = await User.countDocuments({ department: new mongoose.Types.ObjectId(id) });
     console.log(employeeCount);
     
     // Unassign all employees from this department
     if (employeeCount > 0) {
       await User.updateMany(
-        { department: id },
+        { department: new mongoose.Types.ObjectId(id) },
         { $set: { department: null } }
       );
     }
@@ -1065,7 +1065,13 @@ const getAllEmployees = async (req, res) => {
           { department: { $exists: false } }
         ];
       } else {
-        filter.department = { $regex: new RegExp(department, 'i') };
+        // For specific department, convert to ObjectId for matching
+        try {
+          filter.department = new mongoose.Types.ObjectId(department);
+        } catch (e) {
+          // If not a valid ObjectId, try regex matching on populated field
+          filter.department = { $regex: new RegExp(department, 'i') };
+        }
       }
     }
 
@@ -1980,7 +1986,7 @@ const getDepartmentTasks = async (req, res) => {
       departmentDetails = await Department.find({}).populate("manager", "firstName lastName");
       departmentEmployees = await User.find({
         role: { $in: ["employee", "Department Head"] }
-      });
+      }).populate("department", "name");
     } else if (req.user.role === "Department Head") {
       // Use department from user profile directly (more reliable than manager field)
       const userDepartmentId = req.user.department;
@@ -1999,7 +2005,7 @@ const getDepartmentTasks = async (req, res) => {
           department: departmentDetails._id,
           _id: { $ne: req.user._id },
           role: "employee"  // Only show employees, not other department heads
-        });
+        }).populate("department", "name");
       } else {
         departmentEmployees = [];
       }
@@ -2712,7 +2718,7 @@ const getDepartmentHeadEmployees = async (req, res) => {
       department: departmentId,
       role: 'employee',  // Only regular employees, not department heads
       _id: { $ne: currentUser._id }  // Exclude the current department head
-    });
+    }).populate("department", "name");
 
     console.log("DEBUG: Found employees count:", employeeList.length);
 
