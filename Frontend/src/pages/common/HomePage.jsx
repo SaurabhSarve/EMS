@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 import Footer from "../../Components/Footer";
-import Navbar from "../../Components/Navbar_";
+import Navbar_ from "../../Components/Navbar_";
 
 function Counter({ end, suffix = "", duration = 2200 }) {
   const [count, setCount] = useState(0);
