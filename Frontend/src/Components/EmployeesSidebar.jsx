@@ -59,14 +59,14 @@ const EmployeesSidebar = () => {
     return (
         <>
             {/* Mobile Hamburger Button - Small Size */}
-            {isMobile && (
-                <button
-                    onClick={toggleSidebar}
-                    className="fixed top-4 left-4 z-50 w-10 h-10 bg-white/90 text-gray-900 rounded-lg hover:bg-white active:scale-95 transition-all duration-200 shadow-md border border-gray-200 flex items-center justify-center"
-                >
-                    {isOpen ? <MdClose size={18} /> : <MdMenu size={18} />}
-                </button>
-            )}
+            {isMobile && !isOpen && (
+    <button
+        onClick={toggleSidebar}
+        className="fixed top-4 left-4 z-50 w-10 h-10 bg-white shadow-md rounded-lg flex items-center justify-center"
+    >
+        <MdMenu size={20} />
+    </button>
+)}
 
             {/* Sidebar */}
             <aside
@@ -90,7 +90,7 @@ const EmployeesSidebar = () => {
                 </div>
 
                 {/* MENU */}
-                <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto min-h-0">
+                <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto min-h-0" style={{ WebkitOverflowScrolling: "touch" }}>
                     {menuItems.map((item, index) => (
                         <MenuItem
                             key={index}
@@ -162,8 +162,14 @@ const EmployeesSidebar = () => {
                 }
 
                 /* Scrollbar styling for sidebar */
+                nav {
+                    scrollbar-width: thin;
+                    scrollbar-color: #cbd5e0 transparent;
+                    -webkit-overflow-scrolling: touch;
+                }
+                
                 nav::-webkit-scrollbar {
-                    width: 6px;
+                    width: 8px;
                 }
                 
                 nav::-webkit-scrollbar-track {
@@ -172,11 +178,22 @@ const EmployeesSidebar = () => {
                 
                 nav::-webkit-scrollbar-thumb {
                     background: #cbd5e0;
-                    border-radius: 3px;
+                    border-radius: 4px;
+                    -webkit-appearance: none;
                 }
                 
                 nav::-webkit-scrollbar-thumb:hover {
                     background: #a0aec0;
+                }
+                
+                /* iOS specific - always show scrollbar indicator */
+                @supports (-webkit-touch-callout: none) {
+                    nav::-webkit-scrollbar {
+                        width: 10px;
+                    }
+                    nav::-webkit-scrollbar-thumb {
+                        background: rgba(203, 213, 224, 0.8);
+                    }
                 }
             `}</style>
         </>

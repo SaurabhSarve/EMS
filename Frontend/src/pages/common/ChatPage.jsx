@@ -72,15 +72,24 @@ const ChatPage = () => {
     const [showMenu, setShowMenu] = useState(false); 
     const [editingMsgId, setEditingMsgId] = useState(null); 
     const [editText, setEditText] = useState(""); 
+    const [activeMessageId, setActiveMessageId] = useState(null);
 
     const bottomRef = useRef(null);
-    const WS_URL = jwtToken ? `ws://127.0.0.1:8000/ws/chat/?token=${jwtToken}` : null;
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const CHAT_BASE_URL = isLocal ? "http://127.0.0.1:8000" : "https://employee-management-system-chat-feature.onrender.com"; 
+    const WS_BASE_URL = isLocal ? "ws://127.0.0.1:8000" : "wss://employee-management-system-chat-feature.onrender.com";
+    const WS_URL = jwtToken ? `${WS_BASE_URL}/ws/chat/?token=${jwtToken}` : null;
     const { sendJsonMessage, lastJsonMessage, readyState } = useChatWebSocket(WS_URL);
+
+    // --- AUTH CONFIG FOR HTTP REQUESTS ---
+    const authConfig = {
+        headers: { Authorization: `Bearer ${jwtToken}` }
+    };
 
     // --- NAVIGATION HANDLER ---
     const handleGoBack = () => {
         if (user.role === 'Admin') navigate('/admin/dashboard');
-        else if (user.role === 'Department Head') navigate('/department-head/dashboard');
+        else if (user.role === 'Department Head') navigate('/head/dashboard');
         else navigate('/employee/dashboard');
     };
 
@@ -88,7 +97,7 @@ const ChatPage = () => {
         if (!user) return;
         try {
             const currentUserId = user.id || user._id;
-            const res = await axios.get(`http://127.0.0.1:8000/api/chat/recent/${currentUserId}`);
+            const res = await axios.get(`${CHAT_BASE_URL}/api/chat/recent/${currentUserId}`, authConfig);
             setConversationList(res.data);
         } catch (err) {}
     };
@@ -99,7 +108,7 @@ const ChatPage = () => {
             if (globalSearchQuery.length > 1) {
                 const currentUserId = user.id || user._id;
                 try {
-                    const res = await axios.get(`http://127.0.0.1:8000/api/chat/search?q=${globalSearchQuery}&user_id=${currentUserId}`);
+                    const res = await axios.get(`${CHAT_BASE_URL}/api/chat/search?q=${globalSearchQuery}&user_id=${currentUserId}`, authConfig);
                     setGlobalSearchResults(res.data);
                 } catch (err) {}
             } else { setGlobalSearchResults([]); }
@@ -116,7 +125,7 @@ const ChatPage = () => {
         setShowMenu(false);
         setConversationList(prev => prev.map(c => c.user._id === targetUser._id ? { ...c, unread_count: 0 } : c));
         const currentUserId = user.id || user._id;
-        axios.get(`http://127.0.0.1:8000/api/chat/history/${currentUserId}?other_user=${targetUser._id}`)
+        axios.get(`${CHAT_BASE_URL}/api/chat/history/${currentUserId}?other_user=${targetUser._id}`, authConfig)
             .then(res => {
                 setMessageHistory(res.data.messages || []);
                 setIsChatDisabled(res.data.is_disabled || false);
@@ -164,7 +173,7 @@ const ChatPage = () => {
         if (!window.confirm("Clear this chat for me?")) return;
         try {
             const currentUserId = user.id || user._id;
-            await axios.delete(`http://127.0.0.1:8000/api/chat/delete_all?user_id=${currentUserId}&other_user=${selectedUser._id}`);
+            await axios.delete(`${CHAT_BASE_URL}/api/chat/delete_all?user_id=${currentUserId}&other_user=${selectedUser._id}`, authConfig);
             setMessageHistory([]); 
             setShowMenu(false);
         } catch (e) {}
@@ -172,15 +181,19 @@ const ChatPage = () => {
 
     const handleDeleteMessage = async (msgId) => {
         if (!window.confirm("Delete message for everyone?")) return;
-        try { await axios.delete(`http://127.0.0.1:8000/api/chat/message/${msgId}?user_id=${user.id || user._id}`); } catch (e) {}
+        try { await axios.delete(`${CHAT_BASE_URL}/api/chat/message/${msgId}?user_id=${user.id || user._id}`, authConfig); } catch (e) {}
     };
 
-    const startEditing = (msg) => { setEditingMsgId(msg.id); setEditText(msg.message); };
+    const startEditing = (msg) => { 
+        setEditingMsgId(msg.id); 
+        setEditText(msg.message); 
+        setActiveMessageId(null); // Close menu when editing starts
+    };
     const cancelEditing = () => { setEditingMsgId(null); setEditText(""); };
     const saveEdit = async (msgId) => {
         if (!editText.trim()) return;
         try {
-            await axios.put(`http://127.0.0.1:8000/api/chat/message/${msgId}?user_id=${user.id || user._id}`, { message: editText });
+            await axios.put(`${CHAT_BASE_URL}/api/chat/message/${msgId}?user_id=${user.id || user._id}`, { message: editText }, authConfig);
             setEditingMsgId(null);
         } catch (e) {}
     };
@@ -188,7 +201,7 @@ const ChatPage = () => {
     const toggleChat = async () => {
         try {
             const action = isChatDisabled ? 'enable' : 'disable';
-            await axios.post(`http://127.0.0.1:8000/api/chat/toggle`, { admin_id: user.id || user._id, target_user_id: selectedUser._id, action: action });
+            await axios.post(`${CHAT_BASE_URL}/api/chat/toggle`, { admin_id: user.id || user._id, target_user_id: selectedUser._id, action: action }, authConfig);
         } catch (err) {}
     };
 
@@ -243,8 +256,9 @@ const ChatPage = () => {
                 </div>
             )}
 
-            {/* --- SIDEBAR PANEL --- */}
-            <div className="w-full lg:w-[380px] bg-white border-r border-gray-200 flex flex-col shadow-2xl z-10 lg:rounded-l-3xl overflow-hidden">
+            {/* --- SIDEBAR PANEL (RESPONSIVE) --- */}
+            {/* hidden on mobile if a chat is selected, flex otherwise */}
+            <div className={`w-full lg:w-[380px] bg-white border-r border-gray-200 flex-col shadow-2xl z-10 lg:rounded-l-3xl overflow-hidden ${selectedUser ? 'hidden lg:flex' : 'flex'}`}>
                 <div className="p-6 bg-white border-b border-gray-100">
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-3">
@@ -300,44 +314,68 @@ const ChatPage = () => {
                 </div>
             </div>
 
-            {/* --- MAIN CHAT WINDOW PANEL --- */}
-            <div className="flex-1 flex flex-col bg-white lg:rounded-r-3xl overflow-hidden shadow-inner border-l border-gray-100">
+            {/* --- MAIN CHAT WINDOW PANEL (RESPONSIVE) --- */}
+            {/* visible on mobile ONLY if a chat is selected, always flex on desktop */}
+            <div className={`flex-1 flex-col bg-white lg:rounded-r-3xl overflow-hidden shadow-inner border-l border-gray-100 ${selectedUser ? 'flex' : 'hidden lg:flex'}`}>
                 {selectedUser ? (
                     <>
                         {/* Header */}
-                        <div className="px-8 py-5 bg-white border-b border-gray-100 shadow-sm flex justify-between items-center z-10 backdrop-blur-md bg-white/80">
-                            <div className="flex items-center gap-5">
-                                <div className="relative group">
-                                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:rotate-6 transition-transform">
+                        <div className="px-4 lg:px-8 py-5 bg-white border-b border-gray-100 shadow-sm flex justify-between items-center z-10 backdrop-blur-md bg-white/80">
+                            <div className="flex items-center gap-3 lg:gap-5">
+                                {/* BACK BUTTON FOR MOBILE */}
+                                <button onClick={() => setSelectedUser(null)} className="lg:hidden p-2 text-gray-600 hover:bg-slate-100 rounded-full transition-all">
+                                    <FiArrowLeft size={22} />
+                                </button>
+                                
+                                <div className="relative group flex-shrink-0">
+                                    <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg lg:text-xl shadow-lg group-hover:rotate-6 transition-transform">
                                         {selectedUser.profilePhoto ? <img src={selectedUser.profilePhoto} className="w-full h-full object-cover rounded-2xl"/> : selectedUser.firstName[0]}
                                     </div>
-                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                                    <div className="absolute -bottom-1 -right-1 w-3 h-3 lg:w-4 lg:h-4 bg-green-500 rounded-full border-2 border-white"></div>
                                 </div>
-                                <div>
-                                    <h3 className="font-black text-xl text-gray-800 tracking-tight">{selectedUser.firstName} {selectedUser.lastName}</h3>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{selectedUser.role}</span>
-                                        {selectedUser.department_name && <span className="text-xs text-gray-400 font-bold tracking-tighter">| {selectedUser.department_name}</span>}
+                               <div className="min-w-0">
+                                    <h3 className="font-black text-lg lg:text-xl text-gray-800 tracking-tight truncate max-w-[150px] lg:max-w-none">
+                                        {selectedUser.firstName} {selectedUser.lastName}
+                                    </h3>
+                                    
+                                    {/* Stack elements vertically */}
+                                    <div className="flex flex-col gap-1 mt-0.5">
+                                        {/* Row 1: Role and Department */}
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                                                {selectedUser.role}
+                                            </span>
+                                            {selectedUser.department_name && (
+                                                <span className="text-xs text-gray-400 font-bold tracking-tighter">
+                                                    | {selectedUser.department_name}
+                                                </span>
+                                            )}
+                                        </div>
+                                        
+                                        {/* Row 2: Instruction Message */}
+                                        <span className="text-[9px] lg:text-[10px] text-gray-400 italic tracking-tight">
+                                            Click on your message to edit or delete
+                                        </span>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 lg:gap-4">
                                 {isChatDisabled && (
-                                    <div className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl border border-red-100 shadow-sm animate-pulse">
+                                    <div className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-xl border border-red-100 shadow-sm animate-pulse">
                                         <FiLock size={16} />
-                                        <span className="text-[10px] font-black uppercase tracking-widest">Chat Locked</span>
+                                        <span className="hidden lg:inline text-[10px] font-black uppercase tracking-widest">Locked</span>
                                     </div>
                                 )}
                                 {/* --- UPDATED PERMISSION LOGIC --- */}
                                 {(user.role === 'Admin' || (user.role === 'Department Head' && selectedUser.role !== 'Admin')) && (
-                                    <button onClick={toggleChat} className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest text-white shadow-xl transition-all hover:-translate-y-0.5 active:translate-y-0 ${isChatDisabled ? 'bg-gradient-to-r from-emerald-500 to-green-600 shadow-green-100' : 'bg-gradient-to-r from-red-500 to-rose-600 shadow-rose-100'}`}>
-                                        {isChatDisabled ? 'Unlock Chat' : 'Lock Chat'}
+                                    <button onClick={toggleChat} className={`px-4 py-2 lg:px-5 lg:py-2.5 rounded-2xl text-[10px] lg:text-xs font-black uppercase tracking-widest text-white shadow-xl transition-all hover:-translate-y-0.5 active:translate-y-0 ${isChatDisabled ? 'bg-gradient-to-r from-emerald-500 to-green-600 shadow-green-100' : 'bg-gradient-to-r from-red-500 to-rose-600 shadow-rose-100'}`}>
+                                        {isChatDisabled ? 'Unlock' : 'Lock'}
                                     </button>
                                 )}
                                 
                                 <div className="relative">
-                                    <button onClick={() => setShowMenu(!showMenu)} className="p-3 hover:bg-slate-50 text-gray-400 rounded-2xl transition-all border border-transparent hover:border-gray-100"><FiMoreVertical size={20}/></button>
+                                    <button onClick={() => setShowMenu(!showMenu)} className="p-2 lg:p-3 hover:bg-slate-50 text-gray-400 rounded-2xl transition-all border border-transparent hover:border-gray-100"><FiMoreVertical size={20}/></button>
                                     {showMenu && (
                                         <div className="absolute right-0 top-14 w-56 bg-white shadow-2xl rounded-2xl border border-gray-100 p-2 z-50 animate-in fade-in zoom-in-95 duration-200">
                                             <button onClick={handleDeleteConversation} className="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl text-sm font-bold flex items-center gap-3 transition-colors">
@@ -350,7 +388,7 @@ const ChatPage = () => {
                         </div>
 
                         {/* Messages */}
-                        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-[#F9FBFF] custom-scrollbar" style={{backgroundImage: `url("https://www.transparenttextures.com/patterns/cubes.png")`, backgroundOpacity: 0.02}}>
+                        <div className="flex-1 overflow-y-auto p-4 lg:p-8 space-y-6 bg-[#F9FBFF] custom-scrollbar" style={{backgroundImage: `url("https://www.transparenttextures.com/patterns/cubes.png")`, backgroundOpacity: 0.02}}>
                             {messageHistory.length === 0 && (
                                 <div className="flex flex-col items-center justify-center mt-20 opacity-30">
                                     <div className="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center mb-6 text-indigo-500"><FiSend size={40}/></div>
@@ -362,35 +400,60 @@ const ChatPage = () => {
                                 const isMe = msg.sender === (user.id || user._id);
                                 return (
                                     <div key={idx} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-3 duration-500`}>
-                                        <div className={`flex flex-col max-w-[70%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                        <div className={`flex flex-col max-w-[85%] lg:max-w-[70%] ${isMe ? 'items-end' : 'items-start'}`}>
                                             
                                             {editingMsgId === msg.id ? (
-                                                <div className="flex items-center gap-3 bg-white border-2 border-indigo-500 p-3 rounded-2xl shadow-2xl w-full min-w-[300px]">
-                                                    <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} className="outline-none text-sm text-gray-800 w-full bg-transparent font-medium" autoFocus />
-                                                    <div className="flex gap-2">
+                                                <div className="flex items-center gap-2 bg-white border-2 border-indigo-500 p-2 rounded-2xl shadow-2xl w-full min-w-[200px] lg:min-w-[300px]">
+                                                    <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} className="outline-none text-sm text-gray-800 w-full bg-transparent font-medium px-2" autoFocus />
+                                                    <div className="flex gap-1">
                                                         <button onClick={() => saveEdit(msg.id)} className="bg-emerald-500 text-white p-2 rounded-xl shadow-md hover:bg-emerald-600 transition-colors"><FiCheck/></button>
                                                         <button onClick={cancelEditing} className="bg-slate-100 text-slate-500 p-2 rounded-xl hover:bg-slate-200 transition-colors"><FiX/></button>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className={`px-5 py-3 shadow-sm text-[15px] leading-relaxed relative group break-words whitespace-pre-wrap transition-all
+                                                <div 
+                                                    onClick={() => {
+                                                        // Toggle menu open/close on click if it's my message
+                                                        if (isMe) {
+                                                            setActiveMessageId(prev => prev === msg.id ? null : msg.id);
+                                                        }
+                                                    }}
+                                                    className={`px-4 lg:px-5 py-3 shadow-sm text-[14px] lg:text-[15px] leading-relaxed relative break-words whitespace-pre-wrap transition-all
                                                     ${isMe 
-                                                        ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none shadow-indigo-100' 
-                                                        : 'bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-tl-none shadow-slate-100'}`}>
-                                                    
+                                                        ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none shadow-indigo-100 cursor-pointer' 
+                                                        : 'bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-tl-none shadow-slate-100'}`}
+                                                >
                                                     {msg.message}
                                                     
-                                                    {isMe && (
-                                                        <div className="absolute top-1/2 -left-20 -translate-y-1/2 hidden group-hover:flex items-center gap-1 bg-white shadow-xl rounded-full p-1.5 border border-gray-100 z-10 animate-in fade-in slide-in-from-right-2">
-                                                            <button onClick={() => startEditing(msg)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"><FiEdit2 size={14}/></button>
-                                                            <button onClick={() => handleDeleteMessage(msg.id)} className="p-2 text-rose-600 hover:bg-rose-50 rounded-full transition-colors"><FiTrash2 size={14}/></button>
+                                                    {/* Action Buttons (Edit/Delete) - Now Triggered by State instead of Hover */}
+                                                    {isMe && activeMessageId === msg.id && (
+                                                        <div 
+                                                            className="absolute top-1/2 -left-[90px] -translate-y-1/2 flex items-center gap-1 bg-white shadow-xl rounded-full p-1.5 border border-gray-100 z-10 animate-in fade-in slide-in-from-right-2"
+                                                            onClick={(e) => e.stopPropagation()} // Prevent click from bubbling to the parent div
+                                                        >
+                                                            <button 
+                                                                onClick={(e) => { e.stopPropagation(); startEditing(msg); }} 
+                                                                className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+                                                            >
+                                                                <FiEdit2 size={14}/>
+                                                            </button>
+                                                            <button 
+                                                                onClick={(e) => { 
+                                                                    e.stopPropagation(); 
+                                                                    handleDeleteMessage(msg.id);
+                                                                    setActiveMessageId(null); 
+                                                                }} 
+                                                                className="p-2 text-rose-600 hover:bg-rose-50 rounded-full transition-colors"
+                                                            >
+                                                                <FiTrash2 size={14}/>
+                                                            </button>
                                                         </div>
                                                     )}
                                                 </div>
                                             )}
                                             
                                             <div className="flex items-center gap-1.5 mt-1.5 px-1 opacity-60">
-                                                <FiClock size={10} className="text-gray-400" />
+                                                {/* <FiClock size={10} className="text-gray-400" /> */}
                                                 <span className="text-[10px] font-bold text-gray-400 uppercase">{formatTimeIST(msg.timestamp)}</span>
                                             </div>
                                         </div>
@@ -401,25 +464,25 @@ const ChatPage = () => {
                         </div>
 
                         {/* Input */}
-                        <div className="p-6 bg-white border-t border-gray-100">
-                            <form onSubmit={handleSendMessage} className="flex gap-4 max-w-5xl mx-auto items-center">
+                        <div className="p-4 lg:p-6 bg-white border-t border-gray-100">
+                            <form onSubmit={handleSendMessage} className="flex gap-2 lg:gap-4 max-w-5xl mx-auto items-center">
                                 <div className="relative flex-1 group">
                                     <input 
                                         type="text" 
                                         value={inputMessage} 
                                         onChange={(e) => setInputMessage(e.target.value)} 
                                         disabled={isChatDisabled && user.role !== 'Admin'} 
-                                        placeholder={isChatDisabled ? "Chat is locked by authority..." : "Write a message..."} 
-                                        className="w-full pl-6 pr-12 py-4 bg-slate-50 border border-transparent rounded-3xl text-sm font-medium focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100 shadow-inner" 
+                                        placeholder={isChatDisabled ? "Chat locked..." : "Write a message..."} 
+                                        className="w-full pl-4 pr-10 py-3 lg:pl-6 lg:pr-12 lg:py-4 bg-slate-50 border border-transparent rounded-3xl text-[14px] lg:text-sm font-medium focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100 shadow-inner" 
                                     />
                                 </div>
                                 <button 
                                     type="submit" 
                                     disabled={!inputMessage.trim() || (isChatDisabled && user.role !== 'Admin')} 
-                                    className={`p-4 rounded-2xl shadow-2xl transition-all active:scale-90 flex items-center justify-center
+                                    className={`p-3 lg:p-4 rounded-2xl shadow-2xl transition-all active:scale-90 flex items-center justify-center
                                         ${!inputMessage.trim() ? 'bg-slate-100 text-slate-400' : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-indigo-200'}`}
                                 >
-                                    <FiSend size={22} className={inputMessage.trim() ? "translate-x-0.5 -translate-y-0.5" : ""} />
+                                    <FiSend size={20} className={inputMessage.trim() ? "translate-x-0.5 -translate-y-0.5" : ""} />
                                 </button>
                             </form>
                         </div>
@@ -427,17 +490,17 @@ const ChatPage = () => {
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center bg-[#F9FBFF] text-center p-12 relative">
                         <div className="absolute inset-0 opacity-40 pointer-events-none" style={{backgroundImage: `radial-gradient(#C7D2FE 1px, transparent 1px)`, backgroundSize: '30px 30px'}}></div>
-                        <div className="w-48 h-48 bg-white rounded-[40px] shadow-2xl flex items-center justify-center mb-8 relative rotate-3 animate-pulse-slow border border-indigo-50">
-                            <FiMessageSquare size={80} className="text-indigo-600/20 absolute -translate-x-2 -translate-y-2" />
-                            <FiMessageSquare size={80} className="text-indigo-600" />
+                        <div className="w-32 h-32 lg:w-48 lg:h-48 bg-white rounded-[40px] shadow-2xl flex items-center justify-center mb-8 relative rotate-3 animate-pulse-slow border border-indigo-50">
+                            <FiMessageSquare size={60} className="text-indigo-600/20 absolute -translate-x-2 -translate-y-2 lg:text-[80px]" />
+                            <FiMessageSquare size={60} className="text-indigo-600 lg:text-[80px]" />
                         </div>
-                        <h2 className="text-3xl font-black text-gray-800 mb-4 tracking-tight">Enterprise Messaging</h2>
-                        <p className="text-gray-500 max-w-sm mx-auto mb-10 font-medium leading-relaxed">
+                        <h2 className="text-2xl lg:text-3xl font-black text-gray-800 mb-4 tracking-tight">Enterprise Messaging</h2>
+                        <p className="text-gray-500 max-w-sm mx-auto mb-10 font-medium leading-relaxed text-sm lg:text-base">
                             Select a colleague from the sidebar or start a secure new conversation using the plus button.
                         </p>
                         <button 
                             onClick={() => { setShowNewChatModal(true); setGlobalSearchQuery(''); }} 
-                            className="group bg-white border-2 border-indigo-600 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:bg-indigo-50 transition-all hover:-translate-y-1 flex items-center gap-3 active:scale-95"
+                            className="group bg-white border-2 border-indigo-600 px-8 lg:px-10 py-3 lg:py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:bg-indigo-50 transition-all hover:-translate-y-1 flex items-center gap-3 active:scale-95"
                         >
                             <FiPlus size={18} className="text-indigo-600" /> 
                             <span className="text-indigo-600">Start New Chat</span>

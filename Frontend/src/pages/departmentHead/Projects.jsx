@@ -36,6 +36,7 @@ const defaultFormState = {
   name: "",
   description: "",
   department: "",
+  departmentName: "",
   teamSize: "",
   leader: "",
   dueDate: "",
@@ -81,6 +82,7 @@ export default function DepartmentHeadProjects() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [notice, setNotice] = useState("");
   const [employees, setEmployees] = useState([]);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [employeeSearch, setEmployeeSearch] = useState("");
   // const [employeeMenuOpen, setEmployeeMenuOpen] = useState(true);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
@@ -160,6 +162,26 @@ export default function DepartmentHeadProjects() {
     return engagementSet;
   }, [projects]);
 
+  // Filter employees based on department and search query
+  const searchFilteredEmployees = useMemo(() => {
+    if (!employeeSearch.trim()) {
+      return filteredEmployees;
+    }
+    
+    const searchLower = employeeSearch.toLowerCase();
+    return filteredEmployees.filter((emp) => {
+      const fullName = `${emp.firstName || ""} ${emp.lastName || ""}`.toLowerCase();
+      const email = (emp.email || "").toLowerCase();
+      const employeeId = (emp.employeeId || "").toLowerCase();
+      
+      return (
+        fullName.includes(searchLower) ||
+        email.includes(searchLower) ||
+        employeeId.includes(searchLower)
+      );
+    });
+  }, [filteredEmployees, employeeSearch]);
+
   const [animatedCounts, setAnimatedCounts] = useState(analytics.map(() => 0));
 
   useEffect(() => {
@@ -213,11 +235,20 @@ export default function DepartmentHeadProjects() {
         console.log("FINAL EMPLOYEE LIST:", list);
 
         setEmployees(list);
+        
+        // For Admin: do not show employees until a department is selected
+        // For Department Head: show all employees from their department
+        if (isAdmin) {
+          setFilteredEmployees([]); // No employees shown until department is selected
+        } else {
+          setFilteredEmployees(list); // Department Head sees their department's employees
+        }
 
       } catch (error) {
         console.error("Error fetching employees:", error);
         setEmployeeError("Unable to load employees.");
         setEmployees([]);
+        setFilteredEmployees([]);
       } finally {
         setLoadingEmployees(false);
       }
@@ -250,6 +281,9 @@ export default function DepartmentHeadProjects() {
           (Array.isArray(response?.data) ? response.data : []);
 
         const deptDetails = response?.data?.departmentDetails;
+        
+        console.log("API Response - deptDetails:", deptDetails);
+        console.log("Available Departments from response:", response?.data?.availableDepartments);
 
         const transformedProjects = projectList.map((proj) => ({
           ...proj,
@@ -258,12 +292,34 @@ export default function DepartmentHeadProjects() {
             proj.leaderName ||
             `${proj.leader?.firstName || ""} ${proj.leader?.lastName || ""}`.trim(),
           leaderId: proj.leader?._id || proj.leader,
+          departmentId: proj.department || deptDetails?._id,
           department: proj.departmentName || deptDetails?.name,
           assignees: proj.assignees || [],
           dueDate: proj.dueDate?.split("T")[0] || proj.dueDate,
         }));
 
         setProjects(transformedProjects);
+
+        // Store department details for Department Head and Admin
+        if (deptDetails?._id) {
+          setCurrentDepartmentId(deptDetails._id);
+          console.log("Setting currentDepartmentId to:", deptDetails._id, "with name:", deptDetails.name);
+          // For Department Head, add their department to availableDepartments if not already there
+          if (!isAdmin && deptDetails) {
+            const deptToSet = [{
+              _id: deptDetails._id,
+              name: deptDetails.name,
+              ...deptDetails
+            }];
+            console.log("Setting availableDepartments for Department Head:", deptToSet);
+            setAvailableDepartments(deptToSet);
+          }
+        }
+        
+        if (response?.data?.availableDepartments) {
+          console.log("Setting availableDepartments from response:", response.data.availableDepartments);
+          setAvailableDepartments(response.data.availableDepartments);
+        }
 
         if (deptDetails?.name && !departmentOverride) {
           setDepartmentOverride(deptDetails.name);
@@ -313,13 +369,39 @@ export default function DepartmentHeadProjects() {
 
   const openCreate = () => {
     setModalMode("create");
-    const autoDepartment = isAdmin ? "" : (departmentOverride || availableDepartments[0]?.name || "");
-    setFormState({ ...defaultFormState, department: autoDepartment });
+    let autoDepartmentId = "";
+    let autoDepartmentName = "";
+    
+    console.log("openCreate - isAdmin:", isAdmin, "currentDepartmentId:", currentDepartmentId, "availableDepartments:", availableDepartments);
+    
+    if (isAdmin) {
+      // Admin can select any department - no employees shown until department is selected
+      autoDepartmentId = "";
+      autoDepartmentName = "";
+      setFilteredEmployees([]); // Clear employees list until department is selected
+    } else {
+      // Department Head - auto-fill with their assigned department
+      // Their employees are already fetched and filtered by the API
+      autoDepartmentId = currentDepartmentId || availableDepartments[0]?._id || "";
+      if (autoDepartmentId && availableDepartments.length > 0) {
+        const foundDept = availableDepartments.find(d => d._id === autoDepartmentId);
+        autoDepartmentName = foundDept?.name || "";
+        console.log("Found department:", foundDept, "Name:", autoDepartmentName);
+        console.log("Setting department members, total employees:", employees.length);
+      }
+      // Show all fetched employees (already filtered by API for their department)
+      setFilteredEmployees(employees);
+    }
+    
+    setFormState({ 
+      ...defaultFormState, 
+      department: autoDepartmentId,
+      departmentName: autoDepartmentName
+    });
     setFormErrors({});
     setSelectedProject(null);
     setSelectedEmployees([]);
     setLeaderId("");
-    // setEmployeeMenuOpen(true);   // ✅ ADD THIS
     setModalOpen(true);
   };
 
@@ -331,18 +413,33 @@ export default function DepartmentHeadProjects() {
     setFormState({
       name: project.name,
       description: project.description,
-      department: project.department || "",
+      department: project.departmentId || "",
+      departmentName: project.department || "",
       teamSize: String(project.teamSize),
       leader: project.leader,
       dueDate: project.dueDate,
       priority: project.priority,
     });
 
+    // Show employees for the form
+    if (isAdmin && project.departmentId) {
+      // Admin: Filter employees by the project's department
+      const selectedDept = availableDepartments.find(d => d._id === project.departmentId);
+      if (selectedDept) {
+        const deptEmployees = employees.filter(emp => 
+          emp.department === selectedDept.name || emp.department?._id === project.departmentId
+        );
+        setFilteredEmployees(deptEmployees);
+      }
+    } else {
+      // Department Head: Show all their department's employees (already filtered by API)
+      setFilteredEmployees(employees);
+    }
+
     setSelectedEmployees(project?.assignees || []);
     setLeaderId(project?.leaderId || "");
     setFormErrors({});
 
-    // setEmployeeMenuOpen(true); // ✅ IMPORTANT
     setModalOpen(true);
   };
 
@@ -401,6 +498,21 @@ export default function DepartmentHeadProjects() {
 
   const handleFormChange = (field, value) => {
     setFormState((prev) => ({ ...prev, [field]: value }));
+    
+    // If Admin is selecting a department, filter employees by that department
+    if (field === "department" && isAdmin && value) {
+      const selectedDept = availableDepartments.find(d => d._id === value);
+      if (selectedDept) {
+        const deptEmployees = employees.filter(emp => 
+          emp.department === selectedDept.name || emp.department?._id === value
+        );
+        console.log("Filtering employees for department:", selectedDept.name, "Found:", deptEmployees);
+        setFilteredEmployees(deptEmployees);
+      }
+    } else if (field === "department" && !value) {
+      // If department is cleared, show all employees
+      setFilteredEmployees(employees);
+    }
   };
 
   useEffect(() => {
@@ -410,17 +522,6 @@ export default function DepartmentHeadProjects() {
       leader: leader ? getEmployeeLabel(leader) : "",
     }));
   }, [leaderId, selectedEmployees]);
-
-  const filteredEmployees = useMemo(() => {
-    const query = employeeSearch.trim().toLowerCase();
-
-    return employees.filter((employee) => {
-      const name = getEmployeeLabel(employee).toLowerCase();
-      const employeeId = (employee?.employeeId || "").toLowerCase();
-
-      return name.includes(query) || employeeId.includes(query);
-    });
-  }, [employees, employeeSearch]);
 
 
 
@@ -442,7 +543,7 @@ export default function DepartmentHeadProjects() {
   const validateForm = () => {
     const nextErrors = {};
     if (!formState.name.trim()) nextErrors.name = "Project name is required.";
-    if (!formState.department.trim()) nextErrors.department = "Department is required.";
+    if (!formState.department) nextErrors.department = "Department is required.";
     if (!formState.dueDate) nextErrors.dueDate = "Due date is required.";
     const teamSize = selectedEmployees.length;
     if (!teamSize || teamSize < 1) nextErrors.teamSize = "Team size must be at least 1.";
@@ -462,18 +563,10 @@ export default function DepartmentHeadProjects() {
     const selectedLeader = selectedEmployees.find((item) => item._id === leaderId);
     const leaderName = selectedLeader ? getEmployeeLabel(selectedLeader) : formState.leader.trim();
 
-    // For Admin: find department ID from availableDepartments by name
-    // For Department Head: use currentDepartmentId
-    let deptId;
-    if (isAdmin) {
-      const selectedDept = availableDepartments.find(d => d.name === formState.department);
-      deptId = selectedDept?._id;
-    } else {
-      deptId = currentDepartmentId || availableDepartments[0]?._id;
-    }
-
+    // Get department ID and name from form state
+    const deptId = formState.department;
     if (!deptId) {
-      setFormErrors({ department: "Department ID not available. Please refresh the page." });
+      setFormErrors({ department: "Department is required." });
       return;
     }
 
@@ -481,7 +574,7 @@ export default function DepartmentHeadProjects() {
       name: formState.name.trim(),
       description: formState.description.trim(),
       department: deptId,
-      departmentName: formState.department,
+      departmentName: formState.departmentName || "",
       teamSize: selectedEmployees.length,
       leader: leaderId,
       leaderName: leaderName,
@@ -504,6 +597,7 @@ export default function DepartmentHeadProjects() {
               id: updatedProject._id,
               leader: updatedProject.leaderName,
               leaderId: updatedProject.leader,
+              departmentId: updatedProject.department,
               department: updatedProject.departmentName
             }
             : item
@@ -518,6 +612,7 @@ export default function DepartmentHeadProjects() {
           id: newProject._id,
           leader: newProject.leaderName,
           leaderId: newProject.leader,
+          departmentId: newProject.department,
           department: newProject.departmentName,
           dueDate: newProject.dueDate?.split('T')[0] || newProject.dueDate
         };
@@ -805,6 +900,7 @@ export default function DepartmentHeadProjects() {
                                 id: proj._id,
                                 leader: proj.leaderName || proj.leader?.firstName + ' ' + proj.leader?.lastName || '',
                                 leaderId: proj.leader?._id || proj.leader,
+                                departmentId: proj.department || deptDetails?._id,
                                 department: proj.departmentName || deptDetails?.name,
                                 assignees: proj.assignees || [],
                                 dueDate: proj.dueDate?.split('T')[0] || proj.dueDate
@@ -1150,18 +1246,18 @@ export default function DepartmentHeadProjects() {
         onClose={closeModal}
         footer={
           modalMode === "view" ? null : (
-            <div className="flex flex-wrap justify-end gap-3">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={closeModal}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
+                className="rounded-lg sm:rounded-xl border border-slate-200 px-4 py-2.5 sm:py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition w-full sm:w-auto"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 form="project-form"
-                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                className="rounded-lg sm:rounded-xl bg-blue-600 px-4 py-2.5 sm:py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition w-full sm:w-auto"
               >
                 {modalMode === "edit" ? "Save Changes" : "Create Project"}
               </button>
@@ -1314,11 +1410,34 @@ export default function DepartmentHeadProjects() {
                     <select
                       className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm transition hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                       value={formState.department}
-                      onChange={(event) => handleFormChange("department", event.target.value)}
+                      onChange={(event) => {
+                        const deptId = event.target.value;
+                        const deptName = availableDepartments.find(d => d._id === deptId)?.name || "";
+                        handleFormChange("department", deptId);
+                        handleFormChange("departmentName", deptName);
+                        
+                        // Filter employees by selected department
+                        if (deptId) {
+                          const selectedDept = availableDepartments.find(d => d._id === deptId);
+                          if (selectedDept) {
+                            const deptEmployees = employees.filter(emp => 
+                              emp.department === selectedDept.name || emp.department?._id === deptId
+                            );
+                            setFilteredEmployees(deptEmployees);
+                            setSelectedEmployees([]); // Clear selected employees when department changes
+                            setLeaderId(""); // Clear leader selection
+                            console.log("Department changed to:", selectedDept.name, "Filtered employees:", deptEmployees.length);
+                          }
+                        } else {
+                          setFilteredEmployees(employees);
+                          setSelectedEmployees([]);
+                          setLeaderId("");
+                        }
+                      }}
                     >
                       <option value="">Select a department</option>
                       {availableDepartments.map((dept) => (
-                        <option key={dept._id} value={dept.name}>
+                        <option key={dept._id} value={dept._id}>
                           {dept.name}
                         </option>
                       ))}
@@ -1329,7 +1448,12 @@ export default function DepartmentHeadProjects() {
                       <input
                         type="text"
                         className="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-600 font-medium"
-                        value={formState.department}
+                        value={
+                          formState.departmentName || 
+                          availableDepartments.find(d => d._id === formState.department)?.name || 
+                          departmentOverride ||
+                          "Loading..."
+                        }
                         disabled
                         readOnly
                       />
@@ -1483,7 +1607,13 @@ export default function DepartmentHeadProjects() {
                           No employees found
                         </p>
                       </div>
-                    ) : filteredEmployees.length === 0 ? (
+                    ) : filteredEmployees.length === 0 && formState.department && isAdmin ? (
+                      <div className="px-4 py-6 text-center">
+                        <p className="text-xs text-slate-500">
+                          No employees in this department
+                        </p>
+                      </div>
+                    ) : searchFilteredEmployees.length === 0 ? (
                       <div className="px-4 py-6 text-center">
                         <p className="text-xs text-slate-500">
                           No employees match "{employeeSearch}"
@@ -1497,10 +1627,11 @@ export default function DepartmentHeadProjects() {
                         </button>
                       </div>
                     ) : (
-                      filteredEmployees.map((employee, index) => {
+                      searchFilteredEmployees.map((employee, index) => {
                         const isSelected = selectedEmployees.some(
                           (item) => item._id === employee._id
                         );
+                        const isEngaged = engagedEmployeeIds.has(employee._id);
 
                         return (
                           <label
@@ -1520,8 +1651,13 @@ export default function DepartmentHeadProjects() {
                             />
 
                             <div className="flex-1 min-w-0">
-                              <div className="text-slate-900 font-medium truncate">
+                              <div className="text-slate-900 font-medium truncate flex items-center gap-2">
                                 {getEmployeeLabel(employee)}
+                                {isEngaged && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold flex-shrink-0">
+                                    Engaged
+                                  </span>
+                                )}
                               </div>
 
                               {employee?.employeeId && (
@@ -1553,22 +1689,34 @@ export default function DepartmentHeadProjects() {
                       Selected Members ({selectedEmployees.length})
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {selectedEmployees.map((employee) => (
-                        <span
-                          key={employee._id}
-                          className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-purple-700 border-2 border-purple-200 transition hover:shadow-md hover:border-purple-400"
-                        >
-                          {getEmployeeLabel(employee)}
-                          <button
-                            type="button"
-                            className="text-purple-500 hover:text-purple-700 font-bold transition hover:bg-purple-100 rounded-full w-4 h-4 flex items-center justify-center"
-                            onClick={() => toggleEmployee(employee)}
-                            title="Remove member"
+                      {selectedEmployees.map((employee) => {
+                        const isEngaged = engagedEmployeeIds.has(employee._id);
+                        return (
+                          <span
+                            key={employee._id}
+                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition hover:shadow-md border-2 ${
+                              isEngaged
+                                ? "bg-amber-50 text-amber-700 border-amber-300 hover:border-amber-400"
+                                : "bg-white text-purple-700 border-purple-200 hover:border-purple-400"
+                            }`}
                           >
-                            ×
-                          </button>
-                        </span>
-                      ))}
+                            {getEmployeeLabel(employee)}
+                            {isEngaged && <span className="text-xs font-bold">⚠</span>}
+                            <button
+                              type="button"
+                              className={`font-bold transition rounded-full w-4 h-4 flex items-center justify-center ${
+                                isEngaged
+                                  ? "text-amber-500 hover:text-amber-700 hover:bg-amber-100"
+                                  : "text-purple-500 hover:text-purple-700 hover:bg-purple-100"
+                              }`}
+                              onClick={() => toggleEmployee(employee)}
+                              title="Remove member"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

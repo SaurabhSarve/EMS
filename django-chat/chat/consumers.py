@@ -1,19 +1,49 @@
 import json
+import jwt
+import os
 import datetime
+from urllib.parse import parse_qs
 from channels.generic.websocket import AsyncWebsocketConsumer
 from .mongo_client import messages_collection, conversations_collection
 from .permissions import check_chat_permission
+from django.conf import settings
+
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        user = self.scope.get('user')
-        if not user or not getattr(user, 'is_authenticated', False):
-            await self.close()
+        query_string = self.scope['query_string'].decode()
+        parsed_qs = parse_qs(query_string)
+        token = parsed_qs.get('token', [None])[0]
+
+        if not token:
+            print("WebSocket Rejected: No Token")
+            await self.close(code=4001)
             return
 
-        self.user_id = user.id
+        token = token.strip('"').strip("'")
+        secret = settings.SECRET_KEY
+
+        try:
+            payload = jwt.decode(token, secret, algorithms=["HS256"])
+            
+            # FIX: Look for 'userId' first
+            self.user_id = str(payload.get('userId', payload.get('id', payload.get('_id'))))
+            
+            if self.user_id == 'None':
+                raise ValueError("Payload missing user ID")
+                
+        except Exception as e:
+            print(f"WebSocket Rejected: Invalid Token. Error: {str(e)}")
+            await self.close(code=4003)
+            return
+
         self.room_group_name = f"user_{self.user_id}"
-        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+        print(f"WebSocket Connected: User {self.user_id}")
         await self.accept()
 
     async def disconnect(self, close_code):
@@ -31,8 +61,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         now_aware = datetime.datetime.now(datetime.timezone.utc)
         
+        # PREVENT SPOOFING: Ignore any sender_id passed by frontend
+        # Force it to be the authenticated user's ID
+        sender_id = self.user_id 
+        
         msg_doc = {
-            "sender_id": self.user_id,
+            "sender_id": sender_id,
             "receiver_id": receiver_id,
             "message": message_text,
             "timestamp": now_aware,

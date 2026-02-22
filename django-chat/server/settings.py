@@ -7,11 +7,11 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('JWT_SECRET', 'django-insecure-key')
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
-    'daphne', # Must be first
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -74,7 +74,21 @@ CHANNEL_LAYERS = {
     }
 }
 
-CORS_ALLOW_ALL_ORIGINS = True 
+CORS_ALLOWED_ORIGINS = [
+    "https://employee-management-system-mauve-sigma.vercel.app", # Your Production Frontend
+    "http://localhost:5173", # Local development
+]
+
+# Allow credentials (cookies/headers)
+CORS_ALLOW_CREDENTIALS = True
+
+# Trusted origins for CSRF (WebSockets)
+CSRF_TRUSTED_ORIGINS = [
+    "https://employee-management-system-mauve-sigma.vercel.app",
+    "https://employee-management-system-chat-feature.onrender.com" # Added your new backend URL
+]
+
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True

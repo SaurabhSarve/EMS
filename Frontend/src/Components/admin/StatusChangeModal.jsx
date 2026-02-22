@@ -18,7 +18,7 @@ const StatusChangeModal = ({ isOpen, onClose, admin, onSuccess }) => {
         try {
             const token = localStorage.getItem("token");
             const response = await axios.patch(
-                `http://localhost:5000/api/v1/admin/admins/${admin._id}/status`,
+                `/api/v1/admin/admins/${admin._id}/status`,
                 { status, superSecretKey },
                 {
                     headers: {

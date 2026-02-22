@@ -117,13 +117,18 @@ export default function AdminLogin() {
       const response = await authService.requestForgotpassword(null, email, userType);
       
       if (response.success) {
-        showToast("If you are a registered user, you will receive an email with OTP.", "success");
+        showToast("OTP sent successfully! Please check your email.", "success");
         setView("verifyOTP");
       } else {
         showToast(response.message || "Failed to send OTP", "error");
       }
     } catch (error) {
-      showToast("Network error. Please try again.", "error");
+      // Check if it's an HTTP error response
+      if (error.response && error.response.data) {
+        showToast(error.response.data.message || "Failed to send OTP", "error");
+      } else {
+        showToast("Network error. Please try again.", "error");
+      }
       console.log("admin forgot password error", error);
     } finally {
       setIsLoading(false);

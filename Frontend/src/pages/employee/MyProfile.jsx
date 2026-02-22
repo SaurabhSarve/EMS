@@ -15,11 +15,11 @@ export default function MyProfile() {
             const result = await employeeService.getProfile();
             console.log(result);
 
-            if (result.success) {
+            if (result.success && result.data) {
                 setProfileData({
-                    ...result.employee,
-                    department: result.department,
-                    manager: result.manager
+                    ...result.data,
+                    department: result.data.department,
+                    manager: result.data.manager
                 });
             }
 

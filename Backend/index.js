@@ -9,11 +9,19 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:5173', 
-  credentials: true, 
-  methods: ['GET', 'POST', 'PUT','PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization' ,'X-Password',
-    'X-Hard-Delete' , 'X-Status']
+  origin: [
+    "http://localhost:5173", 
+    "https://employee-management-system-mauve-sigma.vercel.app"
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Password',
+    'X-Hard-Delete',
+    'X-Status'
+  ]
 }));
 
 app.use(express.json());

@@ -1763,6 +1763,14 @@ const deleteTask = async (req, res) => {
     }
 
     if (req.user.role === 'Department Head') {
+      // Check if task has an employee assigned
+      if (!task.employee) {
+        return res.status(403).json({
+          success: false,
+          message: "Cannot delete task without an assigned employee"
+        });
+      }
+      
       const employee = await User.findById(task.employee).select('department');
       let departmentId = req.user.department;
 

@@ -82,14 +82,14 @@ const AdminSidebar = () => {
     return (
         <>
             {/* Mobile Hamburger Button - Small Size */}
-            {isMobile && (
-                <button
-                        onClick={toggleSidebar}
-                        className="fixed top-4 left-4 z-50 w-10 h-10 bg-white/90 text-gray-900 rounded-lg hover:bg-white active:scale-95 transition-all duration-200 shadow-md border border-gray-200 flex items-center justify-center"
-                    >
-                        {isOpen ? <MdClose size={18} /> : <MdMenu size={18} />}
-                    </button>
-            )}
+            {isMobile && !isOpen && (
+    <button
+        onClick={toggleSidebar}
+        className="fixed top-4 left-4 z-50 w-10 h-10 bg-white shadow-md rounded-lg flex items-center justify-center"
+    >
+        <MdMenu size={20} />
+    </button>
+)}
 
             {/* Sidebar */}
             <aside

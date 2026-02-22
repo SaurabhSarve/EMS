@@ -45,21 +45,39 @@ const requestPasswordReset = async (req, res) => {
 
 
     if (!user) {
-
-      return res.status(200).json({
-        success: true,
-        message: 'If you are a registered user, you will receive an email with reset instructions.'
+      return res.status(404).json({
+        success: false,
+        message: 'This email is not registered'
       });
     }
-
+    console.log("user");
 
 
     // Generate 6-digit OTP
     const otp = crypto.randomInt(100000, 999999).toString();
+    
+    // Determine the correct email to send to
+    const recipientEmail = user.personalEmail || user.email;
+    
+    if (!recipientEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'No email address found for this user'
+      });
+    }
+
+    // Send OTP email
     const emailResult = await sendOtp({
       user: user,
       otp: otp
     });
+    
+    if (!emailResult || !emailResult.success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP email. Please try again.'
+      });
+    }
 
     await OTP.create({
       identifier: userType === 'employee' ? employeeId : email,
@@ -72,12 +90,21 @@ const requestPasswordReset = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'If you are a registered user, you will receive an email with OTP.'
+      message: 'OTP sent successfully! Please check your email.'
     });
 
   } catch (error) {
     console.error('Password reset request error:', error);
-    res.status(500).json({
+    
+    // Check if it's an email sending error
+    if (error.message && error.message.includes('email')) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP email. Please try again.'
+      });
+    }
+    
+    return res.status(500).json({
       success: false,
       message: 'Failed to process password reset request'
     });

@@ -89,7 +89,12 @@ export default function EmployeeLogin() {
         showToast(response.message || "Failed to send OTP", "error");
       }
     } catch (error) {
-      showToast("Network error. Please try again.", "error");
+      // Check if it's an HTTP error response
+      if (error.response && error.response.data) {
+        showToast(error.response.data.message || "Failed to send OTP", "error");
+      } else {
+        showToast("Network error. Please try again.", "error");
+      }
     } finally {
       setIsLoading(false);
     }

@@ -16,7 +16,7 @@ import {
 
 // API Configuration - Replace these with your actual API endpoints
 const API_CONFIG = {
-  BASE_URL: "http://localhost:5000/api", // Change this to your backend URL
+  BASE_URL: "/api", // Change this to your backend URL
   ENDPOINTS: {
     GET_SALARY_HISTORY: "/salary/history",
     GET_SALARY_STATS: "/salary/stats",

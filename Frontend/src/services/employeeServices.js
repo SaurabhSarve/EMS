@@ -229,6 +229,15 @@ export const employeeService = {
     //         }
     //     }
     // },
+    deleteTask: async (taskId) => {
+        try {
+            const response = await api.delete(`/admin/tasks/${taskId}`);
+            return response.data;
+
+        } catch (error) {
+            throw error;
+        }
+    },
 
     getTasks: async () => {
 
@@ -244,6 +253,15 @@ export const employeeService = {
     updateTaskByAdmin: async (taskId, updateData) => {
         try {
             const response = await api.patch(`/admin/tasks/${taskId}`, updateData);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    deleteTask: async (taskId) => {
+        try {
+            const response = await api.delete(`/admin/tasks/${taskId}`);
             return response.data;
         } catch (error) {
             throw error;

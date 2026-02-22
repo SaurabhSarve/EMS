@@ -58,21 +58,20 @@ const HeadDashboard = () => {
     if (!user?._id && !user?.id) return;
     try {
       const id = user._id || user.id;
-      // Using port 8000 for Django Chat Backend
-      const res = await axios.get(`http://127.0.0.1:8000/api/chat/unread/total/${id}`);
+      // UPDATED URL
+      const res = await axios.get(`https://employee-management-system-chat-feature.onrender.com/api/chat/unread/total/${id}`);
       setUnreadCount(res.data.count);
-    } catch (e) {
-      console.error("Chat Count Error:", e);
-    }
+    } catch (e) { console.error(e); }
   };
 
-  // 2. WebSocket Connection
+  // 2. WebSocket
   useEffect(() => {
     fetchUnreadCount();
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/?token=${token}`);
+    // UPDATED URL (wss://)
+    const ws = new WebSocket(`wss://employee-management-system-chat-feature.onrender.com/ws/chat/?token=${token}`);
     socketRef.current = ws;
 
     ws.onmessage = (event) => {
@@ -172,12 +171,6 @@ const HeadDashboard = () => {
 
     // Fetch data immediately
     fetchDepartmentData();
-
-    // Set up real-time polling - refresh every 15 seconds
-    const intervalId = setInterval(fetchDepartmentData, 15000);
-
-    // Cleanup interval on component unmount
-    return () => clearInterval(intervalId);
   }, [user?.department, user?.departmentId]);
 
   // Manual refresh handler
@@ -454,10 +447,10 @@ const HeadDashboard = () => {
             {/* Task Bar Chart */}
             {taskStats.totalTasks > 0 ? (
               <div>
-                <ResponsiveContainer width="100%" height={260}>
+                <ResponsiveContainer width="100%" height={300}>
                   <BarChart
                     data={taskStats.chartData}
-                    margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
+                    margin={{ top: 20, right: 30, left: 0, bottom: 80 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis 
@@ -465,7 +458,7 @@ const HeadDashboard = () => {
                       tick={{ fill: "#64748b", fontSize: 12 }}
                       angle={-45}
                       textAnchor="end"
-                      height={80}
+                      height={100}
                     />
                     <YAxis 
                       tick={{ fill: "#64748b", fontSize: 12 }}

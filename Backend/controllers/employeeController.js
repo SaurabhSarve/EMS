@@ -314,21 +314,11 @@ const getProfile = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      employee: {
-        _id: profile[0]._id,
-        firstName: profile[0].firstName,
-        lastName: profile[0].lastName,
-        email: profile[0].email,
-        role: profile[0].role,
-        contactNumber: profile[0].contactNumber,
-        personalEmail: profile[0].personalEmail,
-        position: profile[0].position,
-        joiningDate: profile[0].joiningDate,
-        jobType: profile[0].jobType,
-        status: profile[0].status
-      },
-      department: profile[0].department,
-      manager: profile[0].manager
+      data: {
+        ...profile[0],
+        department: profile[0].department,
+        manager: profile[0].manager
+      }
     });
 
   } catch (error) {

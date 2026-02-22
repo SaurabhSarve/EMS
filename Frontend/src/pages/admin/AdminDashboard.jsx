@@ -63,12 +63,16 @@ const AdminDashboard = () => {
     if (!user?._id && !user?.id) return;
     try {
       const id = user._id || user.id;
+      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      const CHAT_BASE_URL = isLocal ? "http://127.0.0.1:8000" : "https://employee-management-system-chat-feature.onrender.com";
+      const token = localStorage.getItem("token");
       const res = await axios.get(
-        `http://127.0.0.1:8000/api/chat/unread/total/${id}`,
+        `${CHAT_BASE_URL}/api/chat/unread/total/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setUnreadCount(res.data.count);
     } catch (e) {
-      console.error(e);
+      console.error("Chat Count Error:", e);
     }
   };
 
@@ -78,7 +82,9 @@ const AdminDashboard = () => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/?token=${token}`);
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const WS_BASE_URL = isLocal ? "ws://127.0.0.1:8000" : "wss://employee-management-system-chat-feature.onrender.com";
+    const ws = new WebSocket(`${WS_BASE_URL}/ws/chat/?token=${token}`);
     socketRef.current = ws;
 
     ws.onmessage = (event) => {
