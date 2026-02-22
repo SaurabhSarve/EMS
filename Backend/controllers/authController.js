@@ -437,6 +437,11 @@ const login = async (req, res, next) => {
       redirectTo = '/employee/dashboard';
     }
 
+    // Populate department for Department Head
+    if (currUser.department) {
+      await currUser.populate('department');
+    }
+
     const userResponse = {
       id: currUser._id,
       firstName: currUser.firstName,
@@ -446,7 +451,11 @@ const login = async (req, res, next) => {
       employeeId: currUser.employeeId,
       role: currUser.role,
       isActive: currUser.isActive,
-      lastLogin: currUser.lastLogin
+      lastLogin: currUser.lastLogin,
+      department: currUser.department ? {
+        _id: currUser.department._id,
+        name: currUser.department.name
+      } : null
     };
 
     res.status(200).json({
@@ -745,3 +754,4 @@ module.exports = {
   createPassword,
   register
 }
+

@@ -26,6 +26,7 @@ const {
     payIndividual,
     deleteDepartment,
     updateDepartment,
+    assignDepartmentToEmployee,
     updateProfile,
     getAllEmployeesByDepartement,
     getCurrentMonthPaidEmployees,
@@ -119,6 +120,9 @@ router.route("/employee/:id")
     .get(getEmployeebyId)
     .put(upload.single('profilePhoto'), updateEmployee)
     .delete(deleteEmployee);
+
+// Assign department to employee
+router.patch("/employee/:id/assign-department", assignDepartmentToEmployee);
 
 router.route("/employees/bydepartment").get(getAllEmployeesByDepartement)
 
@@ -222,6 +226,6 @@ router.route("/bulkHiring").post(uploadFile.single("file"), bulkHiring)
 // Admin management routes
 router.get("/admins", getAllAdmins);
 router.patch("/admins/:id/status", updateAdminStatus);
-router.get("/head/employess", getDepartmentHeadEmployees);
+router.get("/head/employess", protect, authorize('Department Head'), getDepartmentHeadEmployees);
 
 module.exports = router;

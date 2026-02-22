@@ -56,7 +56,7 @@ export default function EmployeeEdit() {
           lastName: employee.lastName || "",
           personalEmail: employee.personalEmail || "",
           contactNumber: employee.contactNumber || "",
-          department: employee.department.name || "",
+          department: employee.department?.name || "",
           jobType: employee.jobType || "",
           joiningDate: employee.joiningDate
             ? employee.joiningDate.split("T")[0]
@@ -432,7 +432,7 @@ export default function EmployeeEdit() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Current Department: <span className="text-blue-600">{formData.department}</span>
+                        Current Department: <span className="text-blue-600">{formData.department || "Unassigned"}</span>
                       </label>
                       <select
                         name="department"
@@ -440,7 +440,7 @@ export default function EmployeeEdit() {
                         onChange={handleChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                       >
-                        <option value="">Update Department</option>
+                        <option value="">-- Unassign Department --</option>
                         {departments.map((dept) => (
                           <option key={dept._id} value={dept.name}>
                             {dept.name}

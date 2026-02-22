@@ -105,16 +105,13 @@ const HeadDashboard = () => {
 
         // Fetch all data in parallel
         const [employeeRes, leaveRes, taskRes] = await Promise.all([
-          employeeService.getAllEmployees(),
+          employeeService.getDepartmentHeadEmployees(),
           employeeService.getLeavesdetails(),
           employeeService.getDepartmentTasks() // Fetch department employee tasks
         ]);
 
         // Filter employees in the same department as the head
-        const headDept = user?.department || user?.departmentId;
-        const deptEmpList = (employeeRes?.data || []).filter(emp => 
-          emp.department === headDept || emp.department?._id === headDept || emp.departmentId === headDept
-        );
+        const deptEmpList = employeeRes?.employees || [];
         setDepartmentEmployees(deptEmpList);
 
         // Filter leaves from department employees
@@ -181,16 +178,13 @@ const HeadDashboard = () => {
     try {
       // Fetch all data in parallel
       const [employeeRes, leaveRes, taskRes] = await Promise.all([
-        employeeService.getAllEmployees(),
+        employeeService.getDepartmentHeadEmployees(),
         employeeService.getLeavesdetails(),
         employeeService.getDepartmentTasks() // Fetch department employee tasks
       ]);
 
-      // Filter employees in the same department as the head
-      const headDept = user?.department || user?.departmentId;
-      const deptEmpList = (employeeRes?.data || []).filter(emp => 
-        emp.department === headDept || emp.department?._id === headDept || emp.departmentId === headDept
-      );
+      // Get department employees from the response
+      const deptEmpList = employeeRes?.employees || [];
       setDepartmentEmployees(deptEmpList);
 
       // Filter leaves from department employees

@@ -491,6 +491,12 @@ const assignDepartmentToHead = async (req, res, next) => {
       { new: true }
     ).populate("department", "name");
 
+    // Also update the department's manager field
+    await Department.findByIdAndUpdate(
+      departmentId,
+      { manager: headId }
+    );
+
     res.status(200).json({
       success: true,
       message: "Department assigned successfully",
