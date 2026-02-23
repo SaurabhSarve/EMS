@@ -4,7 +4,6 @@ import authService from "../../services/auth";
 import { useAuth } from "../../context/AuthContext";
 import EMPloginPic from "../../assets/images/Employee.jpeg";
 import BackButton from "../../Components/BackButton.jsx";
-import Navbar_ from "../../Components/Navbar_.jsx";
 
 export default function EmployeeLogin() {
   const [view, setView] = useState("login");
@@ -181,7 +180,6 @@ export default function EmployeeLogin() {
 
   return (
     <>
-      <Navbar_ />
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4 py-8">
         {toast.show && (
           <div

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import registerImg from "../../assets/images/regis.webp";
 import "../../assets/styles/LandingPageStyles/Register.css";
 import { useAuth } from "../../context/AuthContext";
-import Navbar_ from "../../Components/Navbar_.jsx"
 import BackButton from "../../Components/BackButton.jsx"
 
 export default function CreateAccount() {
@@ -121,7 +120,6 @@ export default function CreateAccount() {
 
   return (
     <>
-      <Navbar_ />
       <div className="register-page pt-3">
         {/* Toast Notification */}
         {toast.show && (

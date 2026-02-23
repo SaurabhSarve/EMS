@@ -5,10 +5,10 @@ export default function BackButton() {
   const navigate = useNavigate();
   return (
     <div>
-      {/* Navigation Back Button - Mobile Only */}
+      {/* Navigation Back Button - Visible on All Screens */}
       <button
         onClick={() => navigate(-1)}
-        className="absolute top-4 left-4 md:hidden flex items-center gap-2 text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-all duration-200 border border-blue-200 shadow-sm z-10"
+        className="absolute top-4 left-4 flex items-center gap-2 text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-all duration-200 border border-blue-200 shadow-sm z-10"
         aria-label="Go back"
       >
         <svg
