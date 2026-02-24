@@ -1653,16 +1653,16 @@ export default function SecureSalaryManagement() {
                 </div>
               </div>
 
-              <div className="flex">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-3">
                 <button
                   onClick={handlePaymentHistory}
-                  className="w-full lg:w-auto px-4 sm:px-6 py-3 
+                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 
              bg-gradient-to-r from-indigo-600 to-purple-600
              text-white rounded-xl font-semibold 
              flex items-center justify-center gap-2 
              hover:from-indigo-700 hover:to-purple-700
              shadow-lg text-sm sm:text-base
-             transition-all duration-300 mr-4"
+             transition-all duration-300"
                 >
                   <History size={18} />
                   Payment History
@@ -1671,7 +1671,7 @@ export default function SecureSalaryManagement() {
 
                 <button
                   onClick={handleActivatePaymentMode}
-                  className="w-full lg:w-auto px-4 sm:px-6 py-3 bg-white text-red-600 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-red-50 shadow-lg text-sm sm:text-base border border-white/60"
+                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-white text-red-600 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-red-50 shadow-lg text-sm sm:text-base border border-white/60"
                 >
                   <Lock size={18} />
                   Activate Payment Mode

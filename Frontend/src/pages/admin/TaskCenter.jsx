@@ -426,7 +426,7 @@ export default function TaskCenter() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-white">
       <AdminSidebar />
 
-      <main className="lg:ml-64 p-4 sm:p-6 lg:p-8">
+      <main className="lg:ml-64 p-4 sm:p-6 lg:p-8 pl-12 sm:pl-6">
         <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 rounded-3xl shadow-xl border border-white/20 px-6 sm:px-8 py-7 text-white relative overflow-hidden">
           <div className="absolute -top-10 -right-10 w-36 h-36 bg-white/15 rounded-full blur-2xl" />
           <div className="absolute -bottom-12 -left-10 w-44 h-44 bg-white/15 rounded-full blur-2xl" />
@@ -458,10 +458,10 @@ export default function TaskCenter() {
               </div>
             </div>
             {/* Tab Bar */}
-            <div className="flex gap-2 mt-6">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 mt-6">
               <button
                 onClick={() => setActiveTab("assigned")}
-                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all w-full sm:w-auto ${
                   activeTab === "assigned"
                     ? "bg-white text-blue-600 shadow-md"
                     : "text-white/90 hover:bg-white/15"
@@ -471,7 +471,7 @@ export default function TaskCenter() {
               </button>
               <button
                 onClick={() => setActiveTab("assign")}
-                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all w-full sm:w-auto ${
                   activeTab === "assign"
                     ? "bg-white text-blue-600 shadow-md"
                     : "text-white/90 hover:bg-white/15"

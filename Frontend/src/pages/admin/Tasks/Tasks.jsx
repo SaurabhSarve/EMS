@@ -1040,7 +1040,7 @@ export default function Tasks() {
         <div className="min-h-screen bg-white">
           <AdminSidebar />
           
-          <div className="lg:ml-64 p-3 sm:p-6 lg:p-8">
+          <div className="lg:ml-64 p-3 sm:p-6 lg:p-8 pl-12 sm:pl-6">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 rounded-2xl p-6 sm:p-8 text-white shadow-xl border border-white/20 mb-6">
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -1412,7 +1412,7 @@ export default function Tasks() {
       <div className="min-h-screen bg-gray-50">
         <AdminSidebar />
         
-        <div className="lg:ml-64 p-3 sm:p-6 lg:p-8">
+        <div className="lg:ml-64 p-3 sm:p-6 lg:p-8 pl-12 sm:pl-6">
           {!selectedEmployee ? (
             <>
               {/* Header */}
