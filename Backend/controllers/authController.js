@@ -236,10 +236,35 @@ const resetPassword = async (req, res) => {
       // }
 
     } else if (userType === 'Department Head') {
-      // Verify department secret key
-      const department = await Department.findOne({ manager: otpDoc.userId });
-
-      if (!department || departmentSecretkey !== process.env.DEPARTMENT_SECRET_KEY) {
+      // Verify department head secret key using keyModel (same as login)
+      const savedUser = await User.findOne({ email: identifier, role: "Department Head" });
+      
+      if (!savedUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'Department Head user not found'
+        });
+      }
+      
+      // Check if user has access key configured
+      if (!savedUser.AccessKey) {
+        return res.status(403).json({
+          success: false,
+          message: 'Department Head access key not configured. Contact administrator'
+        });
+      }
+      
+      // Verify using keyModel (same as login)
+      const accessKeyDetail = await keyModel.findOne({ roleName: "Department Head" });
+      if (!accessKeyDetail) {
+        return res.status(500).json({
+          success: false,
+          message: 'Department Head key not configured in system'
+        });
+      }
+      
+      const isValidKey = await keyDecrypt(departmentSecretkey, accessKeyDetail.keyValue);
+      if (!isValidKey) {
         return res.status(401).json({
           success: false,
           message: 'Invalid department secret key'
@@ -267,11 +292,9 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    // // Hash new password
-    // const bcrypt = require('bcryptjs');
-    // const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    user.password = password;
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
     await user.save();
 
     // Clear OTP
