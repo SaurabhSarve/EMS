@@ -142,6 +142,7 @@ const sendOtp = async ({ user, otp }) => {
             </html>
           `
   };
+  console.log("Email Data:", otp);
   try {
     const response = await emailApi.sendTransacEmail(emailData);
     return { success: true, messageId: response.body.messageId };

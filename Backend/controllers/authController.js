@@ -192,9 +192,34 @@ const resetPassword = async (req, res) => {
     let user;
 
     if (userType === 'Admin') {
-      // Verify admin secret key
-      const savedUser = User.findOne({ email, role: "Admin" });
-      if (adminSecretkey !== savedUser.AccessKey) {
+      // Verify admin secret key using keyModel (same as login)
+      const savedUser = await User.findOne({ email: identifier, role: "Admin" });
+      if (!savedUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'Admin user not found'
+        });
+      }
+      
+      // Check if admin has access key configured
+      if (!savedUser.AccessKey) {
+        return res.status(403).json({
+          success: false,
+          message: 'Admin access key not configured. Contact system administrator'
+        });
+      }
+      
+      // Verify using keyModel (same as login)
+      const accessKeyDetail = await keyModel.findOne({ roleName: "Admin" });
+      if (!accessKeyDetail) {
+        return res.status(500).json({
+          success: false,
+          message: 'Admin key not configured in system'
+        });
+      }
+      
+      const isValidKey = await keyDecrypt(adminSecretkey, accessKeyDetail.keyValue);
+      if (!isValidKey) {
         return res.status(401).json({
           success: false,
           message: 'Invalid admin secret key'
@@ -221,7 +246,7 @@ const resetPassword = async (req, res) => {
         });
       }
 
-      user = await User.findById(otp.userId);
+      user = await User.findById(otpDoc.userId);
 
       // if (`${user.firstName} ${user.lastName}` !== name) {
       //   return res.status(401).json({
